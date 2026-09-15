@@ -7,7 +7,7 @@ Turn your flashcards into a learning adventure. Works with decks exported from A
 Requires [Node.js](https://nodejs.org).
 
 ```bash
-node server.js
+npm start
 ```
 
 Open http://localhost:5173 (designed for a phone-sized screen, ~400 px wide — use your browser's device toolbar on desktop).
@@ -37,3 +37,7 @@ It is a plain static site, so it also works on GitHub Pages or any static host. 
 ## Naming
 
 "Anki" is a registered trademark of Ankitects. The product name is **Cardslayer**. Saying that the app *works with Anki decks* is fine (descriptive use); putting "Anki" in the product name, app title, or store listing title is not.
+
+## Docs
+
+- `docs/specs/2026-09-15-character-art-pipeline-design.md` — how player/mob sprites are produced, stored and rendered (PixiJS, layered 64×64 pixel art).
