@@ -85,10 +85,15 @@ function closeModal() {
 const renderers = {};
 
 function go(view) {
+  const previousView = document.querySelector(".view.is-active")?.dataset.view;
+  if (previousView === "world" && previousView !== view) worldScene?.pause();
+
   document.querySelectorAll(".view").forEach((v) => v.classList.toggle("is-active", v.dataset.view === view));
   document.querySelectorAll(".nav-item").forEach((b) => b.classList.toggle("is-active", b.dataset.target === view));
   $(".views").scrollTop = 0;
   renderers[view]?.();
+
+  if (view === "world") worldScene?.resume();
 }
 
 document.querySelectorAll(".nav-item").forEach((btn) => btn.addEventListener("click", () => go(btn.dataset.target)));
@@ -435,6 +440,15 @@ function endBattle(won) {
     el("div", { class: "modal-actions" }, el("button", { class: "btn-small", onclick: closeModal }, "Continue"))
   );
 }
+
+// ================= WORLD =================
+let worldScene = null;
+
+renderers.world = async () => {
+  if (worldScene) return;
+  worldScene = new window.Cardslayer.WorldScene({ mountElement: $("#worldRoot") });
+  await worldScene.loadZone("data/zones/plains.json");
+};
 
 // ================= SCENE PLAY =================
 const OWL_LINES = ["Hoo! Ready to study?", "Drop a deck here!", "Knowledge is power!", "Hoo-hoo! 📚", "Let's beat some cards!"];
