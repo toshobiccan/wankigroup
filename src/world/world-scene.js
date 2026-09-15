@@ -91,7 +91,8 @@ export class WorldScene {
 
       const sprite = new PIXI.Sprite(mobTexture);
       sprite.anchor.set(0.5, 1);
-      sprite.scale.set(MOB_HEIGHT / mobTexture.height);
+      const mobScale = MOB_HEIGHT / mobTexture.height;
+      sprite.scale.set(-mobScale, mobScale); // flipped to face left, toward the player approaching from spawn
       container.addChild(sprite);
 
       const label = new PIXI.Text({
@@ -104,8 +105,10 @@ export class WorldScene {
 
       const hpBack = new PIXI.Graphics().rect(-20, -MOB_HEIGHT - 10, 40, 5).fill(0x0a1120);
       container.addChild(hpBack);
-      const hpFill = new PIXI.Graphics().rect(-20, -MOB_HEIGHT - 10, 40, 5).fill(0xb8262f);
-      container.addChild(hpFill); // always full for now -- no combat wired up yet
+      // Green at full HP; once combat exists this should shift toward red as
+      // cardsRemaining/cardsToKill drops -- always full for now, no damage yet.
+      const hpFill = new PIXI.Graphics().rect(-20, -MOB_HEIGHT - 10, 40, 5).fill(0x4cd137);
+      container.addChild(hpFill);
 
       this.world.addChild(container);
       this.mobs.push({ data: mobData, container });

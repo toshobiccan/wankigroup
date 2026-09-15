@@ -12,7 +12,17 @@
       "name": "Forgetful Goblin",
       "level": 3,
       "image": "assets/mob-goblin.png",
-      "xFrac": 0.45,
+      "xFrac": 0.55,
+      "cardsToKill": 5,
+      "xpReward": 50,
+      "coinReward": 15
+    },
+    {
+      "id": "goblin_2",
+      "name": "Forgetful Goblin",
+      "level": 3,
+      "image": "assets/mob-goblin.png",
+      "xFrac": 0.72,
       "cardsToKill": 5,
       "xpReward": 50,
       "coinReward": 15
