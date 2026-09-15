@@ -142,6 +142,19 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .view.is-active { display: block; animation: fadeIn .25s ease; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 
+/* World is the one view that fills the content area exactly, instead of
+   scrolling like the other pages — it hosts a fixed-size canvas, not text. */
+.view[data-view="world"].is-active {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.world-root {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+
 /* ================= HERO ================= */
 .hero {
   position: relative;
@@ -447,7 +460,7 @@ img.scene-layer { height: auto; }
   position: absolute; left: 0; right: 0; bottom: 0;
   height: var(--nav-h);
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   align-items: center;
   padding: 5px 5px 6px;
   background:
