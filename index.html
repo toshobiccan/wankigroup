@@ -273,12 +273,6 @@
         </div>
       </section>
 
-      <!-- ============ BATTLE ============ -->
-      <section class="view" data-view="battle">
-        <div class="page-head"><h2>Battle</h2><p>Defeat monsters by answering your cards.</p></div>
-        <div id="battleRoot"></div>
-      </section>
-
       <!-- ============ HOME ============ -->
       <section class="view" data-view="home">
         <div class="page-head"><h2>Your Decks</h2><p>Every card you master makes you stronger.</p></div>
@@ -300,7 +294,8 @@
       <!-- ============ WORLD ============ -->
       <section class="view" data-view="world">
         <div id="worldRoot" class="world-root"></div>
-        <div id="mobInfoPanel" class="mob-info-panel" hidden></div>
+        <div id="encounterPanelRoot"></div>
+        <div id="defeatFade" class="defeat-fade" hidden></div>
       </section>
     </main>
 
@@ -313,10 +308,6 @@
       <button class="nav-item" data-target="world">
         <svg viewBox="0 0 28 28" aria-hidden="true"><path d="M2 23 L9 9 L13 15 L17 6 L26 23Z" fill="currentColor"/><circle cx="20" cy="6" r="2.6" fill="currentColor"/></svg>
         <span>World</span>
-      </button>
-      <button class="nav-item" data-target="battle">
-        <svg viewBox="0 0 28 28" aria-hidden="true"><path d="M5 3 L19 17 L17 19 L3 5 L3 3Z M16 20 L20 16 M18 22 L22 18 L25 21 L21 25Z" fill="currentColor" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M23 3 L9 17 L11 19 L25 5 L25 3Z M12 20 L8 16 M10 22 L6 18 L3 21 L7 25Z" fill="currentColor" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
-        <span>Battle</span>
       </button>
       <button class="nav-item" data-target="quests">
         <svg viewBox="0 0 28 28" aria-hidden="true"><path d="M3 6 L10 3 L18 6 L25 3 V22 L18 25 L10 22 L3 25Z" fill="currentColor"/><path d="M10 3 V22 M18 6 V25" stroke="#1a2130" stroke-width="1.2"/><path d="M12 11 l4 4 m0 -4 l-4 4" stroke="#1a2130" stroke-width="1.6"/></svg>
