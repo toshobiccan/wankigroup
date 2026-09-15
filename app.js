@@ -1,6 +1,6 @@
 // ================= PLAYER STATE =================
 const XP_PER_LEVEL = 1000;
-const STORAGE_KEY = "anki-quest-player";
+const STORAGE_KEY = "cardslayer-player";
 
 const defaultPlayer = {
   name: "EUGEEE23",

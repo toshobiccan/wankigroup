@@ -36,4 +36,4 @@ http
       res.end(data);
     });
   })
-  .listen(port, () => console.log(`Anki Quest running at http://localhost:${port}`));
+  .listen(port, () => console.log(`Cardslayer running at http://localhost:${port}`));

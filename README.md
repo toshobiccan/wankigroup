@@ -1,6 +1,6 @@
-# Anki Quest
+# Cardslayer
 
-Turn your Anki flashcards into a learning adventure. Import an `.apkg` deck exported from Anki, then battle monsters by answering your cards — earn XP, coins and gems, and complete daily quests.
+Turn your flashcards into a learning adventure. Works with decks exported from Anki. Import an `.apkg` deck exported from Anki, then battle monsters by answering your cards — earn XP, coins and gems, and complete daily quests.
 
 ## Run it
 
@@ -32,3 +32,7 @@ It is a plain static site, so it also works on GitHub Pages or any static host. 
 | `db.js` | IndexedDB storage |
 | `server.js` | Tiny static file server |
 | `assets/` | Web-sized art; `assets/originals/` holds the full-resolution source images |
+
+## Naming
+
+"Anki" is a registered trademark of Ankitects. The product name is **Cardslayer**. Saying that the app *works with Anki decks* is fine (descriptive use); putting "Anki" in the product name, app title, or store listing title is not.
