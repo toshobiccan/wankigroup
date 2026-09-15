@@ -2,7 +2,7 @@
 
 **Project:** Cardslayer
 **Date:** 2026-09-15
-**Status:** Approved in discussion, pending written review
+**Status:** Verified working (implemented per `docs/superpowers/plans/2026-09-15-world-view-shell-integration.md`; manually verified in-browser 2026-09-15 — World tab reachable and correctly sized, position persists across tab switches, live resize redraws correctly, ticker pause/resume confirmed precisely via `worldScene.app.ticker.started`, all five other tabs unaffected)
 **Scope:** Sub-project 2 of the open-world pivot. Wires the already-built, already-verified `WorldScene` (`src/world/world-scene.js`, previously reachable only via the standalone `dev/world-preview.html`) into the main app's shell and bottom navigation, so it fills the same content area as the other menu pages and stays reachable alongside them. Does not add encounters/mobs, real tile art, or any new movement/camera behavior — those were covered (or explicitly deferred) by `docs/superpowers/specs/2026-09-15-overworld-movement-prototype-design.md`, which this spec builds on unchanged.
 
 ---
