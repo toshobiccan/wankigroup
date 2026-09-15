@@ -1,9 +1,9 @@
 {
   "id": "plains",
   "displayName": "Plains",
-  "width": 2000,
-  "groundTop": 110,
-  "groundBottom": 190,
-  "spawnX": 100,
-  "spawnY": 150
+  "backgroundImage": "assets/world-background.png",
+  "groundTopFrac": 0.7354,
+  "groundBottomFrac": 0.7737,
+  "spawnXFrac": 0.25,
+  "spawnYFrac": 0.7546
 }

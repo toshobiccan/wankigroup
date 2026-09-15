@@ -17,9 +17,10 @@ export class WorldScene {
     this.cameraX = 0;
     this.app = new PIXI.Application();
     this.world = new PIXI.Container();
-    this.ground = null;
+    this.background = null;
     this.player = null;
     this._resizeObserver = null;
+    this._backgroundTexture = null;
   }
 
   async loadZone(zoneJsonUrl) {
@@ -31,9 +32,12 @@ export class WorldScene {
       return;
     }
 
-    this.zone = zone;
-    this.position = { x: zone.spawnX, y: zone.spawnY };
-    this.target = { x: zone.spawnX, y: zone.spawnY };
+    // backgroundImage is authored root-relative (e.g. "assets/foo.png"), same
+    // convention as the rest of the project's data-referenced asset paths --
+    // resolved against the server root, not the page that happened to load
+    // this zone, so it's correct from both index.html and dev/world-preview.html.
+    const backgroundUrl = new URL(zone.backgroundImage, `${location.origin}/`).href;
+    this._backgroundTexture = await PIXI.Assets.load(backgroundUrl);
 
     const { width, height } = this.mountElement.getBoundingClientRect();
 
@@ -42,16 +46,26 @@ export class WorldScene {
       height,
       resolution: window.devicePixelRatio || 1, // otherwise the canvas renders soft/blocky on Retina screens
       autoDensity: true,
-      backgroundColor: 0x8fd0ff, // placeholder sky
+      backgroundColor: 0x000000,
       roundPixels: true,
     });
     this.mountElement.appendChild(this.app.canvas);
     this.app.stage.addChild(this.world);
 
-    this.ground = new PIXI.Graphics()
-      .rect(0, zone.groundTop, zone.width, zone.groundBottom - zone.groundTop)
-      .fill(0x5fa14a); // placeholder grass
-    this.world.addChild(this.ground);
+    this.background = new PIXI.Sprite(this._backgroundTexture);
+    this.world.addChild(this.background);
+
+    // Ground bounds are stored as fractions of the background image's own
+    // height, not fixed pixels -- the background always scales to fill the
+    // canvas's current height exactly (see resize()), and this derives the
+    // matching walkable band from that scale every time, in world-movement.js's
+    // existing units. This is what "where the character can/cannot walk" comes
+    // from: it's the actual dirt path in the artwork, not a guessed range.
+    this.zone = { ...zone };
+    this._applyBackgroundLayout(height);
+
+    this.position = { x: this.zone.spawnX, y: this.zone.spawnY };
+    this.target = { x: this.zone.spawnX, y: this.zone.spawnY };
 
     const playerTexture = await PIXI.Assets.load(PLAYER_TEXTURE_URL);
     this.player = new PIXI.Sprite(playerTexture);
@@ -70,12 +84,26 @@ export class WorldScene {
     this._resizeObserver.observe(this.mountElement);
   }
 
+  // Scales the background to fill the given height (preserving its aspect
+  // ratio) and recomputes zone.width/groundTop/groundBottom/spawnX/spawnY
+  // from the original zone JSON's *Frac fields against that new scale.
+  _applyBackgroundLayout(displayHeight) {
+    const scale = displayHeight / this._backgroundTexture.height;
+    const displayWidth = this._backgroundTexture.width * scale;
+
+    this.background.height = displayHeight;
+    this.background.width = displayWidth;
+
+    this.zone.width = displayWidth;
+    this.zone.groundTop = this.zone.groundTopFrac * displayHeight;
+    this.zone.groundBottom = this.zone.groundBottomFrac * displayHeight;
+    this.zone.spawnX = this.zone.spawnXFrac * displayWidth;
+    this.zone.spawnY = this.zone.spawnYFrac * displayHeight;
+  }
+
   resize(width, height) {
     this.app.renderer.resize(width, height);
-    this.ground
-      .clear()
-      .rect(0, this.zone.groundTop, this.zone.width, this.zone.groundBottom - this.zone.groundTop)
-      .fill(0x5fa14a);
+    this._applyBackgroundLayout(height);
   }
 
   pause() {
