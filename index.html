@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Anki Quest</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Dancing+Script:wght@600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css?v=3" />
+</head>
+<body>
+  <div class="app">
+    <!-- ============ TOP BAR ============ -->
+    <header class="topbar">
+      <div class="player">
+        <div class="avatar">
+          <img src="assets/avatar.png" alt="" />
+          <span class="avatar-badge" aria-hidden="true">
+            <svg viewBox="0 0 20 22"><path d="M10 1 L19 4 V11 Q19 18 10 21 Q1 18 1 11 V4Z" fill="#2a3448" stroke="#d9a943" stroke-width="1.6"/><path d="M10 6 L11.6 9.5 L15 10 L12.5 12.3 L13.2 16 L10 14.2 L6.8 16 L7.5 12.3 L5 10 L8.4 9.5Z" fill="#e9c469"/></svg>
+          </span>
+        </div>
+        <div class="player-info">
+          <div class="player-name" id="playerName">EUGEEE23</div>
+          <div class="player-level">
+            <span id="playerLevel">Lv 19</span>
+            <div class="xpbar"><div class="xpbar-fill" id="xpFill"></div><span id="xpText">320 / 1000</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="currencies">
+        <div class="currency-pill">
+          <span class="coin" aria-hidden="true"></span><span id="coins">12,450</span>
+          <span class="gem" aria-hidden="true">
+            <svg viewBox="0 0 20 22"><path d="M10 1 L18 7 L15 20 H5 L2 7Z" fill="#3d8bff"/><path d="M10 1 L18 7 H2Z" fill="#8cc4ff"/><path d="M6 7 L10 20 L14 7Z" fill="#5aa4ff"/><path d="M10 1 L6 7 H14Z" fill="#c8e4ff"/></svg>
+          </span><span id="gems">320</span>
+        </div>
+        <button class="icon-btn" aria-label="Settings">
+          <svg viewBox="0 0 24 24"><path fill="#c9ced8" d="M19.4 13a7.6 7.6 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.4 7.4 0 0 0-1.7-1L15 3.3h-4l-.4 2.6a7.4 7.4 0 0 0-1.7 1l-2.5-1-2 3.5L6.6 11a7.6 7.6 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1a7.4 7.4 0 0 0 1.7 1l.4 2.6h4l.4-2.6a7.4 7.4 0 0 0 1.7-1l2.5 1 2-3.5ZM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z" transform="translate(-1 0)"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <main class="views">
+      <!-- ============ IMPORT DECK ============ -->
+      <section class="view is-active" data-view="import">
+        <div class="hero">
+          <svg class="hero-scene" viewBox="0 0 400 310" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+            <defs>
+              <linearGradient id="wall" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#2c2a33" /><stop offset=".6" stop-color="#3b3029" /><stop offset="1" stop-color="#241a14" />
+              </linearGradient>
+              <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#4f8fd0" /><stop offset=".55" stop-color="#9cc8ea" /><stop offset="1" stop-color="#e6f1f2" />
+              </linearGradient>
+              <linearGradient id="stone" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0" stop-color="#4a3e36" /><stop offset=".5" stop-color="#6b5a4b" /><stop offset="1" stop-color="#3a302a" />
+              </linearGradient>
+              <linearGradient id="desk" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#6b4526" /><stop offset="1" stop-color="#2e1d10" />
+              </linearGradient>
+              <linearGradient id="cape" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stop-color="#3563b8" /><stop offset="1" stop-color="#17305f" />
+              </linearGradient>
+              <linearGradient id="hair" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#9a5a2a" /><stop offset="1" stop-color="#5a2f14" />
+              </linearGradient>
+              <linearGradient id="parch" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stop-color="#f6e6bf" /><stop offset="1" stop-color="#dcc28c" />
+              </linearGradient>
+              <linearGradient id="bannerCloth" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0" stop-color="#1b3263" /><stop offset=".5" stop-color="#27468a" /><stop offset="1" stop-color="#162a55" />
+              </linearGradient>
+              <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#f6dc8c" /><stop offset=".5" stop-color="#d4a441" /><stop offset="1" stop-color="#8f6420" />
+              </linearGradient>
+              <radialGradient id="lanternGlow" cx="50%" cy="50%" r="50%">
+                <stop offset="0" stop-color="#ffcf6b" stop-opacity=".85" /><stop offset=".4" stop-color="#ff9a2e" stop-opacity=".35" /><stop offset="1" stop-color="#ff9a2e" stop-opacity="0" />
+              </radialGradient>
+              <radialGradient id="flame" cx="50%" cy="60%" r="50%">
+                <stop offset="0" stop-color="#fff6c8" /><stop offset=".5" stop-color="#ffc24a" /><stop offset="1" stop-color="#d9661a" />
+              </radialGradient>
+              <radialGradient id="sunHaze" cx="50%" cy="80%" r="60%">
+                <stop offset="0" stop-color="#fff8dc" stop-opacity=".9" /><stop offset="1" stop-color="#fff8dc" stop-opacity="0" />
+              </radialGradient>
+              <clipPath id="archClip"><path d="M52 310 V120 Q52 20 190 20 Q328 20 328 120 V310Z" /></clipPath>
+              <clipPath id="leftArchClip"><path d="M-10 310 V150 Q-10 95 22 95 Q42 95 42 150 V310Z" /></clipPath>
+            </defs>
+
+            <!-- wall -->
+            <rect width="400" height="310" fill="url(#wall)" />
+            <g stroke="#1b1612" stroke-opacity=".35" stroke-width="1">
+              <path d="M0 40 H400 M0 80 H400 M0 120 H400 M0 160 H400 M0 200 H400" />
+              <path d="M30 0 V40 M90 40 V80 M340 0 V40 M370 80 V120 M20 120 V160 M360 160 V200" />
+            </g>
+
+            <!-- small left arch -->
+            <g clip-path="url(#leftArchClip)">
+              <rect x="-10" y="90" width="60" height="220" fill="url(#sky)" />
+              <path d="M-10 230 L5 190 L12 205 L22 170 L30 200 L42 185 V310 H-10Z" fill="#7390b8" opacity=".75" />
+              <rect x="14" y="150" width="8" height="60" fill="#6c89b3" /><path d="M12 150 L18 128 L24 150Z" fill="#3a5a92" />
+              <ellipse cx="10" cy="260" rx="30" ry="30" fill="#3f7a3a" /><ellipse cx="35" cy="250" rx="16" ry="24" fill="#4f9143" />
+            </g>
+            <path d="M-10 310 V150 Q-10 95 22 95 Q42 95 42 150 V310" fill="none" stroke="#5e4e40" stroke-width="7" />
+
+            <!-- main arch opening -->
+            <g clip-path="url(#archClip)">
+              <rect x="40" y="10" width="300" height="300" fill="url(#sky)" />
+              <ellipse cx="190" cy="250" rx="160" ry="90" fill="url(#sunHaze)" />
+              <!-- clouds -->
+              <g class="sky-clouds" fill="#ffffff" opacity=".85">
+                <ellipse cx="95" cy="110" rx="28" ry="9" /><ellipse cx="115" cy="104" rx="18" ry="9" />
+                <ellipse cx="280" cy="120" rx="30" ry="8" /><ellipse cx="262" cy="114" rx="16" ry="8" />
+                <ellipse cx="190" cy="148" rx="40" ry="7" opacity=".6" />
+              </g>
+              <!-- distant mountains -->
+              <path d="M40 235 L85 180 L120 215 L160 170 L195 205 L240 165 L285 210 L330 175 V310 H40Z" fill="#a9c4de" />
+              <path d="M40 255 L100 215 L150 240 L210 205 L270 238 L330 210 V310 H40Z" fill="#8fb0d0" />
+              <!-- castle -->
+              <g>
+                <rect x="170" y="175" width="70" height="80" fill="#7d9ac2" />
+                <rect x="170" y="175" width="35" height="80" fill="#6d8ab5" />
+                <path d="M170 175 v-6 h7 v6 h7 v-6 h7 v6 h7 v-6 h7 v6 h7 v-6 h7 v6 h7 v-6 h7 v6 h7 v-6 h7 v6" fill="#7d9ac2" />
+                <rect x="195" y="120" width="22" height="60" fill="#8aa6cc" /><rect x="195" y="120" width="11" height="60" fill="#7793bd" />
+                <path d="M191 122 L206 78 L221 122Z" fill="#3a5c98" /><path d="M206 78 L221 122 H206Z" fill="#2c4a80" />
+                <line x1="206" y1="78" x2="206" y2="68" stroke="#dfe7f2" stroke-width="1" /><path class="castle-flag" d="M206 68 l8 3 -8 3Z" fill="#d6463c" />
+                <rect x="160" y="150" width="16" height="70" fill="#86a2c9" /><path d="M157 152 L168 118 L179 152Z" fill="#3a5c98" />
+                <rect x="236" y="145" width="16" height="75" fill="#7390bb" /><path d="M233 147 L244 110 L255 147Z" fill="#2f4f88" />
+                <rect x="140" y="190" width="14" height="50" fill="#7d9ac2" /><path d="M137 192 L147 165 L157 192Z" fill="#3a5c98" />
+                <rect x="258" y="185" width="14" height="55" fill="#6d8ab5" /><path d="M255 187 L265 160 L275 187Z" fill="#2f4f88" />
+                <g fill="#2b3f63" opacity=".7">
+                  <rect x="203" y="135" width="5" height="9" rx="2.5" /><rect x="166" y="168" width="4" height="8" rx="2" /><rect x="242" y="165" width="4" height="8" rx="2" />
+                  <rect x="185" y="200" width="5" height="9" rx="2.5" /><rect x="220" y="200" width="5" height="9" rx="2.5" /><path d="M198 255 V238 Q205 228 212 238 V255Z" />
+                </g>
+              </g>
+              <!-- foreground trees & hills -->
+              <path d="M40 275 Q120 245 190 262 Q270 240 330 268 V310 H40Z" fill="#5f9a54" />
+              <g fill="#3c7536">
+                <ellipse cx="62" cy="200" rx="30" ry="46" /><ellipse cx="88" cy="235" rx="24" ry="34" fill="#4c8a42" />
+                <ellipse cx="318" cy="210" rx="26" ry="50" /><ellipse cx="296" cy="245" rx="22" ry="28" fill="#4c8a42" />
+              </g>
+            </g>
+            <!-- arch stones -->
+            <path d="M52 310 V120 Q52 20 190 20 Q328 20 328 120 V310" fill="none" stroke="url(#stone)" stroke-width="16" />
+            <path d="M52 310 V120 Q52 20 190 20 Q328 20 328 120 V310" fill="none" stroke="#231b16" stroke-width="16" stroke-dasharray="2 26" stroke-opacity=".5" />
+            <path d="M43 310 V120 Q43 11 190 11 Q337 11 337 120 V310" fill="none" stroke="#1d1712" stroke-width="2" stroke-opacity=".6" />
+            <!-- pillar right -->
+            <rect x="336" y="0" width="64" height="310" fill="#2c241f" />
+            <rect x="336" y="0" width="10" height="310" fill="#43372f" />
+
+            <!-- hanging banner -->
+            <g class="banner">
+              <rect x="342" y="22" width="58" height="5" rx="2" fill="#6b4a22" />
+              <circle cx="342" cy="24.5" r="4" fill="url(#gold)" />
+              <path d="M347 27 H398 V222 L372.5 206 L347 222Z" fill="url(#bannerCloth)" />
+              <path d="M351 31 H394 V214 L372.5 200 L351 214Z" fill="none" stroke="#d4a441" stroke-width="1.4" />
+              <g transform="translate(372.5 90)">
+                <path d="M0 -22 L4 -4 L22 0 L4 4 L0 22 L-4 4 L-22 0 L-4 -4Z" fill="url(#gold)" />
+                <path class="banner-star-glow" d="M0 -12 L3 -3 L12 0 L3 3 L0 12 L-3 3 L-12 0 L-3 -3Z" fill="#f6dc8c" transform="rotate(45)" opacity=".85" />
+                <circle r="3" fill="#8f6420" />
+              </g>
+              <g font-family="Cinzel, serif" font-weight="700" font-size="7.6" fill="#e9c469" text-anchor="middle" letter-spacing="0">
+                <text x="372.5" y="140">LEARN</text><text x="372.5" y="156">QUEST</text><text x="372.5" y="172">IMPROVE</text>
+              </g>
+            </g>
+
+            <!-- lantern glow + desk -->
+            <ellipse class="lantern-glow" cx="372" cy="262" rx="70" ry="60" fill="url(#lanternGlow)" />
+            <rect x="0" y="292" width="400" height="18" fill="url(#desk)" />
+            <rect x="0" y="292" width="400" height="2" fill="#8a5a31" />
+
+            <!-- vignette -->
+            <rect width="400" height="310" fill="none" stroke="#0a0e18" stroke-width="10" stroke-opacity=".35" />
+          </svg>
+
+          <!-- dust motes floating in the window light -->
+          <div class="motes" aria-hidden="true">
+            <i style="--x:8%;--d:9s;--delay:0s"></i><i style="--x:22%;--d:12s;--delay:3s"></i>
+            <i style="--x:35%;--d:10s;--delay:6s"></i><i style="--x:48%;--d:13s;--delay:1.5s"></i>
+            <i style="--x:60%;--d:9.5s;--delay:4.5s"></i><i style="--x:72%;--d:11s;--delay:7s"></i>
+            <i style="--x:84%;--d:12.5s;--delay:2s"></i><i style="--x:15%;--d:14s;--delay:8s"></i>
+            <i style="--x:55%;--d:10.5s;--delay:9s"></i><i style="--x:92%;--d:13.5s;--delay:5s"></i>
+          </div>
+
+          <!-- painted scene layers -->
+          <div class="scene-layer books-left">
+            <img src="assets/books.png" alt="" />
+            <span class="book-label" style="top:22%">Medicine</span>
+            <span class="book-label" style="top:40.3%">Science</span>
+            <span class="book-label" style="top:57.7%">Languages</span>
+            <span class="book-label" style="top:74.6%">And More</span>
+          </div>
+          <div class="scene-layer hero-char" data-poke="hero">
+            <img src="assets/hero.png" alt="" />
+            <div class="scroll-text">Questions<br />Knowledge<br />Progress</div>
+          </div>
+          <img class="scene-layer books-owl" src="assets/books.png" alt="" />
+          <div class="scene-layer owl" data-poke="owl">
+            <img class="owl-wing owl-wing-l" src="assets/owl.png" alt="" />
+            <img class="owl-wing owl-wing-r" src="assets/owl.png" alt="" />
+            <img class="owl-body" src="assets/owl.png" alt="" />
+          </div>
+          <div class="owl-bubble" id="owlBubble" aria-live="polite"></div>
+          <div class="scene-layer lantern" data-poke="lantern">
+            <img src="assets/lantern.png" alt="" />
+            <span class="lantern-flame"></span>
+          </div>
+
+          <!-- title plaque -->
+          <div class="plaque">
+            <img class="plaque-frame" src="assets/plaque.png" alt="" />
+            <span class="twinkle" style="left:50%;top:7%"></span>
+            <span class="twinkle" style="left:50%;top:91%;animation-delay:1.7s"></span>
+            <span class="twinkle twinkle-sm" style="left:4%;top:12%;animation-delay:.9s"></span>
+            <span class="twinkle twinkle-sm" style="left:96%;top:86%;animation-delay:2.6s"></span>
+            <div class="plaque-text">
+              <div class="plaque-top">UPLOAD YOUR</div>
+              <div class="plaque-main">ANKI DECK</div>
+            </div>
+          </div>
+          <p class="hero-sub">Turn your flashcards into<br />a learning adventure</p>
+        </div>
+
+        <!-- drop zone -->
+        <div class="panel upload-panel">
+          <label class="dropzone" id="dropzone">
+            <input type="file" id="fileInput" accept=".apkg,.colpkg" hidden />
+            <svg class="cloud" viewBox="0 0 64 48" aria-hidden="true">
+              <path d="M18 40 H14 A11 11 0 0 1 13 18 A16 16 0 0 1 44 13 A12 12 0 0 1 51 40 H46" fill="none" stroke="#e8ecf4" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" />
+              <path class="cloud-arrow" d="M32 44 V24 M24 31 L32 23 L40 31" fill="none" stroke="#e8ecf4" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            <span class="drop-title" id="dropTitle">Drag and drop your Anki deck here</span>
+            <span class="drop-or">or</span>
+            <span class="btn-primary" role="button">
+              <svg viewBox="0 0 16 18" aria-hidden="true"><path d="M2 1 H10 L14 5 V17 H2Z" fill="#fff"/><path d="M10 1 V5 H14" fill="#cfe0ff"/><path d="M5 9 H11 M5 12 H11" stroke="#2f6fd6" stroke-width="1.3"/></svg>
+              Choose File
+            </span>
+            <span class="drop-hint" id="dropHint">Supports .apkg files from Anki</span>
+          </label>
+        </div>
+
+        <!-- features -->
+        <div class="panel features">
+          <div class="feature">
+            <svg viewBox="0 0 48 40" aria-hidden="true">
+              <g transform="rotate(-18 16 26)"><rect x="6" y="8" width="20" height="28" rx="3" fill="#5a8fe0" stroke="#dfe9fb" stroke-width="1.6"/></g>
+              <g transform="rotate(14 32 26)"><rect x="22" y="8" width="20" height="28" rx="3" fill="#5a8fe0" stroke="#dfe9fb" stroke-width="1.6"/></g>
+              <rect x="14" y="5" width="20" height="28" rx="3" fill="#7aaaf2" stroke="#ffffff" stroke-width="1.6"/>
+              <path d="M24 12 L26 18 L32 19 L27.5 22.5 L29 28 L24 25 L19 28 L20.5 22.5 L16 19 L22 18Z" fill="#fff" opacity=".9"/>
+            </svg>
+            <span>Your questions<br />to epic practice</span>
+          </div>
+          <div class="feature">
+            <svg viewBox="0 0 44 44" aria-hidden="true">
+              <g>
+                <path d="M8 6 L30 28 L27 31 L5 9 L4 4Z" fill="#dfe4ec" stroke="#8b94a6" stroke-width="1"/>
+                <path d="M25 33 L33 25 M28 36 L31 33 L37 39 L34 42Z" stroke="#c99b45" stroke-width="3" stroke-linecap="round" fill="#c99b45"/>
+                <path d="M36 6 L14 28 L17 31 L39 9 L40 4Z" fill="#eef1f6" stroke="#8b94a6" stroke-width="1"/>
+                <path d="M19 33 L11 25 M16 36 L13 33 L7 39 L10 42Z" stroke="#c99b45" stroke-width="3" stroke-linecap="round" fill="#c99b45"/>
+              </g>
+            </svg>
+            <span>Adaptive<br />challenges</span>
+          </div>
+          <div class="feature">
+            <svg viewBox="0 0 44 40" aria-hidden="true">
+              <defs><linearGradient id="barG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7fb6ff"/><stop offset="1" stop-color="#2f6fd6"/></linearGradient></defs>
+              <rect x="6" y="24" width="8" height="12" rx="1.5" fill="url(#barG)"/>
+              <rect x="18" y="16" width="8" height="20" rx="1.5" fill="url(#barG)"/>
+              <rect x="30" y="6" width="8" height="30" rx="1.5" fill="url(#barG)"/>
+            </svg>
+            <span>Track your<br />progress</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ BATTLE ============ -->
+      <section class="view" data-view="battle">
+        <div class="page-head"><h2>Battle</h2><p>Defeat monsters by answering your cards.</p></div>
+        <div id="battleRoot"></div>
+      </section>
+
+      <!-- ============ HOME ============ -->
+      <section class="view" data-view="home">
+        <div class="page-head"><h2>Your Decks</h2><p>Every card you master makes you stronger.</p></div>
+        <div id="deckList" class="deck-list"></div>
+      </section>
+
+      <!-- ============ QUESTS ============ -->
+      <section class="view" data-view="quests">
+        <div class="page-head"><h2>Quests</h2><p>Daily goals for bonus loot.</p></div>
+        <div id="questList" class="deck-list"></div>
+      </section>
+
+      <!-- ============ INVENTORY ============ -->
+      <section class="view" data-view="inventory">
+        <div class="page-head"><h2>Inventory</h2><p>Gear and treasures you have collected.</p></div>
+        <div class="panel empty-state">Your bag is empty — win battles to earn loot.</div>
+      </section>
+    </main>
+
+    <!-- ============ BOTTOM NAV ============ -->
+    <nav class="bottomnav">
+      <button class="nav-item" data-target="home">
+        <svg viewBox="0 0 28 28" aria-hidden="true"><path d="M4 25 V12 L7 9 V5 H10 V8 L14 4 L18 8 V5 H21 V9 L24 12 V25 H17 V19 Q14 15 11 19 V25Z" fill="currentColor"/><path d="M4 12 h20" stroke="#0000" /></svg>
+        <span>Home</span>
+      </button>
+      <button class="nav-item" data-target="battle">
+        <svg viewBox="0 0 28 28" aria-hidden="true"><path d="M5 3 L19 17 L17 19 L3 5 L3 3Z M16 20 L20 16 M18 22 L22 18 L25 21 L21 25Z" fill="currentColor" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M23 3 L9 17 L11 19 L25 5 L25 3Z M12 20 L8 16 M10 22 L6 18 L3 21 L7 25Z" fill="currentColor" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
+        <span>Battle</span>
+      </button>
+      <button class="nav-item" data-target="quests">
+        <svg viewBox="0 0 28 28" aria-hidden="true"><path d="M3 6 L10 3 L18 6 L25 3 V22 L18 25 L10 22 L3 25Z" fill="currentColor"/><path d="M10 3 V22 M18 6 V25" stroke="#1a2130" stroke-width="1.2"/><path d="M12 11 l4 4 m0 -4 l-4 4" stroke="#1a2130" stroke-width="1.6"/></svg>
+        <span>Quests</span>
+      </button>
+      <button class="nav-item is-active" data-target="import">
+        <svg viewBox="0 0 32 28" aria-hidden="true"><path d="M16 7 Q10 3 3 4 V23 Q10 22 16 26 Q22 22 29 23 V4 Q22 3 16 7Z" fill="#f4e2b0" stroke="#c99b45" stroke-width="1.6" stroke-linejoin="round"/><path d="M16 7 V26" stroke="#c99b45" stroke-width="1.6"/><path d="M6 9 Q10 8.5 13 10 M6 13 Q10 12.5 13 14 M19 10 Q22 8.5 26 9 M19 14 Q22 12.5 26 13" stroke="#b58a44" stroke-width="1"/></svg>
+        <span>Import Deck</span>
+      </button>
+      <button class="nav-item" data-target="inventory">
+        <svg viewBox="0 0 28 28" aria-hidden="true"><path d="M10 6 V4 Q10 2 12 2 H16 Q18 2 18 4 V6" fill="none" stroke="currentColor" stroke-width="2"/><rect x="4" y="6" width="20" height="19" rx="4" fill="currentColor"/><rect x="9" y="14" width="10" height="7" rx="1.5" fill="#1a2130" opacity=".55"/><path d="M4 13 H24" stroke="#1a2130" stroke-width="1.2" opacity=".6"/></svg>
+        <span>Inventory</span>
+      </button>
+    </nav>
+
+    <div class="modal" id="modal" hidden>
+      <div class="modal-card panel" id="modalCard"></div>
+    </div>
+  </div>
+
+  <script src="db.js?v=3"></script>
+  <script src="anki-import.js?v=3"></script>
+  <script src="app.js?v=3"></script>
+</body>
+</html>
