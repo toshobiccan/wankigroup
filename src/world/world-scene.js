@@ -10,8 +10,9 @@ const MOB_HEIGHT = 70; // a bit shorter than the player -- these are the weak, e
 const PLAYER_TEXTURE_URL = new URL("../../assets/world-character.png", import.meta.url).href;
 
 export class WorldScene {
-  constructor({ mountElement }) {
+  constructor({ mountElement, onMobSelected }) {
     this.mountElement = mountElement;
+    this.onMobSelected = onMobSelected; // (mobData | null) -- fires on select, re-select of a different mob, and deselect
     this.zone = null;
     this.position = { x: 0, y: 0 };
     this.target = { x: 0, y: 0 };
@@ -20,15 +21,17 @@ export class WorldScene {
     this.world = new PIXI.Container();
     this.background = null;
     this.player = null;
-    this.mobs = []; // [{ data, container }] -- static placement only for now; no
-                    // click/select/HP-damage yet, that's the in-world-encounters
+    this.mobs = []; // [{ data, container, glow }] -- click-to-select is wired up
+                    // (see _onMobClick); attack/combat is still the in-world-encounters
                     // spec's job once it has its own implementation plan.
+    this.selectedMob = null; // the selected mob's own {data, container, glow} record, or null
     this._resizeObserver = null;
     this._backgroundTexture = null;
     this._playerBaseScale = 1;
     this._facingLeft = false; // the source art faces right by default
     this._lastDisplayHeight = 0;
     this._pointerHeld = false;
+    this._suppressNextGroundClick = false;
   }
 
   async loadZone(zoneJsonUrl) {
@@ -83,11 +86,21 @@ export class WorldScene {
     this.player.position.set(this.position.x, this.position.y);
     this.world.addChild(this.player);
 
-    for (const mobData of zone.mobs ?? []) {
+    for (const rawMobData of zone.mobs ?? []) {
+      const mobData = { ...rawMobData, cardsRemaining: rawMobData.cardsToKill };
       const mobUrl = new URL(mobData.image, `${location.origin}/`).href;
       const mobTexture = await PIXI.Assets.load(mobUrl);
 
       const container = new PIXI.Container();
+
+      // Selection glow -- drawn first so it sits behind the sprite. An ellipse
+      // roughly matching the sprite's footprint, hidden until clicked.
+      const glow = new PIXI.Graphics()
+        .ellipse(0, -MOB_HEIGHT / 2, MOB_HEIGHT * 0.62, MOB_HEIGHT * 0.68)
+        .fill({ color: 0xffd84d, alpha: 0.35 })
+        .stroke({ color: 0xffd84d, width: 4, alpha: 0.9 });
+      glow.visible = false;
+      container.addChild(glow);
 
       const sprite = new PIXI.Sprite(mobTexture);
       sprite.anchor.set(0.5, 1);
@@ -110,12 +123,33 @@ export class WorldScene {
       const hpFill = new PIXI.Graphics().rect(-20, -MOB_HEIGHT - 10, 40, 5).fill(0x4cd137);
       container.addChild(hpFill);
 
+      container.eventMode = "static";
+      container.cursor = "pointer";
+      const mobEntry = { data: mobData, container, glow };
+      container.on("pointerdown", (event) => {
+        // Pixi's federated event system and the plain native "pointerdown"
+        // listener below are two separate dispatch systems on the same
+        // canvas -- event.stopPropagation() here only stops *Pixi's own*
+        // propagation to parent containers, it does not stop that other,
+        // independently-registered native listener from also firing for
+        // this same click. Without this flag, a mob click would set
+        // selectedMob here and then immediately have it undone by the
+        // native handler treating the same click as "move here".
+        event.stopPropagation();
+        this._suppressNextGroundClick = true;
+        this._onMobClick(mobEntry);
+      });
+
       this.world.addChild(container);
-      this.mobs.push({ data: mobData, container });
+      this.mobs.push(mobEntry);
     }
     this._layoutMobs();
 
     this.app.canvas.addEventListener("pointerdown", (event) => {
+      if (this._suppressNextGroundClick) {
+        this._suppressNextGroundClick = false;
+        return;
+      }
       this._pointerHeld = true;
       this._setTargetFromPointer(event);
     });
@@ -202,12 +236,34 @@ export class WorldScene {
   }
 
   _setTargetFromPointer(event) {
+    if (this.selectedMob) {
+      // A mob is selected -- this ground click (mob clicks never reach here,
+      // see _onMobClick) only deselects. It doesn't also move the player;
+      // the next click, now with nothing selected, is a normal move-click.
+      this._deselectMob();
+      return;
+    }
     const rect = this.app.canvas.getBoundingClientRect();
     const worldPoint = {
       x: event.clientX - rect.left + this.cameraX,
       y: event.clientY - rect.top,
     };
     this.target = clampToZone(worldPoint, this.zone);
+  }
+
+  _onMobClick(mobEntry) {
+    if (this.selectedMob === mobEntry) return; // already selected; attacking it is a future step
+    if (this.selectedMob) this.selectedMob.glow.visible = false;
+    this.selectedMob = mobEntry;
+    mobEntry.glow.visible = true;
+    this.onMobSelected?.(mobEntry.data);
+  }
+
+  _deselectMob() {
+    if (!this.selectedMob) return;
+    this.selectedMob.glow.visible = false;
+    this.selectedMob = null;
+    this.onMobSelected?.(null);
   }
 
   _onTick(ticker) {

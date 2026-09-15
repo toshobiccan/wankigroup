@@ -148,12 +148,36 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
   display: flex;
   flex-direction: column;
   height: 100%;
+  position: relative;
 }
 .world-root {
   flex: 1;
   min-height: 0;
   display: flex;
 }
+
+/* Docked overlay shown when a mob is selected -- sits on top of the canvas
+   without resizing it (position: absolute, not part of the flex column). */
+.mob-info-panel {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  background: linear-gradient(180deg, #16243b, #111d31);
+  border-top: 1px solid #2a3a58;
+  box-shadow: 0 -6px 16px rgba(0,0,0,.5);
+  padding: 10px 12px;
+  z-index: 5;
+}
+.mob-info-head { display: flex; align-items: center; gap: 10px; }
+.mob-info-portrait {
+  width: 56px; height: 56px;
+  border-radius: 10px;
+  object-fit: cover;
+  background: radial-gradient(circle at 50% 40%, #2a3a1f, #10160c);
+  border: 1px solid #3a5525;
+}
+.mob-info-text { flex: 1; min-width: 0; }
+.mob-info-name { font-size: 14px; font-weight: 600; color: #fff; display: flex; align-items: center; gap: 6px; }
+.mob-info-hp { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
 
 /* ================= HERO ================= */
 .hero {

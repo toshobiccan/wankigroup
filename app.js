@@ -444,9 +444,31 @@ function endBattle(won) {
 // ================= WORLD =================
 let worldScene = null;
 
+function renderMobInfoPanel(mob) {
+  const panel = $("#mobInfoPanel");
+  if (!mob) {
+    panel.hidden = true;
+    panel.replaceChildren();
+    return;
+  }
+  panel.replaceChildren(
+    el("div", { class: "mob-info-head" },
+      el("img", { class: "mob-info-portrait", src: mob.portrait, alt: "" }),
+      el("div", { class: "mob-info-text" },
+        el("div", { class: "mob-info-name" }, mob.name, el("span", { class: "tag" }, `Lv ${mob.level}`)),
+        el("div", { class: "mob-info-hp" }, `${mob.cardsRemaining} / ${mob.cardsToKill} HP`)
+      )
+    )
+  );
+  panel.hidden = false;
+}
+
 renderers.world = async () => {
   if (worldScene) return;
-  worldScene = new window.Cardslayer.WorldScene({ mountElement: $("#worldRoot") });
+  worldScene = new window.Cardslayer.WorldScene({
+    mountElement: $("#worldRoot"),
+    onMobSelected: renderMobInfoPanel,
+  });
   await worldScene.loadZone("data/zones/plains.json");
 };
 
