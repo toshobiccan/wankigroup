@@ -604,6 +604,78 @@ img.scene-layer { height: auto; }
 }
 @keyframes floatUp { to { transform: translateY(-40px); opacity: 0; } }
 
+/* ================= ENCOUNTER SHEET ================= */
+.encounter-sheet {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(180deg, #16243b, #111d31);
+  border-top: 1px solid #2a3a58;
+  box-shadow: 0 -6px 16px rgba(0,0,0,.5);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: height .25s ease;
+  z-index: 5;
+}
+.sheet-handle {
+  flex-shrink: 0;
+  height: 18px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: grab;
+  touch-action: none;
+}
+.sheet-handle::before {
+  content: ""; width: 36px; height: 4px; border-radius: 2px; background: #3a4a66;
+}
+.sheet-content { flex: 1; min-height: 0; padding: 4px 12px 12px; overflow-y: auto; }
+
+.sheet-peek { display: flex; align-items: center; gap: 10px; }
+.sheet-portrait {
+  width: 56px; height: 56px; border-radius: 10px; object-fit: cover;
+  background: radial-gradient(circle at 50% 40%, #2a3a1f, #10160c);
+  border: 1px solid #3a5525;
+}
+.sheet-peek-text { flex: 1; min-width: 0; }
+.sheet-peek-name { font-size: 14px; font-weight: 600; color: #fff; display: flex; align-items: center; gap: 6px; }
+.sheet-peek-hp { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+.sheet-peek-hint { font-size: 11px; color: var(--text-dim); margin-top: 4px; }
+
+.tag {
+  font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 8px;
+  background: rgba(212,164,65,.25); color: var(--gold-light);
+}
+
+.sheet-message { padding: 20px 10px; text-align: center; color: var(--text-dim); font-size: 13px; }
+.sheet-message .btn-small { margin-top: 12px; }
+
+.sheet-hp-row { margin-bottom: 10px; }
+.sheet-hp-label { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-dim); }
+.sheet-hp-bar { height: 10px; border-radius: 3px; background: #0a1120; border: 1px solid #2a3a58; overflow: hidden; margin-top: 4px; }
+.sheet-hp-bar > div { height: 100%; background: linear-gradient(#5ecb5e, #2f8a4a); transition: width .35s ease; }
+
+.sheet-card-content {
+  padding: 14px;
+  border-radius: 8px;
+  background: linear-gradient(#f6ecd0, #e3cf9f);
+  color: #2b1e0e;
+  box-shadow: inset 0 0 0 2px #b8975c;
+  font-size: 15px; line-height: 1.4; text-align: center;
+  overflow-wrap: anywhere;
+}
+.sheet-card-content img { max-width: 100%; cursor: zoom-in; }
+.sheet-card-answer {
+  margin-top: 10px; padding-top: 10px; border-top: 1px dashed #a4844c;
+  font-weight: 500; text-align: center;
+}
+.sheet-reveal-btn { width: 100%; margin-top: 12px; }
+
+.lightbox {
+  position: fixed; inset: 0; z-index: 30;
+  background: rgba(0,0,0,.9);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+}
+.lightbox-img { max-width: 100%; max-height: 100%; object-fit: contain; }
+
 /* ================= MODAL ================= */
 .modal {
   position: absolute; inset: 0; z-index: 20;
