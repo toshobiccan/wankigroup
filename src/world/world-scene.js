@@ -3,6 +3,10 @@ import { clampToZone, stepTowardTarget, computeCameraX } from "./world-movement.
 
 const MOVE_SPEED = 220; // world-pixels/second
 const DEAD_ZONE_FRACTION = 0.4;
+const PLAYER_HEIGHT = 90; // world-pixels tall, roughly matches the ground band's scale
+// Resolved relative to this module's own file (not whichever HTML page loaded
+// it) since world-scene.js is used from both index.html and dev/world-preview.html.
+const PLAYER_TEXTURE_URL = new URL("../../assets/world-character.png", import.meta.url).href;
 
 export class WorldScene {
   constructor({ mountElement }) {
@@ -47,7 +51,10 @@ export class WorldScene {
       .fill(0x5fa14a); // placeholder grass
     this.world.addChild(this.ground);
 
-    this.player = new PIXI.Graphics().circle(0, 0, 10).fill(0xffcc00); // placeholder player
+    const playerTexture = await PIXI.Assets.load(PLAYER_TEXTURE_URL);
+    this.player = new PIXI.Sprite(playerTexture);
+    this.player.anchor.set(0.5, 1); // feet at this.player.position
+    this.player.scale.set(PLAYER_HEIGHT / playerTexture.height);
     this.player.position.set(this.position.x, this.position.y);
     this.world.addChild(this.player);
 
