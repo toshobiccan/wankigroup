@@ -4,6 +4,7 @@ import { clampToZone, stepTowardTarget, computeCameraX } from "./world-movement.
 const MOVE_SPEED = 220; // world-pixels/second
 const DEAD_ZONE_FRACTION = 0.4;
 const PLAYER_HEIGHT = 90; // world-pixels tall, roughly matches the ground band's scale
+const MOB_HEIGHT = 70; // a bit shorter than the player -- these are the weak, early mobs
 // Resolved relative to this module's own file (not whichever HTML page loaded
 // it) since world-scene.js is used from both index.html and dev/world-preview.html.
 const PLAYER_TEXTURE_URL = new URL("../../assets/world-character.png", import.meta.url).href;
@@ -19,6 +20,9 @@ export class WorldScene {
     this.world = new PIXI.Container();
     this.background = null;
     this.player = null;
+    this.mobs = []; // [{ data, container }] -- static placement only for now; no
+                    // click/select/HP-damage yet, that's the in-world-encounters
+                    // spec's job once it has its own implementation plan.
     this._resizeObserver = null;
     this._backgroundTexture = null;
     this._playerBaseScale = 1;
@@ -79,6 +83,35 @@ export class WorldScene {
     this.player.position.set(this.position.x, this.position.y);
     this.world.addChild(this.player);
 
+    for (const mobData of zone.mobs ?? []) {
+      const mobUrl = new URL(mobData.image, `${location.origin}/`).href;
+      const mobTexture = await PIXI.Assets.load(mobUrl);
+
+      const container = new PIXI.Container();
+
+      const sprite = new PIXI.Sprite(mobTexture);
+      sprite.anchor.set(0.5, 1);
+      sprite.scale.set(MOB_HEIGHT / mobTexture.height);
+      container.addChild(sprite);
+
+      const label = new PIXI.Text({
+        text: `${mobData.name} · Lv ${mobData.level}`,
+        style: { fontSize: 11, fill: 0xffffff, stroke: { color: 0x000000, width: 3 } },
+      });
+      label.anchor.set(0.5, 1);
+      label.position.set(0, -MOB_HEIGHT - 16);
+      container.addChild(label);
+
+      const hpBack = new PIXI.Graphics().rect(-20, -MOB_HEIGHT - 10, 40, 5).fill(0x0a1120);
+      container.addChild(hpBack);
+      const hpFill = new PIXI.Graphics().rect(-20, -MOB_HEIGHT - 10, 40, 5).fill(0xb8262f);
+      container.addChild(hpFill); // always full for now -- no combat wired up yet
+
+      this.world.addChild(container);
+      this.mobs.push({ data: mobData, container });
+    }
+    this._layoutMobs();
+
     this.app.canvas.addEventListener("pointerdown", (event) => {
       this._pointerHeld = true;
       this._setTargetFromPointer(event);
@@ -116,6 +149,15 @@ export class WorldScene {
     this._lastDisplayHeight = displayHeight;
   }
 
+  // Mobs stand at a fixed xFrac of the zone width, on the same ground line the
+  // player walks -- vertically centered in the walkable band, not per-mob.
+  _layoutMobs() {
+    const groundY = (this.zone.groundTop + this.zone.groundBottom) / 2;
+    for (const { data, container } of this.mobs) {
+      container.position.set(data.xFrac * this.zone.width, groundY);
+    }
+  }
+
   resize(width, height) {
     // A transient 0 (container briefly detached/hidden, a mid-layout
     // ResizeObserver callback) must never be treated as a real size -- it
@@ -139,6 +181,7 @@ export class WorldScene {
     const targetYFrac = canRescalePosition ? this.target.y / oldHeight : null;
 
     this._applyBackgroundLayout(height);
+    this._layoutMobs();
 
     if (canRescalePosition) {
       this.position = { x: posXFrac * this.zone.width, y: posYFrac * height };

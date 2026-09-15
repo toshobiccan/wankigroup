@@ -5,5 +5,17 @@
   "groundTopFrac": 0.7354,
   "groundBottomFrac": 0.7737,
   "spawnXFrac": 0.25,
-  "spawnYFrac": 0.7546
+  "spawnYFrac": 0.7546,
+  "mobs": [
+    {
+      "id": "goblin_1",
+      "name": "Forgetful Goblin",
+      "level": 3,
+      "image": "assets/mob-goblin.png",
+      "xFrac": 0.45,
+      "cardsToKill": 5,
+      "xpReward": 50,
+      "coinReward": 15
+    }
+  ]
 }
