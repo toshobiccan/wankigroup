@@ -21,6 +21,8 @@ export class WorldScene {
     this.player = null;
     this._resizeObserver = null;
     this._backgroundTexture = null;
+    this._playerBaseScale = 1;
+    this._facingLeft = false; // the source art faces right by default
   }
 
   async loadZone(zoneJsonUrl) {
@@ -70,7 +72,8 @@ export class WorldScene {
     const playerTexture = await PIXI.Assets.load(PLAYER_TEXTURE_URL);
     this.player = new PIXI.Sprite(playerTexture);
     this.player.anchor.set(0.5, 1); // feet at this.player.position
-    this.player.scale.set(PLAYER_HEIGHT / playerTexture.height);
+    this._playerBaseScale = PLAYER_HEIGHT / playerTexture.height;
+    this.player.scale.set(this._playerBaseScale);
     this.player.position.set(this.position.x, this.position.y);
     this.world.addChild(this.player);
 
@@ -124,7 +127,13 @@ export class WorldScene {
   }
 
   _onTick(ticker) {
+    const previousX = this.position.x;
     this.position = stepTowardTarget(this.position, this.target, ticker.deltaMS, MOVE_SPEED);
+    const dx = this.position.x - previousX;
+    if (dx > 0.01) this._facingLeft = false;
+    else if (dx < -0.01) this._facingLeft = true;
+
+    this.player.scale.x = this._facingLeft ? -this._playerBaseScale : this._playerBaseScale;
     this.player.position.set(this.position.x, this.position.y);
 
     this.cameraX = computeCameraX(this.position.x, this.cameraX, this.app.screen.width, this.zone.width, DEAD_ZONE_FRACTION);
