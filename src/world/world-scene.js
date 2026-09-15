@@ -23,6 +23,8 @@ export class WorldScene {
     this._backgroundTexture = null;
     this._playerBaseScale = 1;
     this._facingLeft = false; // the source art faces right by default
+    this._lastDisplayHeight = 0;
+    this._pointerHeld = false;
   }
 
   async loadZone(zoneJsonUrl) {
@@ -77,7 +79,16 @@ export class WorldScene {
     this.player.position.set(this.position.x, this.position.y);
     this.world.addChild(this.player);
 
-    this.app.canvas.addEventListener("pointerdown", (event) => this._onPointerDown(event));
+    this.app.canvas.addEventListener("pointerdown", (event) => {
+      this._pointerHeld = true;
+      this._setTargetFromPointer(event);
+    });
+    this.app.canvas.addEventListener("pointermove", (event) => {
+      if (this._pointerHeld) this._setTargetFromPointer(event);
+    });
+    this.app.canvas.addEventListener("pointerup", () => { this._pointerHeld = false; });
+    this.app.canvas.addEventListener("pointercancel", () => { this._pointerHeld = false; });
+    this.app.canvas.addEventListener("pointerleave", () => { this._pointerHeld = false; });
     this.app.ticker.add((ticker) => this._onTick(ticker));
 
     this._resizeObserver = new ResizeObserver((entries) => {
@@ -102,11 +113,38 @@ export class WorldScene {
     this.zone.groundBottom = this.zone.groundBottomFrac * displayHeight;
     this.zone.spawnX = this.zone.spawnXFrac * displayWidth;
     this.zone.spawnY = this.zone.spawnYFrac * displayHeight;
+    this._lastDisplayHeight = displayHeight;
   }
 
   resize(width, height) {
+    // A transient 0 (container briefly detached/hidden, a mid-layout
+    // ResizeObserver callback) must never be treated as a real size -- it
+    // would zero out zone.width and permanently corrupt the next resize's
+    // fraction math into NaN. Skip degenerate sizes entirely.
+    if (!(width > 0) || !(height > 0)) return;
+
     this.app.renderer.resize(width, height);
+
+    // The player's x/y are absolute world-pixels tied to the *old* scale --
+    // convert to fractions of the old zone size first, then re-derive
+    // absolute coordinates from those fractions against the new scale, so
+    // the character stays in the same relative spot instead of ending up
+    // off the path (or off-screen) whenever the canvas size changes.
+    const oldWidth = this.zone.width;
+    const oldHeight = this._lastDisplayHeight;
+    const canRescalePosition = oldWidth > 0 && oldHeight > 0;
+    const posXFrac = canRescalePosition ? this.position.x / oldWidth : null;
+    const posYFrac = canRescalePosition ? this.position.y / oldHeight : null;
+    const targetXFrac = canRescalePosition ? this.target.x / oldWidth : null;
+    const targetYFrac = canRescalePosition ? this.target.y / oldHeight : null;
+
     this._applyBackgroundLayout(height);
+
+    if (canRescalePosition) {
+      this.position = { x: posXFrac * this.zone.width, y: posYFrac * height };
+      this.target = { x: targetXFrac * this.zone.width, y: targetYFrac * height };
+      this.player.position.set(this.position.x, this.position.y);
+    }
   }
 
   pause() {
@@ -117,7 +155,7 @@ export class WorldScene {
     this.app.ticker?.start();
   }
 
-  _onPointerDown(event) {
+  _setTargetFromPointer(event) {
     const rect = this.app.canvas.getBoundingClientRect();
     const worldPoint = {
       x: event.clientX - rect.left + this.cameraX,
