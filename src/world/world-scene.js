@@ -9,6 +9,25 @@ const MOB_HEIGHT = 70; // a bit shorter than the player -- these are the weak, e
 // it) since world-scene.js is used from both index.html and dev/world-preview.html.
 const PLAYER_TEXTURE_URL = new URL("../../assets/world-character.png", import.meta.url).href;
 
+// Silhouette outline for assets/mob-goblin.png specifically, extracted from
+// its own alpha channel (sampled every 40px vertically, expanded outward by
+// 45px) and normalized so (0,0) sits at the sprite's own anchor point (feet,
+// horizontally centered) -- the same space sprite.anchor(0.5, 1) uses. A
+// different mob image would need its own outline the same way; this isn't
+// derived from the source image at runtime.
+const GOBLIN_OUTLINE_POINTS = [
+  [-147, -1179], [-113, -1094], [-98, -1054], [-105, -1014], [-78, -974], [-66, -934],
+  [-135, -894], [-166, -854], [-271, -814], [-317, -774], [-356, -734], [-388, -694],
+  [-392, -654], [-413, -614], [-475, -574], [-462, -534], [-483, -494], [-524, -454],
+  [-565, -414], [-580, -374], [-595, -334], [-615, -294], [-620, -254], [-622, -214],
+  [-413, -174], [-433, -134], [-449, -94], [-424, -9], [-169, -9], [-174, -94],
+  [386, -134], [345, -174], [269, -214], [250, -254], [290, -294], [298, -334],
+  [294, -374], [513, -414], [550, -454], [566, -494], [557, -534], [515, -574],
+  [460, -614], [279, -654], [294, -694], [408, -734], [422, -774], [443, -814],
+  [480, -854], [549, -894], [420, -934], [402, -974], [367, -1014], [277, -1054],
+  [104, -1094], [11, -1179],
+];
+
 export class WorldScene {
   constructor({ mountElement, onMobSelected }) {
     this.mountElement = mountElement;
@@ -93,18 +112,23 @@ export class WorldScene {
 
       const container = new PIXI.Container();
 
-      // Selection glow -- drawn first so it sits behind the sprite. An ellipse
-      // roughly matching the sprite's footprint, hidden until clicked.
+      const mobScale = MOB_HEIGHT / mobTexture.height;
+
+      // Selection glow -- drawn first so it sits behind the sprite. Traces
+      // the goblin's actual silhouette (GOBLIN_OUTLINE_POINTS, already
+      // expanded outward from the real alpha edge) rather than a generic
+      // shape, so it never reaches up into the label/HP bar above. The
+      // sprite itself is flipped (-mobScale) to face left; the outline's x
+      // gets the same negation so it lines up with the flipped sprite.
       const glow = new PIXI.Graphics()
-        .ellipse(0, -MOB_HEIGHT / 2, MOB_HEIGHT * 0.62, MOB_HEIGHT * 0.68)
+        .poly(GOBLIN_OUTLINE_POINTS.flatMap(([x, y]) => [x * -mobScale, y * mobScale]))
         .fill({ color: 0xffd84d, alpha: 0.35 })
-        .stroke({ color: 0xffd84d, width: 4, alpha: 0.9 });
+        .stroke({ color: 0xffd84d, width: 3, alpha: 0.9 });
       glow.visible = false;
       container.addChild(glow);
 
       const sprite = new PIXI.Sprite(mobTexture);
       sprite.anchor.set(0.5, 1);
-      const mobScale = MOB_HEIGHT / mobTexture.height;
       sprite.scale.set(-mobScale, mobScale); // flipped to face left, toward the player approaching from spawn
       container.addChild(sprite);
 
