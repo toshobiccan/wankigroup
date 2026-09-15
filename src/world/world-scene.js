@@ -40,6 +40,8 @@ export class WorldScene {
     await this.app.init({
       width,
       height,
+      resolution: window.devicePixelRatio || 1, // otherwise the canvas renders soft/blocky on Retina screens
+      autoDensity: true,
       backgroundColor: 0x8fd0ff, // placeholder sky
       roundPixels: true,
     });
