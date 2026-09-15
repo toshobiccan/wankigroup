@@ -3,11 +3,11 @@ const XP_PER_LEVEL = 1000;
 const STORAGE_KEY = "cardslayer-player";
 
 const defaultPlayer = {
-  name: "EUGEEE23",
-  level: 19,
-  xp: 320,
-  coins: 12450,
-  gems: 320,
+  name: "Adventurer",
+  level: 1,
+  xp: 0,
+  coins: 0,
+  gems: 0,
   daily: { date: "", reviewed: 0, battlesWon: 0, imported: 0, claimed: [] },
 };
 
