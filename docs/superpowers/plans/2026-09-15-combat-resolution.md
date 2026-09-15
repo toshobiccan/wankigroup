@@ -329,18 +329,111 @@ git commit -m "feat(combat): add resolveRound() pure combat resolution"
 
 ---
 
-## Task 3: `WorldScene` — real combat state, hit animation, respawn
+## Task 3: `WorldScene` — walk-to-engage, camera centering, hit animation, respawn
 
 **Files:**
+- Modify: `src/world/world-movement.js`
+- Modify: `test/world-movement.test.js`
 - Modify: `src/world/world-scene.js`
 
 **Interfaces:**
 - Consumes: nothing new from other tasks (this task doesn't import `combat.js` or `encounter-panel.js` — it just exposes the hooks `app.js` will call in Task 6).
-- Produces: constructor now accepts `onCombatStart` in addition to `onMobSelected`. New public methods: `playHit(hits)` where `hits` is an array of `{ attacker: "player" | "mob", damage: number, isCrit?: boolean }` (already filtered to non-zero damage by the caller), returns a `Promise` that resolves when the animation sequence finishes; `endCombat({ mobDefeated })`; `respawnPlayer()`. New instance field `this.inCombat` (boolean). Mob HP bars now read `data.hp`/`data.stats.hp` and shift color by fraction.
+- Produces: a new pure function `computeCenteredCameraX(midpointX, viewportWidth, zoneWidth)` in `world-movement.js`. `WorldScene`'s constructor now accepts `onCombatStart` in addition to `onMobSelected`. New public methods: `playHit(hits)` where `hits` is an array of `{ attacker: "player" | "mob", damage: number, isCrit?: boolean }` (already filtered to non-zero damage by the caller), returns a `Promise` that resolves when the animation sequence finishes; `endCombat({ mobDefeated })`; `respawnPlayer()`. New instance fields `this.inCombat` and `this._approaching` (both boolean). Mob HP bars now read `data.hp`/`data.stats.hp` and shift color by fraction. Behavior: a second click on the selected mob no longer starts combat immediately — the player walks to within `APPROACH_DISTANCE` of it first (camera re-centering on the midpoint of player and mob as they close the gap), and only then does `onCombatStart` fire.
 
-- [ ] **Step 1: Accept `onCombatStart` and add `inCombat`**
+- [ ] **Step 1: Add `computeCenteredCameraX()`, written test-first**
 
-In `src/world/world-scene.js`, change the constructor (currently lines 72-94):
+Add to `test/world-movement.test.js`, after the existing `describe("computeCameraX", ...)` block (currently ending at line 78):
+
+```js
+describe("computeCenteredCameraX", () => {
+  const VIEWPORT = 400;
+  const ZONE_WIDTH = 2000;
+
+  it("centers the given midpoint on screen", () => {
+    expect(computeCenteredCameraX(1000, VIEWPORT, ZONE_WIDTH)).toBe(800);
+  });
+
+  it("clamps to 0 when centering would go past the zone's left edge", () => {
+    expect(computeCenteredCameraX(50, VIEWPORT, ZONE_WIDTH)).toBe(0);
+  });
+
+  it("clamps to zoneWidth - viewportWidth when centering would go past the right edge", () => {
+    expect(computeCenteredCameraX(1990, VIEWPORT, ZONE_WIDTH)).toBe(1600);
+  });
+
+  it("stays at 0 when the zone is narrower than the viewport", () => {
+    expect(computeCenteredCameraX(150, VIEWPORT, 300)).toBe(0);
+  });
+});
+```
+
+Also update the import line at the top of the file (currently line 2) from:
+
+```js
+import { clampToZone, stepTowardTarget, computeCameraX } from "../src/world/world-movement.js";
+```
+
+to:
+
+```js
+import { clampToZone, stepTowardTarget, computeCameraX, computeCenteredCameraX } from "../src/world/world-movement.js";
+```
+
+Run: `npx vitest run test/world-movement.test.js`
+Expected: FAIL — `computeCenteredCameraX is not a function` (it isn't exported yet).
+
+Now add the function itself to `src/world/world-movement.js`, after the existing `computeCameraX` (currently ending at line 36):
+
+```js
+
+// Centers the given world-x point on screen, clamped the same way
+// computeCameraX clamps -- used while approaching/fighting a mob, when the
+// camera should frame the midpoint between player and mob instead of
+// dead-zone-following the player alone.
+export function computeCenteredCameraX(midpointX, viewportWidth, zoneWidth) {
+  const maxCameraX = Math.max(0, zoneWidth - viewportWidth);
+  return Math.min(Math.max(midpointX - viewportWidth / 2, 0), maxCameraX);
+}
+```
+
+Run: `npx vitest run test/world-movement.test.js`
+Expected: `Test Files 1 passed (1)`, `Tests 17 passed (17)` (the existing 13 plus these 4).
+
+Run: `npm test`
+Expected: `Test Files 2 passed (2)`, `Tests 23 passed (23)` (17 here plus the 6 from Task 2's `test/combat.test.js`).
+
+Commit this step on its own:
+
+```bash
+git add src/world/world-movement.js test/world-movement.test.js
+git commit -m "feat(world): add computeCenteredCameraX() for combat camera framing"
+```
+
+- [ ] **Step 2: Accept `onCombatStart`, add `inCombat`/`_approaching`, and an approach-distance constant**
+
+In `src/world/world-scene.js`, add a new constant near the top alongside the existing ones (currently lines 4-7):
+
+```js
+const MOVE_SPEED = 220; // world-pixels/second
+const DEAD_ZONE_FRACTION = 0.4;
+const PLAYER_HEIGHT = 90; // world-pixels tall, roughly matches the ground band's scale
+const MOB_HEIGHT = 70; // a bit shorter than the player -- these are the weak, early mobs
+const APPROACH_DISTANCE = 60; // how close (world-pixels) the player walks before a fight actually starts
+```
+
+And import the new pure function at the top of the file (currently line 2):
+
+```js
+import { clampToZone, stepTowardTarget, computeCameraX } from "./world-movement.js";
+```
+
+becomes:
+
+```js
+import { clampToZone, stepTowardTarget, computeCameraX, computeCenteredCameraX } from "./world-movement.js";
+```
+
+Change the constructor (currently lines 72-94):
 
 ```js
   constructor({ mountElement, onMobSelected }) {
@@ -354,7 +447,7 @@ to:
   constructor({ mountElement, onMobSelected, onCombatStart }) {
     this.mountElement = mountElement;
     this.onMobSelected = onMobSelected; // (mobData | null) -- fires on select, re-select of a different mob, and deselect
-    this.onCombatStart = onCombatStart; // (mobData) -- fires once, when a second click on the selected mob starts a fight
+    this.onCombatStart = onCombatStart; // (mobData) -- fires once, when the player finishes walking up to an engaged mob
 ```
 
 and change this line inside the same constructor:
@@ -368,9 +461,10 @@ to:
 ```js
     this.selectedMob = null; // the selected mob's own {data, container, glow, hpFill} record, or null
     this.inCombat = false;
+    this._approaching = false; // true from the moment a fight is triggered until the walk-up finishes
 ```
 
-- [ ] **Step 2: Store the mob's HP bar fill graphic on its entry**
+- [ ] **Step 3: Store the mob's HP bar fill graphic on its entry**
 
 In `loadZone()`, the mob-creation loop currently does (around line 149):
 
@@ -411,7 +505,7 @@ to:
       // Starts full/green; _updateMobHpBar() repaints this as hp drops during combat.
 ```
 
-- [ ] **Step 3: Make the second click on a selected mob start combat**
+- [ ] **Step 4: A second click on the selected mob walks the player in, instead of starting combat immediately**
 
 Replace `_onMobClick()` (currently lines 320-326):
 
@@ -429,10 +523,12 @@ with:
 
 ```js
   _onMobClick(mobEntry) {
-    if (this.inCombat) return; // a fight is already running; mob clicks do nothing until it ends
+    if (this.inCombat || this._approaching) return; // a fight is already running or starting; mob clicks do nothing until it ends
     if (this.selectedMob === mobEntry) {
-      this.inCombat = true;
-      this.onCombatStart?.(mobEntry.data);
+      this._approaching = true;
+      const mobX = mobEntry.container.position.x;
+      const approachX = mobX + (this.position.x < mobX ? -APPROACH_DISTANCE : APPROACH_DISTANCE);
+      this.target = clampToZone({ x: approachX, y: this.position.y }, this.zone);
       return;
     }
     if (this.selectedMob) this.selectedMob.glow.visible = false;
@@ -442,7 +538,9 @@ with:
   }
 ```
 
-- [ ] **Step 4: Lock ground clicks during combat too**
+(`onCombatStart` no longer fires here — it fires from `_onTick`, once the walk-up actually finishes; see Step 6.)
+
+- [ ] **Step 5: Lock ground clicks during the approach too, not just during combat**
 
 `_setTargetFromPointer()` (currently lines 304-318) starts with:
 
@@ -455,11 +553,62 @@ Change to:
 
 ```js
   _setTargetFromPointer(event) {
-    if (this.inCombat) return; // movement stays locked for the whole fight; combat ends via endCombat(), not a ground click
+    if (this.inCombat || this._approaching) return; // movement is scripted (walk-up) or locked (fight) -- never a ground click's job to change it
     if (this.selectedMob) {
 ```
 
-- [ ] **Step 5: Add `endCombat()` and `respawnPlayer()`**
+- [ ] **Step 6: Finish the walk-up and center the camera on player + mob**
+
+`_onTick()` currently reads (full method, unchanged lines otherwise):
+
+```js
+  _onTick(ticker) {
+    const previousX = this.position.x;
+    this.position = stepTowardTarget(this.position, this.target, ticker.deltaMS, MOVE_SPEED);
+    const dx = this.position.x - previousX;
+    if (dx > 0.01) this._facingLeft = false;
+    else if (dx < -0.01) this._facingLeft = true;
+
+    this.player.scale.x = this._facingLeft ? -this._playerBaseScale : this._playerBaseScale;
+    this.player.position.set(this.position.x, this.position.y);
+
+    this.cameraX = computeCameraX(this.position.x, this.cameraX, this.app.screen.width, this.zone.width, DEAD_ZONE_FRACTION);
+    this.world.x = -this.cameraX;
+  }
+```
+
+Replace the whole method with:
+
+```js
+  _onTick(ticker) {
+    const previousX = this.position.x;
+    this.position = stepTowardTarget(this.position, this.target, ticker.deltaMS, MOVE_SPEED);
+    const dx = this.position.x - previousX;
+    if (dx > 0.01) this._facingLeft = false;
+    else if (dx < -0.01) this._facingLeft = true;
+
+    this.player.scale.x = this._facingLeft ? -this._playerBaseScale : this._playerBaseScale;
+    this.player.position.set(this.position.x, this.position.y);
+
+    if (this._approaching && Math.abs(this.position.x - this.target.x) < 2) {
+      this._approaching = false;
+      this.inCombat = true;
+      this.onCombatStart?.(this.selectedMob.data);
+    }
+
+    if (this.selectedMob && (this.inCombat || this._approaching)) {
+      const midpointX = (this.position.x + this.selectedMob.container.position.x) / 2;
+      this.cameraX = computeCenteredCameraX(midpointX, this.app.screen.width, this.zone.width);
+    } else {
+      this.cameraX = computeCameraX(this.position.x, this.cameraX, this.app.screen.width, this.zone.width, DEAD_ZONE_FRACTION);
+    }
+    this.world.x = -this.cameraX;
+  }
+```
+
+(While `_approaching` is true, the camera is already centering on the midpoint as the player closes the gap — by the time the walk-up finishes and `onCombatStart` fires, player and mob are already framed together, matching "the camera will follow you automatically so that the player and mob is centered when combat starts." Once `endCombat()` clears both flags, the very next tick falls back to the normal dead-zone follow.)
+
+- [ ] **Step 7: Add `endCombat()` and `respawnPlayer()`**
 
 Add these two methods to the `WorldScene` class, right after `_deselectMob()` (currently ending at line 333):
 
@@ -476,6 +625,7 @@ Add these two methods to the `WorldScene` class, right after `_deselectMob()` (c
     if (entry) entry.glow.visible = false;
     this.selectedMob = null;
     this.inCombat = false;
+    this._approaching = false; // defensive -- should already be false by the time a fight can end
     this.onMobSelected?.(null);
   }
 
@@ -489,7 +639,7 @@ Add these two methods to the `WorldScene` class, right after `_deselectMob()` (c
   }
 ```
 
-- [ ] **Step 6: Add the hit-animation sequence**
+- [ ] **Step 8: Add the hit-animation sequence**
 
 Add these methods right after `respawnPlayer()`:
 
@@ -572,17 +722,17 @@ Add these methods right after `respawnPlayer()`:
   }
 ```
 
-- [ ] **Step 7: Manual verification**
+- [ ] **Step 9: Manual verification**
 
-Run: `npm test` — expected: still `Test Files 2 passed (2)`, `Tests 19 passed (19)` (this task touches no tested pure functions, but confirms nothing else regressed).
+Run: `npm test` — expected: `Test Files 2 passed (2)`, `Tests 23 passed (23)` (confirms Step 1's new tests plus everything from Task 2 still pass together).
 
-Then start the dev server and load the World tab in a browser (see Task 8 for the full checklist this feeds into) — for now just confirm no console errors on load and that clicking a mob still shows its glow (the existing Selected-state behavior, unchanged by this task). Combat itself can't be exercised yet — `onCombatStart` has no listener until Task 6.
+Then start the dev server and load the World tab in a browser (see Task 8 for the full checklist this feeds into) — for now just confirm: no console errors on load; clicking a mob still shows its glow (unchanged Selected-state behavior); clicking that same mob again makes the player walk toward it (not teleport, not instant), with the camera visibly panning to keep both player and mob in frame as the gap closes, and movement/ground-clicks doing nothing during that walk. Combat itself can't be exercised yet — `onCombatStart` has no listener until Task 6, so once the walk-up finishes nothing further happens (that's expected here, not a bug).
 
-- [ ] **Step 8: Commit**
+- [ ] **Step 10: Commit**
 
 ```bash
 git add src/world/world-scene.js
-git commit -m "feat(world): wire real combat state, hit animation, and respawn into WorldScene"
+git commit -m "feat(world): walk-to-engage with camera centering, hit animation, and respawn"
 ```
 
 ---
@@ -964,7 +1114,7 @@ panel.showCard({ front: "What is 2+2?", back: "4" }, { name: "Test Mob" }, { hp:
 
 Expected: a sheet slides up from the bottom showing "What is 2+2?", a player HP bar at 80%, and a "Show Answer" button. Clicking it reveals "4" and four grade buttons; clicking one logs `graded <name>` to the console. Drag the handle up — the sheet grows toward `expanded`; release and it snaps to whichever of `default`/`expanded` is nearer. This is a manual, throwaway check — remove `testRoot` by reloading the page afterward (Task 6's real wiring replaces this entirely, this file doesn't need `window.Cardslayer.EncounterPanel` yet since that export happens in Task 6).
 
-Run `npm test` too: expected unchanged, `Tests 19 passed (19)` (this task adds no pure-function tests, `encounter-panel.js` is DOM-only per this project's testing convention).
+Run `npm test` too: expected unchanged, `Tests 23 passed (23)` (this task adds no pure-function tests, `encounter-panel.js` is DOM-only per this project's testing convention).
 
 - [ ] **Step 8: Commit**
 
@@ -1397,7 +1547,7 @@ renderers.world = async () => {
 - [ ] **Step 5: Run the full test suite**
 
 Run: `npm test`
-Expected: `Test Files 2 passed (2)`, `Tests 19 passed (19)` — this task is all UI wiring, no new pure functions, but must not have broken the existing ones.
+Expected: `Test Files 2 passed (2)`, `Tests 23 passed (23)` — this task is all UI wiring, no new pure functions, but must not have broken the existing ones.
 
 - [ ] **Step 6: Manual smoke test**
 
@@ -1560,7 +1710,7 @@ Expected: no output (everything that referenced these was already removed in Tas
 - [ ] **Step 6: Run the full test suite**
 
 Run: `npm test`
-Expected: `Test Files 2 passed (2)`, `Tests 19 passed (19)`.
+Expected: `Test Files 2 passed (2)`, `Tests 23 passed (23)`.
 
 - [ ] **Step 7: Commit**
 
@@ -1583,9 +1733,9 @@ Start the dev server, open the browser's console (via the Claude_Browser tools),
 
 Click a goblin in World. Expected: yellow glow appears, sheet rises to peek height showing portrait/name/level/HP and "Tap the ... again to attack.", ground clicks do nothing while peeking.
 
-- [ ] **Step 3: No active deck**
+- [ ] **Step 3: Walk-to-engage, camera centering, and the no-active-deck message**
 
-With no active deck set, click the same goblin again. Expected: sheet shows "Pick an active deck on Home first." with a working "Go to Home" button; clicking it navigates to Home.
+With no active deck set, click the same goblin again. Expected: the player walks toward the goblin (not a teleport), the camera pans smoothly so both player and goblin stay framed as the gap closes, ground clicks do nothing during the walk, and only once the player is standing next to it does the sheet appear, showing "Pick an active deck on Home first." with a working "Go to Home" button; clicking it navigates to Home.
 
 - [ ] **Step 4: Set an active deck**
 
@@ -1593,7 +1743,7 @@ On Home, import a deck if none exists (`~/Desktop/wanki/Hematologi.apkg` works, 
 
 - [ ] **Step 5: Combat start**
 
-Back in World, click the goblin, then click it again. Expected: sheet opens to `default` height with a real card front and a player HP bar at full width; a "Show Answer" button is visible with no grade buttons yet.
+Back in World, click the goblin, then click it again. Expected: the player walks up next to the goblin with the camera centering on both of them, and once adjacent, the sheet opens to `default` height with a real card front and a player HP bar at full width; a "Show Answer" button is visible with no grade buttons yet.
 
 - [ ] **Step 6: Reveal and grade — Again**
 
@@ -1630,6 +1780,6 @@ Walk around normally (click-to-move, hold-to-drag, resize the browser window) wi
 - [ ] **Step 14: Final test run and report**
 
 Run: `npm test`
-Expected: `Test Files 2 passed (2)`, `Tests 19 passed (19)`.
+Expected: `Test Files 2 passed (2)`, `Tests 23 passed (23)`.
 
 No commit for this task — it's verification only. If any step surfaces a bug, fix it in the relevant earlier task's files and commit the fix there (e.g. `git commit -m "fix(combat): <what was wrong>"`), then re-run the affected steps.
