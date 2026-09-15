@@ -2,7 +2,7 @@
 
 **Project:** Cardslayer
 **Date:** 2026-09-15
-**Status:** Approved in discussion, pending written review
+**Status:** Prototype verified working (implemented per `docs/superpowers/plans/2026-09-15-overworld-movement-prototype.md`; manually verified in-browser 2026-09-15 — click-to-move, vertical clamping, and dead-zone camera panning all confirmed)
 **Scope:** Sub-project 1 of the open-world pivot. Proves click/tap-to-move (both axes) + a horizontally-panning soft-follow camera in a single placeholder zone. Does not cover real tile art, encounters/mobs, zone transitions, jumping/platforms, or a walk animation for the character — those are separate sub-projects, sequenced after this one proves out.
 **Revision 2026-09-15:** movement changed from horizontal-only to free 2D (x and y) within a fixed-height walkable band, after user feedback wanting AQW-style up/down movement, not just left/right. The camera itself stays horizontal-only (see §6) — see the "up/down ≠ jumping" clarification in §2.
 
