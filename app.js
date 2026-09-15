@@ -8,6 +8,17 @@ const defaultPlayer = {
   xp: 0,
   coins: 0,
   gems: 0,
+  activeDeckId: null,
+  stats: {
+    hp: 100,
+    attackDamage: 12,
+    magicDamage: 0,
+    armor: 2,
+    magicResist: 2,
+    attackSpeed: 10,
+    luck: 0,
+  },
+  hp: 100, // current HP -- persists across fights, separate from the max in stats.hp
   daily: { date: "", reviewed: 0, battlesWon: 0, imported: 0, claimed: [] },
 };
 

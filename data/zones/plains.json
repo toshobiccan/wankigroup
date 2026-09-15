@@ -14,7 +14,15 @@
       "image": "assets/mob-goblin.png",
       "portrait": "assets/mob-goblin-head.png",
       "xFrac": 0.55,
-      "cardsToKill": 5,
+      "stats": {
+        "hp": 40,
+        "attackDamage": 6,
+        "magicDamage": 0,
+        "armor": 0,
+        "magicResist": 0,
+        "attackSpeed": 8,
+        "luck": 0
+      },
       "xpReward": 50,
       "coinReward": 15
     },
@@ -25,7 +33,15 @@
       "image": "assets/mob-goblin.png",
       "portrait": "assets/mob-goblin-head.png",
       "xFrac": 0.72,
-      "cardsToKill": 5,
+      "stats": {
+        "hp": 40,
+        "attackDamage": 6,
+        "magicDamage": 0,
+        "armor": 0,
+        "magicResist": 0,
+        "attackSpeed": 8,
+        "luck": 0
+      },
       "xpReward": 50,
       "coinReward": 15
     }
