@@ -15,10 +15,14 @@ const PLAYER_TEXTURE_URL = new URL("../../assets/world-character.png", import.me
 // clear of the body, then simplified) -- not a per-row min/max bridge, which
 // was cutting straight across gaps (between the sword arm and torso, between
 // the legs) and made the outline balloon outward as if it included the
-// ground. INNER is dilated ~90px (a close, soft glow); OUTER ~200px (the
-// crisp line further out). Both normalized so (0,0) is the sprite's own
-// anchor point (feet, horizontally centered), same space as anchor(0.5, 1).
-// A different mob image would need its own two contours the same way.
+// ground. INNER is dilated ~90px (a close, soft glow); OUTER ~130px -- a
+// small additional dilation of the *same* base mask, at the same
+// simplification level, so it tracks the inner shape closely instead of
+// being an independently-traced, much coarser blob (which read as "boxy"
+// and disconnected from the glow beneath it). Both normalized so (0,0) is
+// the sprite's own anchor point (feet, horizontally centered), same space
+// as anchor(0.5, 1). A different mob image would need its own two contours
+// the same way.
 const GOBLIN_GLOW_INNER_POINTS = [
   [-157, -1247], [-203, -1207], [-214, -1151], [-203, -1116], [-145, -1045], [-151, -994],
   [-144, -967], [-178, -931], [-219, -906], [-282, -886], [-411, -772], [-430, -734],
@@ -34,10 +38,15 @@ const GOBLIN_GLOW_INNER_POINTS = [
   [228, -1145], [150, -1126], [104, -1173], [12, -1213], [-103, -1252],
 ];
 const GOBLIN_GLOW_OUTER_POINTS = [
-  [-302, -1254], [-322, -1194], [-321, -1123], [-301, -1066], [-261, -1012], [-341, -979],
-  [-489, -850], [-538, -754], [-597, -685], [-627, -624], [-627, -2], [502, -1],
-  [544, -101], [542, -166], [524, -220], [626, -287], [626, -714], [615, -727],
-  [626, -734], [626, -1099], [571, -1118], [497, -1119], [415, -1195], [264, -1252],
+  [-217, -1254], [-246, -1209], [-254, -1149], [-237, -1095], [-189, -1035], [-189, -979],
+  [-233, -945], [-306, -918], [-438, -802], [-464, -759], [-472, -714], [-510, -684],
+  [-541, -643], [-561, -601], [-566, -565], [-590, -524], [-627, -493], [-627, -75],
+  [-593, -66], [-542, -69], [-516, -1], [-90, -1], [-77, -69], [-101, -148],
+  [-82, -175], [-58, -146], [-53, -103], [-35, -65], [-7, -35], [28, -15],
+  [140, -1], [398, -6], [453, -52], [475, -114], [465, -180], [409, -256],
+  [510, -289], [547, -310], [587, -347], [626, -404], [626, -606], [550, -694],
+  [500, -722], [516, -750], [626, -821], [626, -1016], [559, -1049], [466, -1047],
+  [403, -1118], [354, -1147], [245, -1184], [164, -1172], [118, -1211], [17, -1254],
 ];
 
 export class WorldScene {
