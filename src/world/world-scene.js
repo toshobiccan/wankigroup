@@ -1,10 +1,11 @@
 import * as PIXI from "../../vendor/pixi.min.mjs";
-import { clampToZone, stepTowardTarget, computeCameraX } from "./world-movement.js";
+import { clampToZone, stepTowardTarget, computeCameraX, computeCenteredCameraX } from "./world-movement.js";
 
 const MOVE_SPEED = 220; // world-pixels/second
 const DEAD_ZONE_FRACTION = 0.4;
 const PLAYER_HEIGHT = 90; // world-pixels tall, roughly matches the ground band's scale
 const MOB_HEIGHT = 70; // a bit shorter than the player -- these are the weak, early mobs
+const APPROACH_DISTANCE = 60; // how close (world-pixels) the player walks before a fight actually starts
 // Resolved relative to this module's own file (not whichever HTML page loaded
 // it) since world-scene.js is used from both index.html and dev/world-preview.html.
 const PLAYER_TEXTURE_URL = new URL("../../assets/world-character.png", import.meta.url).href;
@@ -69,9 +70,10 @@ const GOBLIN_GLOW_OUTER_POINTS = [
 ];
 
 export class WorldScene {
-  constructor({ mountElement, onMobSelected }) {
+  constructor({ mountElement, onMobSelected, onCombatStart }) {
     this.mountElement = mountElement;
     this.onMobSelected = onMobSelected; // (mobData | null) -- fires on select, re-select of a different mob, and deselect
+    this.onCombatStart = onCombatStart; // (mobData) -- fires once, when the player finishes walking up to an engaged mob
     this.zone = null;
     this.position = { x: 0, y: 0 };
     this.target = { x: 0, y: 0 };
@@ -83,7 +85,9 @@ export class WorldScene {
     this.mobs = []; // [{ data, container, glow }] -- click-to-select is wired up
                     // (see _onMobClick); attack/combat is still the in-world-encounters
                     // spec's job once it has its own implementation plan.
-    this.selectedMob = null; // the selected mob's own {data, container, glow} record, or null
+    this.selectedMob = null; // the selected mob's own {data, container, glow, hpFill} record, or null
+    this.inCombat = false;
+    this._approaching = false; // true from the moment a fight is triggered until the walk-up finishes
     this._resizeObserver = null;
     this._backgroundTexture = null;
     this._playerBaseScale = 1;
@@ -146,7 +150,7 @@ export class WorldScene {
     this.world.addChild(this.player);
 
     for (const rawMobData of zone.mobs ?? []) {
-      const mobData = { ...rawMobData, cardsRemaining: rawMobData.cardsToKill };
+      const mobData = { ...rawMobData, hp: rawMobData.stats.hp };
       const mobUrl = new URL(mobData.image, `${location.origin}/`).href;
       const mobTexture = await PIXI.Assets.load(mobUrl);
 
@@ -184,14 +188,13 @@ export class WorldScene {
 
       const hpBack = new PIXI.Graphics().rect(-20, -MOB_HEIGHT - 10, 40, 5).fill(0x0a1120);
       container.addChild(hpBack);
-      // Green at full HP; once combat exists this should shift toward red as
-      // cardsRemaining/cardsToKill drops -- always full for now, no damage yet.
+      // Starts full/green; _updateMobHpBar() repaints this as hp drops during combat.
       const hpFill = new PIXI.Graphics().rect(-20, -MOB_HEIGHT - 10, 40, 5).fill(0x4cd137);
       container.addChild(hpFill);
 
       container.eventMode = "static";
       container.cursor = "pointer";
-      const mobEntry = { data: mobData, container, glow };
+      const mobEntry = { data: mobData, container, glow, hpFill };
       container.on("pointerdown", (event) => {
         // Pixi's federated event system and the plain native "pointerdown"
         // listener below are two separate dispatch systems on the same
@@ -302,6 +305,7 @@ export class WorldScene {
   }
 
   _setTargetFromPointer(event) {
+    if (this.inCombat || this._approaching) return; // movement is scripted (walk-up) or locked (fight) -- never a ground click's job to change it
     if (this.selectedMob) {
       // A mob is selected -- this ground click (mob clicks never reach here,
       // see _onMobClick) only deselects. It doesn't also move the player;
@@ -318,7 +322,14 @@ export class WorldScene {
   }
 
   _onMobClick(mobEntry) {
-    if (this.selectedMob === mobEntry) return; // already selected; attacking it is a future step
+    if (this.inCombat || this._approaching) return; // a fight is already running or starting; mob clicks do nothing until it ends
+    if (this.selectedMob === mobEntry) {
+      this._approaching = true;
+      const mobX = mobEntry.container.position.x;
+      const approachX = mobX + (this.position.x < mobX ? -APPROACH_DISTANCE : APPROACH_DISTANCE);
+      this.target = clampToZone({ x: approachX, y: this.position.y }, this.zone);
+      return;
+    }
     if (this.selectedMob) this.selectedMob.glow.visible = false;
     this.selectedMob = mobEntry;
     mobEntry.glow.visible = true;
@@ -332,6 +343,108 @@ export class WorldScene {
     this.onMobSelected?.(null);
   }
 
+  // mobDefeated: true removes the fought mob from the zone for good (victory);
+  // false leaves it exactly where it was (the player fled or lost).  Either
+  // way, clears the selection glow and unlocks movement.
+  endCombat({ mobDefeated }) {
+    const entry = this.selectedMob;
+    if (mobDefeated && entry) {
+      this.world.removeChild(entry.container);
+      this.mobs = this.mobs.filter((e) => e !== entry);
+    }
+    if (entry) entry.glow.visible = false;
+    this.selectedMob = null;
+    this.inCombat = false;
+    this._approaching = false; // defensive -- should already be false by the time a fight can end
+    this.onMobSelected?.(null);
+  }
+
+  // Snaps the player back to the zone's spawn point -- used after a defeat,
+  // once the grey fade (owned by app.js) has fully covered the screen. No
+  // walk animation: this is a teleport, not a walk.
+  respawnPlayer() {
+    this.position = { x: this.zone.spawnX, y: this.zone.spawnY };
+    this.target = { x: this.zone.spawnX, y: this.zone.spawnY };
+    this.player.position.set(this.position.x, this.position.y);
+  }
+
+  // Runs onFrame(t) every tick for durationMs, t going from 0 to 1 linearly.
+  // The one piece of tweening infrastructure every hit-animation step below
+  // uses -- hand-rolled against the ticker rather than a library, per the
+  // combat-resolution design spec.
+  _animate(durationMs, onFrame) {
+    return new Promise((resolve) => {
+      let elapsed = 0;
+      const tick = (ticker) => {
+        elapsed += ticker.deltaMS;
+        const t = Math.min(1, elapsed / durationMs);
+        onFrame(t);
+        if (t >= 1) {
+          this.app.ticker.remove(tick);
+          resolve();
+        }
+      };
+      this.app.ticker.add(tick);
+    });
+  }
+
+  // hits: ordered list of {attacker: "player"|"mob", damage, isCrit?},
+  // already filtered by the caller to only the swings that actually
+  // happened (a knocked-out combatant's would-be retaliation is never
+  // included). Plays each in order against the current this.selectedMob.
+  async playHit(hits) {
+    for (const hit of hits) {
+      await this._playSingleHit(hit);
+    }
+  }
+
+  async _playSingleHit(hit) {
+    const mobEntry = this.selectedMob;
+    const isPlayerAttacking = hit.attacker === "player";
+    const attackerContainer = isPlayerAttacking ? this.player : mobEntry.container;
+    const defenderContainer = isPlayerAttacking ? mobEntry.container : this.player;
+    const lungeDir = Math.sign(defenderContainer.position.x - attackerContainer.position.x) || 1;
+    const baseX = attackerContainer.position.x;
+
+    await this._animate(150, (t) => { attackerContainer.position.x = baseX + lungeDir * 20 * t; });
+    await this._animate(150, (t) => { attackerContainer.position.x = baseX + lungeDir * 20 * (1 - t); });
+    attackerContainer.position.x = baseX;
+
+    this._showFloatingDamage(defenderContainer, hit.damage, hit.isCrit);
+
+    const defenderBaseX = defenderContainer.position.x;
+    await this._animate(120, (t) => {
+      defenderContainer.position.x = defenderBaseX + Math.sin(t * Math.PI * 4) * 6 * (1 - t);
+    });
+    defenderContainer.position.x = defenderBaseX;
+
+    if (!isPlayerAttacking) return; // the mob's own HP bar only changes when it's the one taking the hit
+    this._updateMobHpBar(mobEntry);
+    if (mobEntry.data.hp <= 0) {
+      await this._animate(300, (t) => { mobEntry.container.alpha = 1 - t; });
+    }
+  }
+
+  _showFloatingDamage(targetContainer, damage, isCrit) {
+    const text = new PIXI.Text({
+      text: isCrit ? "CRIT!" : `-${damage}`,
+      style: { fontSize: 18, fontWeight: "900", fill: 0xffd166, stroke: { color: 0x000000, width: 3 } },
+    });
+    text.anchor.set(0.5, 1);
+    text.position.set(targetContainer.position.x, targetContainer.position.y - MOB_HEIGHT - 30);
+    this.world.addChild(text);
+    this._animate(700, (t) => {
+      text.position.y -= 0.6;
+      text.alpha = 1 - t;
+    }).then(() => this.world.removeChild(text));
+  }
+
+  _updateMobHpBar(mobEntry) {
+    const frac = Math.max(0, mobEntry.data.hp / mobEntry.data.stats.hp);
+    const color = frac > 0.5 ? 0x4cd137 : frac > 0.25 ? 0xe8c547 : 0xd1453b;
+    mobEntry.hpFill.clear().rect(-20, -MOB_HEIGHT - 10, 40 * frac, 5).fill(color);
+  }
+
   _onTick(ticker) {
     const previousX = this.position.x;
     this.position = stepTowardTarget(this.position, this.target, ticker.deltaMS, MOVE_SPEED);
@@ -342,7 +455,18 @@ export class WorldScene {
     this.player.scale.x = this._facingLeft ? -this._playerBaseScale : this._playerBaseScale;
     this.player.position.set(this.position.x, this.position.y);
 
-    this.cameraX = computeCameraX(this.position.x, this.cameraX, this.app.screen.width, this.zone.width, DEAD_ZONE_FRACTION);
+    if (this._approaching && Math.abs(this.position.x - this.target.x) < 2) {
+      this._approaching = false;
+      this.inCombat = true;
+      this.onCombatStart?.(this.selectedMob.data);
+    }
+
+    if (this.selectedMob && (this.inCombat || this._approaching)) {
+      const midpointX = (this.position.x + this.selectedMob.container.position.x) / 2;
+      this.cameraX = computeCenteredCameraX(midpointX, this.app.screen.width, this.zone.width);
+    } else {
+      this.cameraX = computeCameraX(this.position.x, this.cameraX, this.app.screen.width, this.zone.width, DEAD_ZONE_FRACTION);
+    }
     this.world.x = -this.cameraX;
   }
 }
