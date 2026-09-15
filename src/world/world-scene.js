@@ -9,23 +9,35 @@ const MOB_HEIGHT = 70; // a bit shorter than the player -- these are the weak, e
 // it) since world-scene.js is used from both index.html and dev/world-preview.html.
 const PLAYER_TEXTURE_URL = new URL("../../assets/world-character.png", import.meta.url).href;
 
-// Silhouette outline for assets/mob-goblin.png specifically, extracted from
-// its own alpha channel (sampled every 40px vertically, expanded outward by
-// 45px) and normalized so (0,0) sits at the sprite's own anchor point (feet,
-// horizontally centered) -- the same space sprite.anchor(0.5, 1) uses. A
-// different mob image would need its own outline the same way; this isn't
-// derived from the source image at runtime.
-const GOBLIN_OUTLINE_POINTS = [
-  [-147, -1179], [-113, -1094], [-98, -1054], [-105, -1014], [-78, -974], [-66, -934],
-  [-135, -894], [-166, -854], [-271, -814], [-317, -774], [-356, -734], [-388, -694],
-  [-392, -654], [-413, -614], [-475, -574], [-462, -534], [-483, -494], [-524, -454],
-  [-565, -414], [-580, -374], [-595, -334], [-615, -294], [-620, -254], [-622, -214],
-  [-413, -174], [-433, -134], [-449, -94], [-424, -9], [-169, -9], [-174, -94],
-  [386, -134], [345, -174], [269, -214], [250, -254], [290, -294], [298, -334],
-  [294, -374], [513, -414], [550, -454], [566, -494], [557, -534], [515, -574],
-  [460, -614], [279, -654], [294, -694], [408, -734], [422, -774], [443, -814],
-  [480, -854], [549, -894], [420, -934], [402, -974], [367, -1014], [277, -1054],
-  [104, -1094], [11, -1179],
+// Two-tier selection glow for assets/mob-goblin.png specifically, extracted
+// from its own alpha channel via a real contour trace (cv2.findContours on
+// the alpha mask, dilated outward before tracing so the result already sits
+// clear of the body, then simplified) -- not a per-row min/max bridge, which
+// was cutting straight across gaps (between the sword arm and torso, between
+// the legs) and made the outline balloon outward as if it included the
+// ground. INNER is dilated ~90px (a close, soft glow); OUTER ~200px (the
+// crisp line further out). Both normalized so (0,0) is the sprite's own
+// anchor point (feet, horizontally centered), same space as anchor(0.5, 1).
+// A different mob image would need its own two contours the same way.
+const GOBLIN_GLOW_INNER_POINTS = [
+  [-157, -1247], [-203, -1207], [-214, -1151], [-203, -1116], [-145, -1045], [-151, -994],
+  [-144, -967], [-178, -931], [-219, -906], [-282, -886], [-411, -772], [-430, -734],
+  [-433, -687], [-467, -670], [-521, -595], [-525, -550], [-558, -497], [-608, -452],
+  [-627, -381], [-627, -120], [-590, -106], [-544, -110], [-517, -125], [-466, -182],
+  [-498, -108], [-502, -71], [-490, -34], [-464, -1], [-137, -1], [-121, -30],
+  [-117, -67], [-148, -150], [-84, -243], [-59, -223], [-43, -189], [-19, -166],
+  [-6, -94], [41, -53], [253, -31], [378, -41], [424, -81], [434, -145],
+  [424, -173], [384, -224], [334, -258], [339, -307], [404, -296], [454, -321],
+  [511, -334], [571, -391], [610, -469], [610, -513], [580, -606], [516, -670],
+  [448, -699], [466, -755], [481, -772], [581, -836], [617, -873], [626, -896],
+  [620, -958], [595, -990], [563, -1007], [447, -1005], [373, -1091], [292, -1129],
+  [228, -1145], [150, -1126], [104, -1173], [12, -1213], [-103, -1252],
+];
+const GOBLIN_GLOW_OUTER_POINTS = [
+  [-302, -1254], [-322, -1194], [-321, -1123], [-301, -1066], [-261, -1012], [-341, -979],
+  [-489, -850], [-538, -754], [-597, -685], [-627, -624], [-627, -2], [502, -1],
+  [544, -101], [542, -166], [524, -220], [626, -287], [626, -714], [615, -727],
+  [626, -734], [626, -1099], [571, -1118], [497, -1119], [415, -1195], [264, -1252],
 ];
 
 export class WorldScene {
@@ -114,16 +126,18 @@ export class WorldScene {
 
       const mobScale = MOB_HEIGHT / mobTexture.height;
 
-      // Selection glow -- drawn first so it sits behind the sprite. Traces
-      // the goblin's actual silhouette (GOBLIN_OUTLINE_POINTS, already
-      // expanded outward from the real alpha edge) rather than a generic
-      // shape, so it never reaches up into the label/HP bar above. The
-      // sprite itself is flipped (-mobScale) to face left; the outline's x
-      // gets the same negation so it lines up with the flipped sprite.
+      // Selection glow -- drawn first so it sits behind the sprite. Two
+      // layers, both tracing the goblin's real contour (already expanded
+      // outward from the actual alpha edge, see the constants above) rather
+      // than a generic shape: a soft filled glow close to the body, and a
+      // crisp stroked line further out. The sprite itself is flipped
+      // (-mobScale) to face left; both outlines' x gets the same negation
+      // so they line up with the flipped sprite.
       const glow = new PIXI.Graphics()
-        .poly(GOBLIN_OUTLINE_POINTS.flatMap(([x, y]) => [x * -mobScale, y * mobScale]))
-        .fill({ color: 0xffd84d, alpha: 0.35 })
-        .stroke({ color: 0xffd84d, width: 3, alpha: 0.9 });
+        .poly(GOBLIN_GLOW_INNER_POINTS.flatMap(([x, y]) => [x * -mobScale, y * mobScale]))
+        .fill({ color: 0xffd84d, alpha: 0.4 })
+        .poly(GOBLIN_GLOW_OUTER_POINTS.flatMap(([x, y]) => [x * -mobScale, y * mobScale]))
+        .stroke({ color: 0xffe27a, width: 3, alpha: 0.95 });
       glow.visible = false;
       container.addChild(glow);
 
