@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { clampToZone, stepTowardTarget, computeCameraX } from "../src/world/world-movement.js";
+import { clampToZone, stepTowardTarget, computeCameraX, computeCenteredCameraX } from "../src/world/world-movement.js";
 
 const ZONE = { id: "plains", width: 2000, groundTop: 110, groundBottom: 190 };
 
@@ -74,5 +74,26 @@ describe("computeCameraX", () => {
 
   it("stays at 0 when the zone is narrower than the viewport", () => {
     expect(computeCameraX(50, 0, VIEWPORT, 300, DEAD_ZONE)).toBe(0);
+  });
+});
+
+describe("computeCenteredCameraX", () => {
+  const VIEWPORT = 400;
+  const ZONE_WIDTH = 2000;
+
+  it("centers the given midpoint on screen", () => {
+    expect(computeCenteredCameraX(1000, VIEWPORT, ZONE_WIDTH)).toBe(800);
+  });
+
+  it("clamps to 0 when centering would go past the zone's left edge", () => {
+    expect(computeCenteredCameraX(50, VIEWPORT, ZONE_WIDTH)).toBe(0);
+  });
+
+  it("clamps to zoneWidth - viewportWidth when centering would go past the right edge", () => {
+    expect(computeCenteredCameraX(1990, VIEWPORT, ZONE_WIDTH)).toBe(1600);
+  });
+
+  it("stays at 0 when the zone is narrower than the viewport", () => {
+    expect(computeCenteredCameraX(150, VIEWPORT, 300)).toBe(0);
   });
 });

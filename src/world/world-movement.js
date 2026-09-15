@@ -34,3 +34,12 @@ export function computeCameraX(playerWorldX, cameraX, viewportWidth, zoneWidth, 
   const maxCameraX = Math.max(0, zoneWidth - viewportWidth);
   return Math.min(Math.max(newCameraX, 0), maxCameraX);
 }
+
+// Centers the given world-x point on screen, clamped the same way
+// computeCameraX clamps -- used while approaching/fighting a mob, when the
+// camera should frame the midpoint between player and mob instead of
+// dead-zone-following the player alone.
+export function computeCenteredCameraX(midpointX, viewportWidth, zoneWidth) {
+  const maxCameraX = Math.max(0, zoneWidth - viewportWidth);
+  return Math.min(Math.max(midpointX - viewportWidth / 2, 0), maxCameraX);
+}
