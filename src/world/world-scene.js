@@ -3,7 +3,6 @@ import { clampToZone, stepTowardTarget, computeCameraX } from "./world-movement.
 
 const MOVE_SPEED = 220; // world-pixels/second
 const DEAD_ZONE_FRACTION = 0.4;
-const VIEWPORT_WIDTH = 400; // matches the ~400px-wide mobile testing convention (docs/HANDOFF.md)
 
 export class WorldScene {
   constructor({ mountElement }) {
@@ -16,6 +15,7 @@ export class WorldScene {
     this.world = new PIXI.Container();
     this.ground = null;
     this.player = null;
+    this._resizeObserver = null;
   }
 
   async loadZone(zoneJsonUrl) {
@@ -31,9 +31,11 @@ export class WorldScene {
     this.position = { x: zone.spawnX, y: zone.spawnY };
     this.target = { x: zone.spawnX, y: zone.spawnY };
 
+    const { width, height } = this.mountElement.getBoundingClientRect();
+
     await this.app.init({
-      width: VIEWPORT_WIDTH,
-      height: zone.groundBottom + 40,
+      width,
+      height,
       backgroundColor: 0x8fd0ff, // placeholder sky
       roundPixels: true,
     });
@@ -51,6 +53,28 @@ export class WorldScene {
 
     this.app.canvas.addEventListener("pointerdown", (event) => this._onPointerDown(event));
     this.app.ticker.add((ticker) => this._onTick(ticker));
+
+    this._resizeObserver = new ResizeObserver((entries) => {
+      const { width, height } = entries[0].contentRect;
+      this.resize(width, height);
+    });
+    this._resizeObserver.observe(this.mountElement);
+  }
+
+  resize(width, height) {
+    this.app.renderer.resize(width, height);
+    this.ground
+      .clear()
+      .rect(0, this.zone.groundTop, this.zone.width, this.zone.groundBottom - this.zone.groundTop)
+      .fill(0x5fa14a);
+  }
+
+  pause() {
+    this.app.ticker?.stop();
+  }
+
+  resume() {
+    this.app.ticker?.start();
   }
 
   _onPointerDown(event) {
