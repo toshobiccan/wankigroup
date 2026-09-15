@@ -1,0 +1,9 @@
+{
+  "id": "plains",
+  "displayName": "Plains",
+  "width": 2000,
+  "groundTop": 110,
+  "groundBottom": 190,
+  "spawnX": 100,
+  "spawnY": 150
+}
