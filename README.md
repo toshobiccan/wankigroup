@@ -12,7 +12,7 @@ node server.js
 
 Open http://localhost:5173 (designed for a phone-sized screen, ~400 px wide — use your browser's device toolbar on desktop).
 
-It is a plain static site, so it also works on GitHub Pages or any static host. An internet connection is needed for the fonts and the libraries that read Anki files (JSZip, sql.js, fzstd, loaded from CDNs).
+It is a plain static site, so it also works on GitHub Pages or any static host. The libraries that read Anki files (JSZip, sql.js, fzstd) are bundled in `vendor/`, so importing works offline. Only the Google Fonts still load from the internet; the app falls back to system fonts without them.
 
 ## How it works
 
@@ -32,6 +32,7 @@ It is a plain static site, so it also works on GitHub Pages or any static host. 
 | `db.js` | IndexedDB storage |
 | `server.js` | Tiny static file server |
 | `assets/` | Web-sized art; `assets/originals/` holds the full-resolution source images |
+| `vendor/` | Third-party browser libraries, pinned versions (see `vendor/README.md`) |
 
 ## Naming
 

@@ -14,6 +14,7 @@ const types = {
   ".jpg": "image/jpeg",
   ".svg": "image/svg+xml",
   ".webp": "image/webp",
+  ".wasm": "application/wasm",
 };
 
 http
