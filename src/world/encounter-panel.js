@@ -173,6 +173,7 @@ export class EncounterPanel {
     if (revealed) {
       const actions = document.createElement("div");
       actions.className = "answer-actions";
+      const gradeButtons = []; // so a click on any one of them can disable all four before onGrade() fires
       for (const [grade, label, sub] of [
         ["again", "Again", "miss"],
         ["hard", "Hard", "hit"],
@@ -186,7 +187,17 @@ export class EncounterPanel {
         const subText = document.createElement("small");
         subText.textContent = sub;
         btn.append(labelText, subText);
-        btn.addEventListener("click", () => this.onGrade?.(grade));
+        // Disable all four grade buttons the moment any one is tapped -- retract()
+        // only animates the sheet's CSS height over .25s, it doesn't stop the
+        // buttons from staying clickable during that transition, so a fast
+        // double-tap could otherwise fire onGrade() twice for one card. They get
+        // naturally replaced/re-enabled next time showCard()/reveal() rebuilds
+        // this content, so no re-enable logic is needed here.
+        btn.addEventListener("click", () => {
+          gradeButtons.forEach((b) => { b.disabled = true; });
+          this.onGrade?.(grade);
+        });
+        gradeButtons.push(btn);
         actions.appendChild(btn);
       }
       wrap.appendChild(actions);

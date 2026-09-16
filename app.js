@@ -303,6 +303,18 @@ function schedule(card, grade) {
 let worldScene = null;
 let encounterPanel = null;
 let fight = null; // { mob, queue } while a fight is in progress; null otherwise
+let gradeInFlight = false; // true while a single handleGrade() call is resolving -- blocks double-taps on the grade buttons
+
+// Shared recovery path for handleCombatStart/handleGrade: any thrown/rejected
+// error inside either leaves worldScene.inCombat latched true with no other
+// way out (no Flee button, by design), so any failure bails all the way out
+// to Idle using the same three-call pattern already used for a real loss.
+function bailOutOfFight(err) {
+  console.error(err);
+  fight = null;
+  encounterPanel.hide();
+  worldScene.endCombat({ mobDefeated: false });
+}
 
 function buildFightQueue(deckCards) {
   const now = Date.now();
@@ -326,85 +338,110 @@ function handleMobSelected(mob) {
 }
 
 async function handleCombatStart(mobData) {
-  if (!player.activeDeckId) {
-    // Bail out of the engaged state entirely (not just skip the fight) --
-    // otherwise WorldScene stays latched in inCombat/_approaching and every
-    // later click on this mob or the ground is silently swallowed, since
-    // both _onMobClick and _setTargetFromPointer early-return while either
-    // flag is set. endCombat({mobDefeated:false}) is the same recovery path
-    // already used for an actual combat loss below.
-    worldScene.endCombat({ mobDefeated: false });
-    encounterPanel.showMessage({
-      text: "Pick an active deck on Home first.",
-      actionLabel: "Go to Home",
-      onAction: () => go("home"),
-    });
-    return;
+  try {
+    if (!player.activeDeckId) {
+      // Bail out of the engaged state entirely (not just skip the fight) --
+      // otherwise WorldScene stays latched in inCombat/_approaching and every
+      // later click on this mob or the ground is silently swallowed, since
+      // both _onMobClick and _setTargetFromPointer early-return while either
+      // flag is set. endCombat({mobDefeated:false}) is the same recovery path
+      // already used for an actual combat loss below.
+      worldScene.endCombat({ mobDefeated: false });
+      encounterPanel.showMessage({
+        text: "Pick an active deck on Home first.",
+        actionLabel: "Go to Home",
+        onAction: () => go("home"),
+      });
+      return;
+    }
+    const cards = await DB.cardsForDeck(player.activeDeckId);
+    if (!cards.length) {
+      worldScene.endCombat({ mobDefeated: false });
+      encounterPanel.showMessage({ text: "This deck has no cards - import more or pick another." });
+      return;
+    }
+    fight = { mob: mobData, queue: buildFightQueue(cards) };
+    encounterPanel.showCard(fight.queue[0], fight.mob, playerHpState());
+  } catch (err) {
+    bailOutOfFight(err);
   }
-  const cards = await DB.cardsForDeck(player.activeDeckId);
-  if (!cards.length) {
-    worldScene.endCombat({ mobDefeated: false });
-    encounterPanel.showMessage({ text: "This deck has no cards - import more or pick another." });
-    return;
-  }
-  fight = { mob: mobData, queue: buildFightQueue(cards) };
-  encounterPanel.showCard(fight.queue[0], fight.mob, playerHpState());
 }
 
 async function handleGrade(grade) {
-  const card = fight.queue.shift();
-  await schedule(card, grade);
-  daily().reviewed += 1;
+  if (!fight || gradeInFlight) return;
+  gradeInFlight = true;
+  try {
+    const card = fight.queue.shift();
+    await schedule(card, grade);
+    daily().reviewed += 1;
 
-  if (grade === "again") {
-    fight.queue.push(card);
-    encounterPanel.showCard(fight.queue[0], fight.mob, playerHpState());
-    return;
-  }
+    if (grade === "again") {
+      savePlayer(); // schedule() already persisted the card itself via DB.putCard; this covers the daily().reviewed quest counter
+      fight.queue.push(card);
+      encounterPanel.showCard(fight.queue[0], fight.mob, playerHpState());
+      return;
+    }
 
-  const result = window.Cardslayer.resolveRound({ player, mob: fight.mob, grade });
-  player.hp = result.playerHp;
-  fight.mob.hp = result.mobHp;
-  savePlayer();
-
-  encounterPanel.retract();
-  const hits = [
-    { attacker: "player", damage: result.playerDamageDealt, isCrit: result.isCrit },
-    { attacker: "mob", damage: result.mobDamageDealt },
-  ];
-  if (result.order === "mob") hits.reverse();
-  await worldScene.playHit(hits.filter((hit) => hit.damage > 0));
-  encounterPanel.restore();
-
-  if (result.mobDefeated) {
-    const mob = fight.mob;
-    worldScene.endCombat({ mobDefeated: true });
-    encounterPanel.hide();
-    fight = null;
-    gainXp(mob.xpReward);
-    player.coins += mob.coinReward;
-    daily().battlesWon += 1;
+    const result = window.Cardslayer.resolveRound({ player, mob: fight.mob, grade });
+    player.hp = result.playerHp;
+    fight.mob.hp = result.mobHp;
     savePlayer();
-    renderHeader();
-    showModal(
-      el("div", { style: "font-size:48px" }, "🏆"),
-      el("h3", {}, "Victory!"),
-      el("p", {}, `You vanquished the ${mob.name}.`),
-      el("div", { class: "reward" }, el("span", {}, `+${mob.xpReward} XP`), el("span", {}, `+${mob.coinReward} 🪙`)),
-      el("div", { class: "modal-actions" }, el("button", { class: "btn-small", onclick: closeModal }, "Continue"))
-    );
-    return;
-  }
 
-  if (result.playerDefeated) {
-    fight = null;
-    encounterPanel.hide();
-    worldScene.endCombat({ mobDefeated: false });
-    await playerDefeatAndRespawn();
-    return;
-  }
+    encounterPanel.retract();
+    const hits = [
+      { attacker: "player", damage: result.playerDamageDealt, isCrit: result.isCrit },
+      { attacker: "mob", damage: result.mobDamageDealt },
+    ];
+    if (result.order === "mob") hits.reverse();
+    await worldScene.playHit(hits.filter((hit) => hit.damage > 0));
+    // Skip restore() on a fight-ending result -- the victory/defeat paths below
+    // call hide() a couple statements later, and restore() then hide() back to
+    // back would fire two competing CSS height transitions for nothing visible.
+    if (!result.mobDefeated && !result.playerDefeated) encounterPanel.restore();
 
-  encounterPanel.showCard(fight.queue[0], fight.mob, playerHpState());
+    if (result.mobDefeated) {
+      const mob = fight.mob;
+      worldScene.endCombat({ mobDefeated: true });
+      encounterPanel.hide();
+      fight = null;
+      gainXp(mob.xpReward);
+      player.coins += mob.coinReward;
+      daily().battlesWon += 1;
+      savePlayer();
+      renderHeader();
+      showModal(
+        el("div", { style: "font-size:48px" }, "🏆"),
+        el("h3", {}, "Victory!"),
+        el("p", {}, `You vanquished the ${mob.name}.`),
+        el("div", { class: "reward" }, el("span", {}, `+${mob.xpReward} XP`), el("span", {}, `+${mob.coinReward} 🪙`)),
+        el("div", { class: "modal-actions" }, el("button", { class: "btn-small", onclick: closeModal }, "Continue"))
+      );
+      return;
+    }
+
+    if (result.playerDefeated) {
+      fight = null;
+      encounterPanel.hide();
+      worldScene.endCombat({ mobDefeated: false });
+      await playerDefeatAndRespawn();
+      return;
+    }
+
+    // The active deck's card queue is consumed one card per non-"again" grade
+    // (buildFightQueue() hands back the whole active deck once); combat keeps
+    // going until the mob or the player drops, not until cards run out, so an
+    // empty queue here just means the deck is small -- recycle it from the same
+    // active deck rather than crashing on fight.queue[0] === undefined below.
+    if (!fight.queue.length) {
+      const cards = await DB.cardsForDeck(player.activeDeckId);
+      fight.queue = buildFightQueue(cards);
+    }
+    encounterPanel.showCard(fight.queue[0], fight.mob, playerHpState());
+  } catch (err) {
+    bailOutOfFight(err);
+  } finally {
+    gradeInFlight = false;
+  }
 }
 
 async function playerDefeatAndRespawn() {

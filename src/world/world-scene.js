@@ -82,9 +82,8 @@ export class WorldScene {
     this.world = new PIXI.Container();
     this.background = null;
     this.player = null;
-    this.mobs = []; // [{ data, container, glow }] -- click-to-select is wired up
-                    // (see _onMobClick); attack/combat is still the in-world-encounters
-                    // spec's job once it has its own implementation plan.
+    this.mobs = []; // [{ data, container, glow, hpFill }] -- click-to-select and combat
+                    // are both wired up (see _onMobClick, playHit()).
     this.selectedMob = null; // the selected mob's own {data, container, glow, hpFill} record, or null
     this.inCombat = false;
     this._approaching = false; // true from the moment a fight is triggered until the walk-up finishes
@@ -431,10 +430,12 @@ export class WorldScene {
       style: { fontSize: 18, fontWeight: "900", fill: 0xffd166, stroke: { color: 0x000000, width: 3 } },
     });
     text.anchor.set(0.5, 1);
-    text.position.set(targetContainer.position.x, targetContainer.position.y - MOB_HEIGHT - 30);
+    const startY = targetContainer.position.y - MOB_HEIGHT - 30;
+    text.position.set(targetContainer.position.x, startY);
     this.world.addChild(text);
+    const RISE_DISTANCE = 36; // total world-pixels risen over the animation -- frame-rate independent, unlike a fixed per-frame offset
     this._animate(700, (t) => {
-      text.position.y -= 0.6;
+      text.position.y = startY - RISE_DISTANCE * t;
       text.alpha = 1 - t;
     }).then(() => this.world.removeChild(text));
   }
