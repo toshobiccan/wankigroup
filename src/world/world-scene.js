@@ -6,6 +6,7 @@ const DEAD_ZONE_FRACTION = 0.4;
 const PLAYER_HEIGHT = 90; // world-pixels tall, roughly matches the ground band's scale
 const MOB_HEIGHT = 70; // a bit shorter than the player -- these are the weak, early mobs
 const APPROACH_DISTANCE = 60; // how close (world-pixels) the player walks before a fight actually starts
+const RESPAWN_DELAY_MS = 6000; // how long a defeated mob stays gone before it's back at full HP
 // Resolved relative to this module's own file (not whichever HTML page loaded
 // it) since world-scene.js is used from both index.html and dev/world-preview.html.
 const PLAYER_TEXTURE_URL = new URL("../../assets/world-character.png", import.meta.url).href;
@@ -82,8 +83,10 @@ export class WorldScene {
     this.world = new PIXI.Container();
     this.background = null;
     this.player = null;
-    this.mobs = []; // [{ data, container, glow, hpFill }] -- click-to-select and combat
-                    // are both wired up (see _onMobClick, playHit()).
+    this.mobs = []; // [{ data, container, glow, hpFill, dead? }] -- click-to-select and
+                    // combat are both wired up (see _onMobClick, playHit()). A defeated
+                    // mob's entry stays here with dead:true and its container hidden
+                    // until it respawns (see endCombat, _scheduleRespawn).
     this.selectedMob = null; // the selected mob's own {data, container, glow, hpFill} record, or null
     this.inCombat = false;
     this._approaching = false; // true from the moment a fight is triggered until the walk-up finishes
@@ -322,17 +325,28 @@ export class WorldScene {
 
   _onMobClick(mobEntry) {
     if (this.inCombat || this._approaching) return; // a fight is already running or starting; mob clicks do nothing until it ends
+    if (mobEntry.dead) return; // respawning -- not interactable yet
     if (this.selectedMob === mobEntry) {
-      this._approaching = true;
-      const mobX = mobEntry.container.position.x;
-      const approachX = mobX + (this.position.x < mobX ? -APPROACH_DISTANCE : APPROACH_DISTANCE);
-      this.target = clampToZone({ x: approachX, y: this.position.y }, this.zone);
+      this.engageSelectedMob();
       return;
     }
     if (this.selectedMob) this.selectedMob.glow.visible = false;
     this.selectedMob = mobEntry;
     mobEntry.glow.visible = true;
     this.onMobSelected?.(mobEntry.data);
+  }
+
+  // Walks the player up to the currently selected mob; combat actually
+  // starts once the walk finishes (see _onTick). Shared by a second click
+  // on the selected mob (see _onMobClick above) and the encounter panel's
+  // "Fight" button.
+  engageSelectedMob() {
+    if (!this.selectedMob || this.inCombat || this._approaching) return;
+    this._approaching = true;
+    const mobEntry = this.selectedMob;
+    const mobX = mobEntry.container.position.x;
+    const approachX = mobX + (this.position.x < mobX ? -APPROACH_DISTANCE : APPROACH_DISTANCE);
+    this.target = clampToZone({ x: approachX, y: this.position.y }, this.zone);
   }
 
   _deselectMob() {
@@ -342,20 +356,41 @@ export class WorldScene {
     this.onMobSelected?.(null);
   }
 
-  // mobDefeated: true removes the fought mob from the zone for good (victory);
-  // false leaves it exactly where it was (the player fled or lost).  Either
-  // way, clears the selection glow and unlocks movement.
+  // Public wrapper for _deselectMob() -- the encounter panel's "Flee" button.
+  deselectMob() {
+    this._deselectMob();
+  }
+
+  // mobDefeated: true hides the fought mob and schedules its respawn (see
+  // _scheduleRespawn) instead of removing it for good; false leaves it
+  // exactly where it was (the player fled or lost). Either way, clears the
+  // selection glow and unlocks movement.
   endCombat({ mobDefeated }) {
     const entry = this.selectedMob;
     if (mobDefeated && entry) {
-      this.world.removeChild(entry.container);
-      this.mobs = this.mobs.filter((e) => e !== entry);
+      entry.dead = true;
+      entry.container.visible = false;
+      this._scheduleRespawn(entry);
     }
     if (entry) entry.glow.visible = false;
     this.selectedMob = null;
     this.inCombat = false;
     this._approaching = false; // defensive -- should already be false by the time a fight can end
     this.onMobSelected?.(null);
+  }
+
+  // Brings a defeated mob back after RESPAWN_DELAY_MS: full HP, visible
+  // again, hp bar repainted green. The entry stays in this.mobs and its
+  // container stays in this.world the whole time (just hidden) -- respawning
+  // is a state change on the same entry, not a re-creation.
+  _scheduleRespawn(entry) {
+    setTimeout(() => {
+      entry.data.hp = entry.data.stats.hp;
+      entry.dead = false;
+      entry.container.visible = true;
+      entry.container.alpha = 1; // undo the death fade from _playSingleHit
+      this._updateMobHpBar(entry);
+    }, RESPAWN_DELAY_MS);
   }
 
   // Snaps the player back to the zone's spawn point -- used after a defeat,

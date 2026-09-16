@@ -476,6 +476,8 @@ renderers.world = async () => {
   encounterPanel = new window.Cardslayer.EncounterPanel({
     mountElement: $("#encounterPanelRoot"),
     onGrade: handleGrade,
+    onFight: () => worldScene.engageSelectedMob(),
+    onFlee: () => worldScene.deselectMob(),
   });
   worldScene = new window.Cardslayer.WorldScene({
     mountElement: $("#worldRoot"),

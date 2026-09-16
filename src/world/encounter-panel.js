@@ -7,15 +7,17 @@
 
 const HEIGHTS = {
   hidden: 0,
-  peek: 110,
+  peek: 132,
   default: 320,
   expanded: 560,
   retracted: 40, // smaller than peek -- just enough to keep the handle visible during a hit
 };
 
 export class EncounterPanel {
-  constructor({ mountElement, onGrade }) {
+  constructor({ mountElement, onGrade, onFight, onFlee }) {
     this.onGrade = onGrade; // (grade: "again"|"hard"|"good"|"easy") => void
+    this.onFight = onFight; // () => void -- "Fight" button on the peek sheet
+    this.onFlee = onFlee; // () => void -- "Flee" button on the peek sheet
 
     this.root = document.createElement("div");
     this.root.className = "encounter-sheet";
@@ -91,14 +93,26 @@ export class EncounterPanel {
     hp.className = "sheet-peek-hp";
     hp.textContent = `${mob.hp} / ${mob.stats.hp} HP`;
 
-    const hint = document.createElement("div");
-    hint.className = "sheet-peek-hint";
-    hint.textContent = `Tap the ${mob.name} again to attack.`;
-
-    text.append(name, hp, hint);
+    text.append(name, hp);
     wrap.append(portrait, text);
 
-    this.content.replaceChildren(wrap);
+    const actions = document.createElement("div");
+    actions.className = "sheet-peek-actions";
+    const fightBtn = document.createElement("button");
+    fightBtn.className = "btn-small";
+    fightBtn.textContent = "Fight";
+    fightBtn.addEventListener("click", () => this.onFight?.());
+    const fleeBtn = document.createElement("button");
+    fleeBtn.className = "btn-small btn-ghost";
+    fleeBtn.textContent = "Flee";
+    fleeBtn.addEventListener("click", () => this.onFlee?.());
+    actions.append(fightBtn, fleeBtn);
+
+    const outer = document.createElement("div");
+    outer.className = "sheet-peek-outer";
+    outer.append(wrap, actions);
+
+    this.content.replaceChildren(outer);
     this._setHeight("peek");
   }
 

@@ -563,6 +563,7 @@ img.scene-layer { height: auto; }
 }
 .sheet-content { flex: 1; min-height: 0; padding: 4px 12px 12px; overflow-y: auto; }
 
+.sheet-peek-outer { display: flex; flex-direction: column; gap: 10px; }
 .sheet-peek { display: flex; align-items: center; gap: 10px; }
 .sheet-portrait {
   width: 56px; height: 56px; border-radius: 10px; object-fit: cover;
@@ -572,7 +573,8 @@ img.scene-layer { height: auto; }
 .sheet-peek-text { flex: 1; min-width: 0; }
 .sheet-peek-name { font-size: 14px; font-weight: 600; color: #fff; display: flex; align-items: center; gap: 6px; }
 .sheet-peek-hp { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
-.sheet-peek-hint { font-size: 11px; color: var(--text-dim); margin-top: 4px; }
+.sheet-peek-actions { display: flex; gap: 8px; }
+.sheet-peek-actions .btn-small { flex: 1; }
 
 .tag {
   font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 8px;
