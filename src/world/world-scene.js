@@ -7,6 +7,18 @@ const PLAYER_HEIGHT = 90; // world-pixels tall, roughly matches the ground band'
 const MOB_HEIGHT = 70; // a bit shorter than the player -- these are the weak, early mobs
 const APPROACH_DISTANCE = 60; // how close (world-pixels) the player walks before a fight actually starts
 const RESPAWN_DELAY_MS = 6000; // how long a defeated mob stays gone before it's back at full HP
+const EDGE_TRANSITION_MARGIN = 4; // world-pixels from a page's exact edge that counts as "reached it"
+// A page with no real art yet ("blank" in its JSON) gets a flat two-tone
+// placeholder instead of a missing-texture error -- same aspect ratio as
+// assets/world-background.png (1672x941) so it doesn't visually jar against
+// a real neighboring page, and its own walkable band so movement/arrows
+// still have somewhere sensible to sit.
+const BLANK_ROOM_ASPECT = 16 / 9;
+const BLANK_ROOM_GROUND_TOP_FRAC = 0.72;
+const BLANK_ROOM_GROUND_BOTTOM_FRAC = 0.8;
+const BLANK_SKY_COLOR = 0x2a3550;
+const BLANK_GROUND_COLOR = 0x3a4436;
+const ARROW_COLOR = 0xffd84d;
 // Resolved relative to this module's own file (not whichever HTML page loaded
 // it) since world-scene.js is used from both index.html and dev/world-preview.html.
 const PLAYER_TEXTURE_URL = new URL("../../assets/world-character.png", import.meta.url).href;
@@ -76,6 +88,8 @@ export class WorldScene {
     this.onMobSelected = onMobSelected; // (mobData | null) -- fires on select, re-select of a different mob, and deselect
     this.onCombatStart = onCombatStart; // (mobData) -- fires once, when the player finishes walking up to an engaged mob
     this.zone = null;
+    this.pageId = null; // the current page's own id, e.g. "plains1"
+    this.links = { prev: null, next: null }; // neighboring page ids this page connects to, or null
     this.position = { x: 0, y: 0 };
     this.target = { x: 0, y: 0 };
     this.cameraX = 0;
@@ -83,6 +97,14 @@ export class WorldScene {
     this.world = new PIXI.Container();
     this.background = null;
     this.player = null;
+    this._roomLabel = null; // DOM element, bottom-left current-page name (see loadZone)
+    this._arrows = { prev: null, next: null }; // PIXI.Graphics edge indicators, only where a link exists
+    this._arrowPhase = 0; // drives the arrows' idle side-to-side wobble
+    this._pixiReady = false; // true once the one-time PIXI app/canvas/ticker/listener setup has run
+    this._pageReady = false; // true once _loadPage has fully finished -- guards resize() against a
+                              // ResizeObserver firing mid-load (its initial fire, or one racing an
+                              // in-flight page transition's background-texture await) hitting null state
+    this._transitioning = false; // guards against re-triggering a page transition while one is in flight
     this.mobs = []; // [{ data, container, glow, hpFill, dead? }] -- click-to-select and
                     // combat are both wired up (see _onMobClick, playHit()). A defeated
                     // mob's entry stays here with dead:true and its container hidden
@@ -99,7 +121,78 @@ export class WorldScene {
     this._suppressNextGroundClick = false;
   }
 
+  // Public entry point -- called once by app.js with the starting page's
+  // zone JSON. Does the one-time PIXI app/canvas/player/ticker/listener
+  // setup exactly once (guarded by _pixiReady), then loads that first page
+  // like any other. Later pages are loaded via _transitionToPage(), which
+  // reuses the same app/canvas/player rather than recreating them.
   async loadZone(zoneJsonUrl) {
+    if (!this._pixiReady) {
+      const { width, height } = this.mountElement.getBoundingClientRect();
+
+      await this.app.init({
+        width,
+        height,
+        resolution: window.devicePixelRatio || 1, // otherwise the canvas renders soft/blocky on Retina screens
+        autoDensity: true,
+        backgroundColor: 0x000000,
+        roundPixels: true,
+      });
+      this.mountElement.appendChild(this.app.canvas);
+      this.app.stage.addChild(this.world);
+
+      // Bottom-left page-name label -- a plain DOM element (not world-space),
+      // so it stays fixed on screen instead of scrolling with the camera.
+      this._roomLabel = document.createElement("div");
+      this._roomLabel.className = "room-label";
+      this.mountElement.appendChild(this._roomLabel);
+
+      const playerTexture = await PIXI.Assets.load(PLAYER_TEXTURE_URL);
+      this.player = new PIXI.Sprite(playerTexture);
+      this.player.anchor.set(0.5, 1); // feet at this.player.position
+      this._playerBaseScale = PLAYER_HEIGHT / playerTexture.height;
+      this.player.scale.set(this._playerBaseScale);
+      this.world.addChild(this.player);
+
+      this.app.canvas.addEventListener("pointerdown", (event) => {
+        if (this._suppressNextGroundClick) {
+          this._suppressNextGroundClick = false;
+          return;
+        }
+        this._pointerHeld = true;
+        this._setTargetFromPointer(event);
+      });
+      this.app.canvas.addEventListener("pointermove", (event) => {
+        if (this._pointerHeld) this._setTargetFromPointer(event);
+      });
+      this.app.canvas.addEventListener("pointerup", () => { this._pointerHeld = false; });
+      this.app.canvas.addEventListener("pointercancel", () => { this._pointerHeld = false; });
+      this.app.canvas.addEventListener("pointerleave", () => { this._pointerHeld = false; });
+      this.app.ticker.add((ticker) => this._onTick(ticker));
+
+      this._resizeObserver = new ResizeObserver((entries) => {
+        const { width, height } = entries[0].contentRect;
+        this.resize(width, height);
+      });
+      this._resizeObserver.observe(this.mountElement);
+
+      this._pixiReady = true;
+    }
+
+    await this._loadPage(zoneJsonUrl, { spawn: true });
+  }
+
+  // Tears down and rebuilds everything that's specific to one page: the
+  // background (real image, or a flat placeholder for a "blank" page),
+  // mobs, edge arrows, and the room label. The PIXI app/canvas/player/
+  // ticker/listeners set up once in loadZone() are untouched.
+  //
+  // spawn: true only for the very first page ever loaded -- positions the
+  // player at the zone's own authored spawn point. entryEdge: "left"|"right"
+  // for every later page, reached by walking off a neighboring page's edge --
+  // positions the player just inside the matching edge of the new page, so
+  // continuing to walk the same direction feels continuous across the seam.
+  async _loadPage(zoneJsonUrl, { spawn = false, entryEdge = null } = {}) {
     let zone;
     try {
       zone = await fetch(zoneJsonUrl).then((r) => r.json());
@@ -108,48 +201,54 @@ export class WorldScene {
       return;
     }
 
-    // backgroundImage is authored root-relative (e.g. "assets/foo.png"), same
-    // convention as the rest of the project's data-referenced asset paths --
-    // resolved against the server root, not the page that happened to load
-    // this zone, so it's correct from both index.html and dev/world-preview.html.
-    const backgroundUrl = new URL(zone.backgroundImage, `${location.origin}/`).href;
-    this._backgroundTexture = await PIXI.Assets.load(backgroundUrl);
+    this._pageReady = false;
+    this._teardownPage();
 
-    const { width, height } = this.mountElement.getBoundingClientRect();
-
-    await this.app.init({
-      width,
-      height,
-      resolution: window.devicePixelRatio || 1, // otherwise the canvas renders soft/blocky on Retina screens
-      autoDensity: true,
-      backgroundColor: 0x000000,
-      roundPixels: true,
-    });
-    this.mountElement.appendChild(this.app.canvas);
-    this.app.stage.addChild(this.world);
-
-    this.background = new PIXI.Sprite(this._backgroundTexture);
-    this.world.addChild(this.background);
-
-    // Ground bounds are stored as fractions of the background image's own
-    // height, not fixed pixels -- the background always scales to fill the
-    // canvas's current height exactly (see resize()), and this derives the
-    // matching walkable band from that scale every time, in world-movement.js's
-    // existing units. This is what "where the character can/cannot walk" comes
-    // from: it's the actual dirt path in the artwork, not a guessed range.
     this.zone = { ...zone };
+    this.pageId = zone.id;
+    this.links = { prev: zone.links?.prev ?? null, next: zone.links?.next ?? null };
+
+    const { height } = this.mountElement.getBoundingClientRect();
+
+    if (zone.blank) {
+      this._backgroundTexture = null;
+      this.zone.groundTopFrac = BLANK_ROOM_GROUND_TOP_FRAC;
+      this.zone.groundBottomFrac = BLANK_ROOM_GROUND_BOTTOM_FRAC;
+      this.zone.spawnXFrac = zone.spawnXFrac ?? 0.5;
+      this.zone.spawnYFrac = zone.spawnYFrac ?? BLANK_ROOM_GROUND_TOP_FRAC + 0.02;
+      this.background = new PIXI.Graphics();
+    } else {
+      // backgroundImage is authored root-relative (e.g. "assets/foo.png"),
+      // same convention as the rest of the project's data-referenced asset
+      // paths -- resolved against the server root, not the page that
+      // happened to load this zone, so it's correct from both index.html
+      // and dev/world-preview.html.
+      const backgroundUrl = new URL(zone.backgroundImage, `${location.origin}/`).href;
+      this._backgroundTexture = await PIXI.Assets.load(backgroundUrl);
+      this.background = new PIXI.Sprite(this._backgroundTexture);
+    }
+    this.world.addChildAt(this.background, 0); // always stays behind the player/mobs/arrows
+
+    // Ground bounds are stored as fractions of the display height, not fixed
+    // pixels -- the background always scales to fill the canvas's current
+    // height exactly (see resize()), and this derives the matching walkable
+    // band from that scale every time, in world-movement.js's existing
+    // units. This is what "where the character can/cannot walk" comes from:
+    // it's the actual dirt path in the artwork (or the placeholder band, for
+    // a blank page), not a guessed range.
     this._applyBackgroundLayout(height);
+    this._updateRoomLabel();
 
-    this.position = { x: this.zone.spawnX, y: this.zone.spawnY };
-    this.target = { x: this.zone.spawnX, y: this.zone.spawnY };
-
-    const playerTexture = await PIXI.Assets.load(PLAYER_TEXTURE_URL);
-    this.player = new PIXI.Sprite(playerTexture);
-    this.player.anchor.set(0.5, 1); // feet at this.player.position
-    this._playerBaseScale = PLAYER_HEIGHT / playerTexture.height;
-    this.player.scale.set(this._playerBaseScale);
+    if (spawn) {
+      this.position = { x: this.zone.spawnX, y: this.zone.spawnY };
+    } else if (entryEdge === "left") {
+      this.position = { x: EDGE_TRANSITION_MARGIN + 2, y: this.position.y };
+    } else if (entryEdge === "right") {
+      this.position = { x: this.zone.width - EDGE_TRANSITION_MARGIN - 2, y: this.position.y };
+    }
+    this.position = clampToZone(this.position, this.zone);
+    this.target = { ...this.position };
     this.player.position.set(this.position.x, this.position.y);
-    this.world.addChild(this.player);
 
     for (const rawMobData of zone.mobs ?? []) {
       const mobData = { ...rawMobData, hp: rawMobData.stats.hp };
@@ -215,39 +314,54 @@ export class WorldScene {
       this.mobs.push(mobEntry);
     }
     this._layoutMobs();
+    this._pageReady = true;
+  }
 
-    this.app.canvas.addEventListener("pointerdown", (event) => {
-      if (this._suppressNextGroundClick) {
-        this._suppressNextGroundClick = false;
-        return;
+  // Removes everything specific to whichever page was previously loaded
+  // (harmless no-op the first time, when there's nothing to remove yet).
+  // Movement lock state is reset defensively -- it should already be clear
+  // by the time a transition can happen, since combat/approach both lock
+  // the ground-clicks that would otherwise send the player toward an edge.
+  _teardownPage() {
+    if (this.background) {
+      this.world.removeChild(this.background);
+      this.background.destroy?.();
+      this.background = null;
+    }
+    for (const entry of this.mobs) {
+      this.world.removeChild(entry.container);
+    }
+    this.mobs = [];
+    this.selectedMob = null;
+    this.inCombat = false;
+    this._approaching = false;
+    for (const key of ["prev", "next"]) {
+      if (this._arrows[key]) {
+        this.world.removeChild(this._arrows[key]);
+        this._arrows[key] = null;
       }
-      this._pointerHeld = true;
-      this._setTargetFromPointer(event);
-    });
-    this.app.canvas.addEventListener("pointermove", (event) => {
-      if (this._pointerHeld) this._setTargetFromPointer(event);
-    });
-    this.app.canvas.addEventListener("pointerup", () => { this._pointerHeld = false; });
-    this.app.canvas.addEventListener("pointercancel", () => { this._pointerHeld = false; });
-    this.app.canvas.addEventListener("pointerleave", () => { this._pointerHeld = false; });
-    this.app.ticker.add((ticker) => this._onTick(ticker));
-
-    this._resizeObserver = new ResizeObserver((entries) => {
-      const { width, height } = entries[0].contentRect;
-      this.resize(width, height);
-    });
-    this._resizeObserver.observe(this.mountElement);
+    }
   }
 
   // Scales the background to fill the given height (preserving its aspect
-  // ratio) and recomputes zone.width/groundTop/groundBottom/spawnX/spawnY
-  // from the original zone JSON's *Frac fields against that new scale.
+  // ratio -- or, for a blank page, BLANK_ROOM_ASPECT) and recomputes
+  // zone.width/groundTop/groundBottom/spawnX/spawnY from the *Frac fields
+  // against that new scale. Also re-lays-out the edge arrows, since their
+  // x position depends on zone.width.
   _applyBackgroundLayout(displayHeight) {
-    const scale = displayHeight / this._backgroundTexture.height;
-    const displayWidth = this._backgroundTexture.width * scale;
-
-    this.background.height = displayHeight;
-    this.background.width = displayWidth;
+    let displayWidth;
+    if (this.zone.blank) {
+      displayWidth = displayHeight * BLANK_ROOM_ASPECT;
+      const groundY = displayHeight * this.zone.groundTopFrac;
+      this.background.clear()
+        .rect(0, 0, displayWidth, groundY).fill(BLANK_SKY_COLOR)
+        .rect(0, groundY, displayWidth, displayHeight - groundY).fill(BLANK_GROUND_COLOR);
+    } else {
+      const scale = displayHeight / this._backgroundTexture.height;
+      displayWidth = this._backgroundTexture.width * scale;
+      this.background.height = displayHeight;
+      this.background.width = displayWidth;
+    }
 
     this.zone.width = displayWidth;
     this.zone.groundTop = this.zone.groundTopFrac * displayHeight;
@@ -255,6 +369,51 @@ export class WorldScene {
     this.zone.spawnX = this.zone.spawnXFrac * displayWidth;
     this.zone.spawnY = this.zone.spawnYFrac * displayHeight;
     this._lastDisplayHeight = displayHeight;
+    this._layoutArrows();
+  }
+
+  // Rebuilds the left/right edge-arrow graphics from scratch (cheap -- at
+  // most two small Graphics objects) wherever this.links says a neighboring
+  // page exists. Called after every layout change, since arrow x position
+  // depends on zone.width.
+  _layoutArrows() {
+    for (const key of ["prev", "next"]) {
+      if (this._arrows[key]) {
+        this.world.removeChild(this._arrows[key]);
+        this._arrows[key] = null;
+      }
+    }
+    const groundY = (this.zone.groundTop + this.zone.groundBottom) / 2;
+    if (this.links.prev) this._arrows.prev = this._createArrow("left", groundY);
+    if (this.links.next) this._arrows.next = this._createArrow("right", groundY);
+  }
+
+  _createArrow(direction, groundY) {
+    const pointingLeft = direction === "left";
+    const size = 22;
+    const graphic = new PIXI.Graphics()
+      .poly(pointingLeft ? [size, -size, -size, 0, size, size] : [-size, -size, size, 0, -size, size])
+      .fill({ color: ARROW_COLOR, alpha: 0.85 })
+      .stroke({ color: 0x000000, width: 2, alpha: 0.6 });
+    graphic.position.set(pointingLeft ? 18 : this.zone.width - 18, groundY);
+    this.world.addChild(graphic);
+    return graphic;
+  }
+
+  _updateRoomLabel() {
+    if (this._roomLabel) this._roomLabel.textContent = this.zone.displayName ?? this.pageId;
+  }
+
+  // Triggered from _onTick when the player reaches a page's edge and a link
+  // exists there. entryEdge is which edge of the *new* page the player
+  // should appear at -- walking off this page's right edge (links.next)
+  // means arriving at the new page's left edge, and vice versa.
+  async _transitionToPage(pageId, entryEdge) {
+    if (this._transitioning) return; // ignore a re-trigger while the fetch/rebuild is already in flight
+    this._transitioning = true;
+    const url = new URL(`data/zones/${pageId}.json`, `${location.origin}/`).href;
+    await this._loadPage(url, { entryEdge });
+    this._transitioning = false;
   }
 
   // Mobs stand at a fixed xFrac of the zone width, on the same ground line the
@@ -272,6 +431,12 @@ export class WorldScene {
     // would zero out zone.width and permanently corrupt the next resize's
     // fraction math into NaN. Skip degenerate sizes entirely.
     if (!(width > 0) || !(height > 0)) return;
+    // A page load/transition is still in flight (background texture still
+    // loading, mobs still being built) -- resizing now would touch zone/
+    // background state that isn't fully assigned yet. The next real layout
+    // (end of _loadPage) already accounts for the current size, so this
+    // resize is safe to just skip.
+    if (!this._pageReady) return;
 
     this.app.renderer.resize(width, height);
 
@@ -482,6 +647,17 @@ export class WorldScene {
   }
 
   _onTick(ticker) {
+    // The ticker starts running during the one-time PIXI setup, before the
+    // very first _loadPage() call ever completes -- and a page transition
+    // clears this flag too, for the same reason. Without this guard, a tick
+    // landing mid-load (this.zone assigned but zone.width not yet computed,
+    // during the background texture's await) would silently corrupt
+    // this.cameraX to NaN forever: computeCameraX's Math.min/Math.max chain
+    // propagates a single NaN input into every future frame's output, the
+    // same self-perpetuating-corruption failure mode already fixed once
+    // this session for position/target via a degenerate-resize guard.
+    if (!this._pageReady) return;
+
     const previousX = this.position.x;
     this.position = stepTowardTarget(this.position, this.target, ticker.deltaMS, MOVE_SPEED);
     const dx = this.position.x - previousX;
@@ -496,6 +672,21 @@ export class WorldScene {
       this.inCombat = true;
       this.onCombatStart?.(this.selectedMob.data);
     }
+
+    // Movement is already locked during combat/approach, so this can only
+    // fire from ordinary walking -- never mid-fight.
+    if (!this.inCombat && !this._approaching) {
+      if (this.position.x <= EDGE_TRANSITION_MARGIN && this.links.prev) {
+        this._transitionToPage(this.links.prev, "right");
+      } else if (this.position.x >= this.zone.width - EDGE_TRANSITION_MARGIN && this.links.next) {
+        this._transitionToPage(this.links.next, "left");
+      }
+    }
+
+    this._arrowPhase += ticker.deltaMS / 400;
+    const arrowBob = Math.sin(this._arrowPhase) * 4;
+    if (this._arrows.prev) this._arrows.prev.position.x = 18 + arrowBob;
+    if (this._arrows.next) this._arrows.next.position.x = this.zone.width - 18 + arrowBob;
 
     if (this.selectedMob && (this.inCombat || this._approaching)) {
       const midpointX = (this.position.x + this.selectedMob.container.position.x) / 2;

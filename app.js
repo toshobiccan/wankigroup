@@ -647,7 +647,7 @@ renderers.world = async () => {
     onMobSelected: handleMobSelected,
     onCombatStart: handleCombatStart,
   });
-  await worldScene.loadZone("data/zones/plains.json");
+  await worldScene.loadZone("data/zones/plains1.json");
 };
 
 // ================= SCENE PLAY =================

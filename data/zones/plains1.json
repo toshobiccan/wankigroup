@@ -1,11 +1,12 @@
 {
-  "id": "plains",
-  "displayName": "Plains",
+  "id": "plains1",
+  "displayName": "Plains 1",
   "backgroundImage": "assets/world-background.png",
   "groundTopFrac": 0.7354,
   "groundBottomFrac": 0.7737,
   "spawnXFrac": 0.25,
   "spawnYFrac": 0.7546,
+  "links": { "prev": null, "next": "plains2" },
   "mobs": [
     {
       "id": "goblin_1",
