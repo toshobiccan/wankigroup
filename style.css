@@ -667,9 +667,15 @@ img.scene-layer { height: auto; }
   background: linear-gradient(#3b80ea, #2560c8); border-color: #2560c8; color: #fff;
 }
 .inventory-list { display: flex; flex-direction: column; gap: 8px; max-height: 60vh; overflow-y: auto; }
-.inventory-item { padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; }
+.inventory-item { padding: 10px 12px; display: flex; align-items: center; gap: 10px; }
+.inventory-item-pic {
+  width: 36px; height: 36px; border-radius: 6px; object-fit: cover; flex-shrink: 0;
+  background: #101b2e; border: 1px solid #223252;
+}
+.inventory-item-info { flex: 1; min-width: 0; }
 .inventory-item-name { font-size: 13px; font-weight: 600; }
-.inventory-item-qty { font-size: 12px; color: var(--gold-light); font-weight: 700; }
+.inventory-item-desc { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+.inventory-item-qty { font-size: 12px; color: var(--gold-light); font-weight: 700; flex-shrink: 0; }
 
 /* ================= MODAL ================= */
 .modal {

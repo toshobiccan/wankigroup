@@ -19,9 +19,19 @@ const defaultPlayer = {
     luck: 0,
   },
   hp: 100, // current HP -- persists across fights, separate from the max in stats.hp
-  // Equipables/status items: { name }. Materials additionally carry a stack count: { name, quantity }.
-  // No item has been created yet (no drop system exists), so these start empty for every player.
-  inventory: { equipables: [], materials: [], status: [] },
+  // Held-but-not-equipped items. equipables: Item[] (see src/items.js, kind
+  // "equipable"). materials: { item, quantity }[] -- quantity has no upper
+  // bound, materials stack infinitely in theory. No item has been created
+  // yet (no drop system exists), so both start empty for every player.
+  inventory: { equipables: [], materials: [] },
+  // What's currently worn, one item per slot (or null) -- see src/items.js's
+  // EQUIP_SLOTS. Separate from inventory.equipables (held) the same way a
+  // real RPG splits "in your bag" from "on your body". No equip UI/logic
+  // exists yet -- this is just the slot structure for when it does.
+  equipment: { helmet: null, cape: null, chestplate: null, leggings: null, boots: null, weapon: null, book: null },
+  // The Inventory screen's Status tab: one selected class, one active buff
+  // (both null until classes/buffs exist -- see src/items.js's createClass/createBuff).
+  status: { selectedClass: null, activeBuff: null },
   daily: { date: "", reviewed: 0, battlesWon: 0, imported: 0, claimed: [] },
 };
 
@@ -306,7 +316,7 @@ const STAT_INFO = [
 ];
 
 const INVENTORY_TABS = [
-  { key: "equipables", label: "Equipables" },
+  { key: "equipables", label: "Equip" },
   { key: "materials", label: "Materials" },
   { key: "status", label: "Status" },
 ];
@@ -369,20 +379,55 @@ function renderInventoryTabs() {
   );
 }
 
+// One held item row: optional picture thumbnail, name + optional
+// description, optional stack-count badge for materials. item is a plain
+// Item object (see src/items.js) -- picture/description render only when
+// present, since no real item exists yet to supply either.
+function renderItemRow(item, quantity) {
+  return el("div", { class: "panel inventory-item" },
+    item.picture ? el("img", { class: "inventory-item-pic", src: item.picture, alt: "" }) : null,
+    el("div", { class: "inventory-item-info" },
+      el("div", { class: "inventory-item-name" }, item.name),
+      item.description ? el("div", { class: "inventory-item-desc" }, item.description) : null
+    ),
+    quantity != null ? el("div", { class: "inventory-item-qty" }, `×${quantity}`) : null
+  );
+}
+
+// The Status tab isn't a list -- it's exactly two fixed slots (per spec:
+// "status is selected class and active buff"), each either empty or
+// holding one Item (kind "class"/"buff").
+function renderStatusTab(root) {
+  const rows = [
+    { label: "Class", value: player.status.selectedClass, emptyText: "No class selected yet." },
+    { label: "Active Buff", value: player.status.activeBuff, emptyText: "No buff active yet." },
+  ].map(({ label, value, emptyText }) =>
+    el("div", { class: "panel inventory-item status-row" },
+      value?.picture ? el("img", { class: "inventory-item-pic", src: value.picture, alt: "" }) : null,
+      el("div", { class: "inventory-item-info" },
+        el("div", { class: "inventory-item-name" }, label),
+        el("div", { class: "inventory-item-desc" }, value ? value.name : emptyText)
+      )
+    )
+  );
+  root.replaceChildren(...rows);
+}
+
 function renderInventoryList() {
   const root = $("#inventoryList");
-  const items = player.inventory[inventoryTab];
-  if (!items.length) {
-    const label = INVENTORY_TABS.find((t) => t.key === inventoryTab).label.toLowerCase();
-    root.replaceChildren(el("div", { class: "panel empty-state" }, `No ${label} yet.`));
+  if (inventoryTab === "status") {
+    renderStatusTab(root);
+    return;
+  }
+  const entries = player.inventory[inventoryTab]; // equipables: Item[]; materials: {item, quantity}[]
+  if (!entries.length) {
+    const emptyText = inventoryTab === "equipables" ? "Nothing to equip yet." : "No materials yet.";
+    root.replaceChildren(el("div", { class: "panel empty-state" }, emptyText));
     return;
   }
   root.replaceChildren(
-    ...items.map((item) =>
-      el("div", { class: "panel inventory-item" },
-        el("div", { class: "inventory-item-name" }, item.name),
-        item.quantity != null ? el("div", { class: "inventory-item-qty" }, `×${item.quantity}`) : null
-      )
+    ...entries.map((entry) =>
+      inventoryTab === "materials" ? renderItemRow(entry.item, entry.quantity) : renderItemRow(entry, null)
     )
   );
 }
