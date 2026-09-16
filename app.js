@@ -390,7 +390,7 @@ async function handleGrade(grade) {
     encounterPanel.retract();
     const hits = [
       { attacker: "player", damage: result.playerDamageDealt, isCrit: result.isCrit },
-      { attacker: "mob", damage: result.mobDamageDealt },
+      { attacker: "mob", damage: result.mobDamageDealt, isCrit: result.mobIsCrit },
     ];
     if (result.order === "mob") hits.reverse();
     await worldScene.playHit(hits.filter((hit) => hit.damage > 0));
@@ -404,8 +404,9 @@ async function handleGrade(grade) {
       worldScene.endCombat({ mobDefeated: true });
       encounterPanel.hide();
       fight = null;
+      const coinReward = window.Cardslayer.applyLuckDropBonus(mob.coinReward, player.stats.luck);
       gainXp(mob.xpReward);
-      player.coins += mob.coinReward;
+      player.coins += coinReward;
       daily().battlesWon += 1;
       savePlayer();
       renderHeader();
@@ -413,7 +414,7 @@ async function handleGrade(grade) {
         el("div", { style: "font-size:48px" }, "🏆"),
         el("h3", {}, "Victory!"),
         el("p", {}, `You vanquished the ${mob.name}.`),
-        el("div", { class: "reward" }, el("span", {}, `+${mob.xpReward} XP`), el("span", {}, `+${mob.coinReward} 🪙`)),
+        el("div", { class: "reward" }, el("span", {}, `+${mob.xpReward} XP`), el("span", {}, `+${coinReward} 🪙`)),
         el("div", { class: "modal-actions" }, el("button", { class: "btn-small", onclick: closeModal }, "Continue"))
       );
       return;
