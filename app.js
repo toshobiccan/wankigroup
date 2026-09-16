@@ -19,14 +19,21 @@ const defaultPlayer = {
     luck: 0,
   },
   hp: 100, // current HP -- persists across fights, separate from the max in stats.hp
+  // Equipables/status items: { name }. Materials additionally carry a stack count: { name, quantity }.
+  // No item has been created yet (no drop system exists), so these start empty for every player.
+  inventory: { equipables: [], materials: [], status: [] },
   daily: { date: "", reviewed: 0, battlesWon: 0, imported: 0, claimed: [] },
 };
 
 function loadPlayer() {
+  // structuredClone, not a shallow spread of defaultPlayer itself -- otherwise every
+  // first-run player's player.stats/player.inventory would be the *same* nested
+  // object as defaultPlayer's, and the first push into inventory.materials would
+  // silently mutate the shared default for every other player in this session too.
   try {
-    return { ...defaultPlayer, ...JSON.parse(localStorage.getItem(STORAGE_KEY)) };
+    return { ...structuredClone(defaultPlayer), ...JSON.parse(localStorage.getItem(STORAGE_KEY)) };
   } catch {
-    return { ...defaultPlayer };
+    return structuredClone(defaultPlayer);
   }
 }
 
@@ -274,6 +281,116 @@ renderers.quests = () => {
     );
   });
   $("#questList").replaceChildren(...rows);
+};
+
+// ================= INVENTORY =================
+// Plain-English explanation (shown in color) plus the exact formula (shown
+// greyed out) for each stat, taken straight from src/world/combat.js's real
+// math -- kept here as copy, not re-derived, so a stat's tooltip can never
+// drift from what the game actually does with it.
+const STAT_INFO = [
+  { key: "hp", label: "HP", plain: "How much damage you can take before you're defeated.",
+    math: "Current / max HP. Reaching 0 during a fight ends it in defeat." },
+  { key: "attackDamage", label: "Attack Damage", plain: "How hard your physical hits land.",
+    math: "dmg = round(max(1, attackDamage − target's armor) × grade × crit). Grade: Hard ×0.7, Good ×1.0, Easy ×1.5." },
+  { key: "magicDamage", label: "Magic Damage", plain: "How hard your magic hits land, on top of physical damage.",
+    math: "dmg = round(max(1, magicDamage − target's magicResist) × grade × crit). 0 today, so this adds nothing yet." },
+  { key: "armor", label: "Armor", plain: "Reduces the physical damage you take.",
+    math: "incoming physical dmg = max(1, attacker's attackDamage − armor). At least 1 always gets through." },
+  { key: "magicResist", label: "Magic Resist", plain: "Reduces the magic damage you take.",
+    math: "incoming magic dmg = max(1, attacker's magicDamage − magicResist). At least 1 always gets through if any magic damage lands." },
+  { key: "attackSpeed", label: "Attack Speed", plain: "Decides who swings first each round.",
+    math: "Higher attackSpeed swings first (ties favor you). A lethal first hit skips the other side's swing entirely." },
+  { key: "luck", label: "Luck", plain: "Raises your crit chance and how much gold you earn from victories.",
+    math: "Crit chance = min(50%, luck × 1%); crits deal ×1.5 damage. Coin reward × (1 + min(100%, luck × 2%))." },
+];
+
+const INVENTORY_TABS = [
+  { key: "equipables", label: "Equipables" },
+  { key: "materials", label: "Materials" },
+  { key: "status", label: "Status" },
+];
+
+let inventoryView = "character"; // "character" | "stats" -- what the left panel currently shows
+let inventoryTab = "equipables"; // which of the three lists the right panel currently shows
+const expandedStats = new Set(); // stat keys whose grey math line is currently shown
+
+function renderInventoryLeft() {
+  const root = $("#inventoryLeft");
+  if (inventoryView === "stats") {
+    const rows = STAT_INFO.map((stat) => {
+      const expanded = expandedStats.has(stat.key);
+      return el("div", {
+        class: "stat-row",
+        onclick: () => {
+          if (expanded) expandedStats.delete(stat.key);
+          else expandedStats.add(stat.key);
+          renderInventoryLeft();
+        },
+      },
+        el("div", { class: "stat-row-head" },
+          el("span", { class: "stat-name" }, stat.label),
+          el("span", { class: "stat-value" }, String(player.stats[stat.key]))
+        ),
+        el("div", { class: "stat-plain" }, stat.plain),
+        expanded ? el("div", { class: "stat-math" }, stat.math) : null
+      );
+    });
+    root.replaceChildren(
+      el("div", { class: "inventory-stats" },
+        el("button", { class: "btn-small btn-ghost stats-back", onclick: () => { inventoryView = "character"; renderInventoryLeft(); } }, "‹ Back"),
+        el("div", { class: "stat-list" }, ...rows)
+      )
+    );
+    return;
+  }
+  // "character" view -- no equip slots yet (armor/helmet/weapon comes once
+  // sprites exist to actually show equipped gear on), just the character
+  // itself, name, level, and the way in to the stats view.
+  root.replaceChildren(
+    el("div", { class: "inventory-character" },
+      el("img", { class: "inventory-portrait", src: "assets/world-character.png", alt: "" }),
+      el("div", { class: "inventory-name" }, player.name),
+      el("div", { class: "inventory-level" }, `Lv ${player.level}`),
+      el("button", { class: "btn-small", onclick: () => { inventoryView = "stats"; renderInventoryLeft(); } }, "Stats")
+    )
+  );
+}
+
+function renderInventoryTabs() {
+  const root = $("#inventoryTabs");
+  root.replaceChildren(
+    ...INVENTORY_TABS.map((tab) =>
+      el("button", {
+        class: `inventory-tab-btn${tab.key === inventoryTab ? " is-active" : ""}`,
+        onclick: () => { inventoryTab = tab.key; renderInventoryTabs(); renderInventoryList(); },
+      }, tab.label)
+    )
+  );
+}
+
+function renderInventoryList() {
+  const root = $("#inventoryList");
+  const items = player.inventory[inventoryTab];
+  if (!items.length) {
+    const label = INVENTORY_TABS.find((t) => t.key === inventoryTab).label.toLowerCase();
+    root.replaceChildren(el("div", { class: "panel empty-state" }, `No ${label} yet.`));
+    return;
+  }
+  root.replaceChildren(
+    ...items.map((item) =>
+      el("div", { class: "panel inventory-item" },
+        el("div", { class: "inventory-item-name" }, item.name),
+        item.quantity != null ? el("div", { class: "inventory-item-qty" }, `×${item.quantity}`) : null
+      )
+    )
+  );
+}
+
+renderers.inventory = () => {
+  renderInventoryLeft();
+  renderInventoryTabs();
+  renderInventoryList();
 };
 
 // ================= SCHEDULING =================

@@ -288,7 +288,13 @@
       <!-- ============ INVENTORY ============ -->
       <section class="view" data-view="inventory">
         <div class="page-head"><h2>Inventory</h2><p>Gear and treasures you have collected.</p></div>
-        <div class="panel empty-state">Your bag is empty — win battles to earn loot.</div>
+        <div class="inventory-layout">
+          <div id="inventoryLeft" class="inventory-left"></div>
+          <div class="inventory-right">
+            <div id="inventoryTabs" class="inventory-tabs"></div>
+            <div id="inventoryList" class="inventory-list"></div>
+          </div>
+        </div>
       </section>
 
       <!-- ============ WORLD ============ -->
