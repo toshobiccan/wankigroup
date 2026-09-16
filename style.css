@@ -156,29 +156,6 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
   display: flex;
 }
 
-/* Docked overlay shown when a mob is selected -- sits on top of the canvas
-   without resizing it (position: absolute, not part of the flex column). */
-.mob-info-panel {
-  position: absolute;
-  left: 0; right: 0; bottom: 0;
-  background: linear-gradient(180deg, #16243b, #111d31);
-  border-top: 1px solid #2a3a58;
-  box-shadow: 0 -6px 16px rgba(0,0,0,.5);
-  padding: 10px 12px;
-  z-index: 5;
-}
-.mob-info-head { display: flex; align-items: center; gap: 10px; }
-.mob-info-portrait {
-  width: 56px; height: 56px;
-  border-radius: 10px;
-  object-fit: cover;
-  background: radial-gradient(circle at 50% 40%, #2a3a1f, #10160c);
-  border: 1px solid #3a5525;
-}
-.mob-info-text { flex: 1; min-width: 0; }
-.mob-info-name { font-size: 14px; font-weight: 600; color: #fff; display: flex; align-items: center; gap: 6px; }
-.mob-info-hp { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
-
 /* ================= HERO ================= */
 .hero {
   position: relative;
@@ -484,7 +461,7 @@ img.scene-layer { height: auto; }
   position: absolute; left: 0; right: 0; bottom: 0;
   height: var(--nav-h);
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   align-items: center;
   padding: 5px 5px 6px;
   background:
@@ -556,53 +533,11 @@ img.scene-layer { height: auto; }
 .quest-bar { height: 8px; border-radius: 4px; background: #0a1120; border: 1px solid #2a3a58; margin-top: 6px; overflow: hidden; }
 .quest-bar > div { height: 100%; background: linear-gradient(90deg, #d4a441, #f3d58a); }
 
-/* ================= BATTLE ================= */
-.arena { padding: 12px 14px 14px; }
-.monster-row { display: flex; align-items: center; gap: 12px; }
-.monster {
-  width: 72px; height: 72px; flex-shrink: 0;
-  display: grid; place-items: center;
-  font-size: 46px;
-  border-radius: 12px;
-  background: radial-gradient(circle at 50% 60%, #3a1f2c, #140b12);
-  border: 1px solid #5b2a3a;
-  transition: transform .15s;
-}
-.monster.hit { animation: hit .35s ease; }
-@keyframes hit { 20% { transform: translateX(-6px) rotate(-6deg); filter: brightness(2); } 60% { transform: translateX(5px); } }
-.hero-hurt { animation: hurt .4s ease; }
-@keyframes hurt { 30% { box-shadow: inset 0 0 40px rgba(255,40,40,.5); } }
-.hp-label { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-dim); }
-.hp { height: 12px; border-radius: 3px; background: #0a1120; border: 1px solid #4a2530; overflow: hidden; margin-top: 4px; }
-.hp > div { height: 100%; background: linear-gradient(#ff6b6b, #b8262f); transition: width .35s ease; }
-.hearts { margin-top: 8px; font-size: 16px; letter-spacing: 2px; }
-
-.flashcard {
-  margin-top: 14px;
-  min-height: 170px;
-  padding: 18px 16px;
-  border-radius: 8px;
-  background: linear-gradient(#f6ecd0, #e3cf9f);
-  color: #2b1e0e;
-  box-shadow: inset 0 0 0 2px #b8975c, 0 4px 12px rgba(0,0,0,.4);
-  font-size: 16px;
-  line-height: 1.45;
-  text-align: center;
-  overflow-wrap: anywhere;
-}
-.flashcard img { max-width: 100%; }
-.flashcard .answer { margin-top: 12px; padding-top: 12px; border-top: 1px dashed #a4844c; font-weight: 500; }
+/* ================= GRADE BUTTONS (reused inside the encounter sheet) ================= */
 .answer-actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 12px; }
 .answer-actions button { padding: 10px 4px; border-radius: 6px; font-size: 13px; font-weight: 600; box-shadow: 0 2px 0 rgba(0,0,0,.4); }
 .answer-actions small { display: block; font-weight: 400; font-size: 10px; opacity: .8; }
 .a-again { background: #b8323a; } .a-hard { background: #9a6a22; } .a-good { background: #2f8a4a; } .a-easy { background: #2560c8; }
-.reveal-btn { width: 100%; margin-top: 12px; height: 42px; }
-.float-dmg {
-  position: absolute; font-family: Cinzel, serif; font-weight: 900; font-size: 22px;
-  color: #ffd166; text-shadow: 0 2px 0 #000; pointer-events: none;
-  animation: floatUp .9s ease forwards;
-}
-@keyframes floatUp { to { transform: translateY(-40px); opacity: 0; } }
 
 /* ================= ENCOUNTER SHEET ================= */
 .encounter-sheet {
@@ -675,6 +610,17 @@ img.scene-layer { height: auto; }
   padding: 20px;
 }
 .lightbox-img { max-width: 100%; max-height: 100%; object-fit: contain; }
+
+.defeat-fade {
+  position: absolute; inset: 0; z-index: 15;
+  background: #05060a;
+  opacity: 0;
+  transition: opacity .5s ease;
+  pointer-events: none;
+}
+.defeat-fade.is-visible { opacity: 1; }
+
+.deck-card.is-active-deck { box-shadow: inset 0 0 0 1px var(--gold); }
 
 /* ================= MODAL ================= */
 .modal {
