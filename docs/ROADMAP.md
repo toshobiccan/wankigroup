@@ -4,11 +4,13 @@ Living backlog and status log for the project, kept alongside `docs/HANDOFF.md` 
 
 ---
 
-## 2026-09-16 (later) — stat formulas finished
+## 2026-09-16 (later) — stat formulas finished, Inventory screen built
 
-`src/world/combat.js` now reads all seven stats, not just three. **Armor**/**magic resist** each independently mitigate their matching damage component (`attackDamage`/`magicDamage`), floored so a nonzero hit always deals at least 1 — defense can slow a fight down, never make it literally unwinnable. **Luck** now does both of the things item 1 below asked for: an injectable-random crit chance (1% per point, capped 50%, stacks with the existing guaranteed crit on "easy") that multiplies total damage by 1.5x, and a deterministic +2%-per-point coin bonus (capped +100%) on victory — a flat bonus, not a random chance, so actual earnings stay predictable. Mobs can crit too now (symmetric with the player), though no mob has nonzero luck yet so this is inert in practice until one does. 10 new tests (`test/combat.test.js`, 16 in that file / 33 total), plus a live check against real game data confirming the goblin's mitigated hit lands correctly in the running app. **Not pushed yet** — committed locally on `feature/overworld-movement-prototype` (`48e8e77`), pending review before joining PR #2.
+**Stat formulas** (`src/world/combat.js`, `48e8e77`): all seven stats are read now, not just three. Armor/magic resist each independently mitigate their matching damage component, floored so a nonzero hit always deals at least 1 — defense can slow a fight down, never make it literally unwinnable. Luck gives an injectable-random crit chance (1%/point, capped 50%, stacks with the guaranteed crit on "easy") that multiplies damage 1.5x, plus a deterministic +2%/point coin bonus (capped +100%) on victory. Mobs can crit too now, symmetric with the player. 10 new tests.
 
-This retires backlog item 1 below and unblocks Inventory (item 2), which was waiting on stats actually doing something.
+**Inventory screen** (`app.js`/`index.html`/`style.css`, `4ee125a`): two-column layout. Left: character image/name/level, with a "Stats" button that swaps in a tappable stat list (plain-English explanation always shown, exact formula revealed on tap, copied straight from `combat.js` so it can't drift from the real math) — no equip slots yet, deliberately, since there's no sprite to show gear on. Right: three tabs (Equipables/Materials/Status) over a scrollable list; materials carry a `quantity` and render a stack badge. No items exist yet (no drop system), so every tab starts empty — the rendering itself (both empty and populated) was verified by temporarily injecting test entries in the browser, not by shipping fake starter items.
+
+Both pushed to `feature/overworld-movement-prototype` (PR #2). This retires backlog items 1 and the UI-shell part of 2 below; Inventory still needs an actual drop system and item definitions before it holds anything real.
 
 ---
 
@@ -28,10 +30,10 @@ Source: team Discord conversation (hoye4083), summarizing what's done and what's
 ### Backlog — not yet built
 
 1. ~~**Stats.**~~ **Done (2026-09-16, see above).** All seven fields (`hp`, `attackDamage`, `magicDamage`, `armor`, `magicResist`, `attackSpeed`, `luck`) are now live in `src/world/combat.js`, not just declared.
-2. **Inventory**, three sections:
-   - **Equipables** — armor/helmet/weapon slots etc.
-   - **Materials** — mob drops (e.g. goblin "scraps"), spent at a smith to craft/upgrade armor.
-   - **Buffs** — equip a class, then choose which buff is active if you have more than one unlocked.
+2. **Inventory.** **UI shell done (2026-09-16, see above)** — the two-column screen, the three tabs, the stat-tooltip character panel. Still missing:
+   - **Equipables** — armor/helmet/weapon slots etc. UI has no equip slots at all yet (deliberate, no sprite to show gear on); needs the slot UI once that's ready, plus actual equip/stat-bonus logic.
+   - **Materials** — mob drops (e.g. goblin "scraps"), spent at a smith to craft/upgrade armor. The list renders and stacks correctly, but no drop system exists yet, so it's always empty in practice.
+   - **Status** (renamed from "buffs" in the latest team message) — equip a class, then choose which buff is active if you have more than one unlocked. Same story: list renders, nothing to show yet, and the "class" concept still isn't defined anywhere (see Open Questions).
 3. **Map system, AQ-style.** Walking off the edge of one "page" loads the next. Each page gets its own id (e.g. `plains1`, `plains2`, ...). Note: the zone-loading infrastructure already in place (`data/zones/*.json` + `data/zones/index.json`) already supports multiple named zones — this backlog item is the *edge-to-next-zone transition*, not the underlying data format.
 4. **Data storage / backend.** Where does a player's inventory and game state actually live? Should imported Anki decks be uploaded to a server? If multiplayer is wanted, a login/account system is required first. **This is flagged as an open question, not a committed decision** — see below.
 5. **Sprites and animations.** Real per-frame character/mob animation, beyond the current single static image + hand-rolled tween "hit" effect.
@@ -44,8 +46,8 @@ Source: team Discord conversation (hoye4083), summarizing what's done and what's
 Reasoning, not a decision — flag disagreement before starting any of these.
 
 1. ~~Finish the stat formulas~~ **Done (2026-09-16).**
-2. **AQ-style map paging** (#3). Next up. The zone/camera/walkable-band infrastructure already exists for one page; this extends it rather than replacing anything, and turns the game into something that feels explorable instead of a single screen.
-3. **Inventory** (#2), once stat formulas exist to make equipment meaningful. Equipables need armor/magic resist to matter (item 1); materials need at least one mob (goblin) already dropping something, which is a small data addition; buffs need the "class" concept defined, which isn't specified anywhere yet and would need its own quick design pass.
+2. ~~Inventory UI shell~~ **Done (2026-09-16)**, built directly on request ahead of this order — the real remaining work (drop system, item definitions, equip slots + stat bonuses, the "class"/buff concept) is unblocked by stats now being live, but still needs its own design pass; not yet scheduled below.
+3. **AQ-style map paging** (#3). Next up. The zone/camera/walkable-band infrastructure already exists for one page; this extends it rather than replacing anything, and turns the game into something that feels explorable instead of a single screen.
 4. **Resolve the data storage / backend question** (#4) as a decision, before writing any server code: is multiplayer actually a goal for launch, or a later stretch goal? That answer changes the storage design completely (client-only IndexedDB/localStorage, which is what exists today, vs. a real backend + accounts). Worth a short dedicated design conversation rather than assuming an answer.
 5. **Sprites and animations** (#5) — largely gated on an art pipeline decision that was researched earlier (Spine/PixiJS runtime, God Mode AI, Layer.ai, Character Animator) but never finalized. Revisit that decision before investing engineering time here, since it determines the actual file format/integration work.
 6. **Aesthetic overhaul** (#6) — lowest urgency, no hard dependency on anything else. Good candidate to pick up opportunistically or hand to a design-focused pass whenever the team wants it, independent of the above order.
