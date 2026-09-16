@@ -178,7 +178,10 @@ async function importFile(file) {
         "div",
         { class: "modal-actions" },
         el("button", { class: "btn-small btn-ghost", onclick: closeModal }, "Later"),
-        el("button", { class: "btn-small", onclick: () => { closeModal(); startBattle(deckId); } }, "⚔️ Start Battle")
+        el("button", {
+          class: "btn-small",
+          onclick: () => { closeModal(); player.activeDeckId = deckId; savePlayer(); go("world"); },
+        }, "⚔️ Fight With This Deck")
       )
     );
   } catch (err) {
@@ -215,13 +218,17 @@ renderers.home = async () => {
       const cards = await DB.cardsForDeck(d.id);
       const due = cards.filter((c) => c.due <= now).length;
       const learned = cards.filter((c) => c.reps > 0).length;
-      return el("div", { class: "panel deck-card" },
+      const isActive = player.activeDeckId === d.id;
+      return el("div", { class: `panel deck-card${isActive ? " is-active-deck" : ""}` },
         el("div", { class: "deck-icon" }, d.name.trim()[0]?.toUpperCase() || "A"),
         el("div", { class: "deck-meta" },
-          el("div", { class: "deck-name" }, d.name),
+          el("div", { class: "deck-name" }, d.name, isActive ? el("span", { class: "tag" }, "Active") : null),
           el("div", { class: "deck-sub" }, `${d.cardCount} cards · ${learned} learned · ${due} due`)
         ),
-        el("button", { class: "btn-small", onclick: () => startBattle(d.id) }, "⚔️")
+        el("button", {
+          class: `btn-small${isActive ? " btn-ghost" : ""}`,
+          onclick: () => { player.activeDeckId = d.id; savePlayer(); renderers.home(); },
+        }, isActive ? "Active ✓" : "Set Active")
       );
     })
   );
@@ -269,107 +276,7 @@ renderers.quests = () => {
   $("#questList").replaceChildren(...rows);
 };
 
-// ================= BATTLE =================
-const MONSTERS = [
-  { name: "Forgetful Goblin", icon: "👺" },
-  { name: "Cram Wraith", icon: "👻" },
-  { name: "Procrastination Wolf", icon: "🐺" },
-  { name: "Syllabus Spider", icon: "🕷️" },
-  { name: "Exam Dragon", icon: "🐉" },
-];
-const SESSION_SIZE = 10;
-const MAX_HEARTS = 3;
-let battle = null;
-
-renderers.battle = async () => {
-  if (battle) return renderBattle();
-  const decks = await DB.listDecks();
-  const root = $("#battleRoot");
-  if (!decks.length) {
-    root.replaceChildren(
-      el("div", { class: "panel empty-state" },
-        "Import a deck to find monsters to fight.",
-        el("br"),
-        el("button", { class: "btn-small", onclick: () => go("import") }, "Import Deck")
-      )
-    );
-    return;
-  }
-  root.replaceChildren(
-    ...decks.map((d) =>
-      el("div", { class: "panel deck-card" },
-        el("div", { class: "deck-icon" }, "⚔️"),
-        el("div", { class: "deck-meta" },
-          el("div", { class: "deck-name" }, d.name),
-          el("div", { class: "deck-sub" }, `${d.cardCount} cards`)
-        ),
-        el("button", { class: "btn-small", onclick: () => startBattle(d.id) }, "Fight")
-      )
-    )
-  );
-};
-
-async function startBattle(deckId) {
-  const cards = await DB.cardsForDeck(deckId);
-  const now = Date.now();
-  const due = cards.filter((c) => c.reps > 0 && c.due <= now).sort((a, b) => a.due - b.due);
-  const fresh = cards.filter((c) => c.reps === 0);
-  const queue = [...due, ...fresh].slice(0, SESSION_SIZE);
-  // Nothing due: practise the cards whose review is closest anyway.
-  if (!queue.length) queue.push(...cards.sort((a, b) => a.due - b.due).slice(0, SESSION_SIZE));
-
-  battle = {
-    deckId,
-    queue,
-    total: queue.length,
-    defeated: 0,
-    hearts: MAX_HEARTS,
-    revealed: false,
-    monster: MONSTERS[Math.floor(Math.random() * MONSTERS.length)],
-  };
-  go("battle");
-}
-
-function renderBattle() {
-  const root = $("#battleRoot");
-  const card = battle.queue[0];
-  const hpPct = ((battle.total - battle.defeated) / battle.total) * 100;
-
-  const arena = el("div", { class: "panel arena" },
-    el("div", { class: "monster-row" },
-      el("div", { class: "monster", id: "monster" }, battle.monster.icon),
-      el("div", { style: "flex:1" },
-        el("div", { class: "hp-label" },
-          el("strong", { style: "color:#fff" }, battle.monster.name),
-          el("span", {}, `${battle.total - battle.defeated} / ${battle.total} HP`)
-        ),
-        el("div", { class: "hp" }, el("div", { style: `width:${hpPct}%` })),
-        el("div", { class: "hearts" }, "❤️".repeat(battle.hearts) + "🖤".repeat(MAX_HEARTS - battle.hearts))
-      )
-    ),
-    el("div", { class: "flashcard", style: "white-space:pre-line" },
-      card.front,
-      battle.revealed ? el("div", { class: "answer" }, card.back || "—") : null
-    ),
-    battle.revealed
-      ? el("div", { class: "answer-actions" },
-          ...[
-            ["again", "Again", "miss"],
-            ["hard", "Hard", "7 dmg"],
-            ["good", "Good", "10 dmg"],
-            ["easy", "Easy", "crit!"],
-          ].map(([grade, label, sub]) =>
-            el("button", { class: `a-${grade}`, onclick: () => answer(grade) }, label, el("small", {}, sub))
-          )
-        )
-      : el("button", { class: "btn-primary reveal-btn", onclick: () => { battle.revealed = true; renderBattle(); } }, "Show Answer"),
-    el("div", { style: "text-align:center;margin-top:12px" },
-      el("button", { class: "btn-small btn-ghost", onclick: () => { battle = null; renderers.battle(); } }, "Flee")
-    )
-  );
-  root.replaceChildren(arena);
-}
-
+// ================= SCHEDULING =================
 function schedule(card, grade) {
   const DAY = 86_400_000;
   card.reps += 1;
@@ -392,93 +299,151 @@ function schedule(card, grade) {
   return DB.putCard(card);
 }
 
-function floatText(text, target, color) {
-  const rect = target.getBoundingClientRect();
-  const appRect = $(".app").getBoundingClientRect();
-  const node = el("div", {
-    class: "float-dmg",
-    style: `left:${rect.left - appRect.left + rect.width / 2 - 20}px;top:${rect.top - appRect.top}px;color:${color}`,
-  }, text);
-  $(".app").append(node);
-  setTimeout(() => node.remove(), 900);
+// ================= WORLD / COMBAT =================
+let worldScene = null;
+let encounterPanel = null;
+let fight = null; // { mob, queue } while a fight is in progress; null otherwise
+
+function buildFightQueue(deckCards) {
+  const now = Date.now();
+  const due = deckCards.filter((c) => c.reps > 0 && c.due <= now).sort((a, b) => a.due - b.due);
+  const fresh = deckCards.filter((c) => c.reps === 0);
+  const queue = [...due, ...fresh];
+  if (!queue.length) queue.push(...deckCards.sort((a, b) => a.due - b.due));
+  return queue;
 }
 
-async function answer(grade) {
-  const card = battle.queue.shift();
+function playerHpState() {
+  return { hp: player.hp, maxHp: player.stats.hp };
+}
+
+function handleMobSelected(mob) {
+  if (!mob) {
+    encounterPanel.hide();
+    return;
+  }
+  encounterPanel.showPeek(mob);
+}
+
+async function handleCombatStart(mobData) {
+  if (!player.activeDeckId) {
+    // Bail out of the engaged state entirely (not just skip the fight) --
+    // otherwise WorldScene stays latched in inCombat/_approaching and every
+    // later click on this mob or the ground is silently swallowed, since
+    // both _onMobClick and _setTargetFromPointer early-return while either
+    // flag is set. endCombat({mobDefeated:false}) is the same recovery path
+    // already used for an actual combat loss below.
+    worldScene.endCombat({ mobDefeated: false });
+    encounterPanel.showMessage({
+      text: "Pick an active deck on Home first.",
+      actionLabel: "Go to Home",
+      onAction: () => go("home"),
+    });
+    return;
+  }
+  const cards = await DB.cardsForDeck(player.activeDeckId);
+  if (!cards.length) {
+    worldScene.endCombat({ mobDefeated: false });
+    encounterPanel.showMessage({ text: "This deck has no cards - import more or pick another." });
+    return;
+  }
+  fight = { mob: mobData, queue: buildFightQueue(cards) };
+  encounterPanel.showCard(fight.queue[0], fight.mob, playerHpState());
+}
+
+async function handleGrade(grade) {
+  const card = fight.queue.shift();
   await schedule(card, grade);
   daily().reviewed += 1;
 
-  const monster = $("#monster");
   if (grade === "again") {
-    battle.hearts -= 1;
-    battle.queue.push(card);
-    floatText("-1 ❤️", monster, "#ff6b6b");
-    $(".arena").classList.add("hero-hurt");
-  } else {
-    battle.defeated += 1;
-    player.coins += grade === "easy" ? 3 : 1;
-    monster.classList.add("hit");
-    floatText({ hard: "-7", good: "-10", easy: "CRIT!" }[grade], monster, "#ffd166");
-  }
-  savePlayer();
-  renderHeader();
-
-  await new Promise((r) => setTimeout(r, 380));
-  battle.revealed = false;
-
-  if (battle.defeated >= battle.total) return endBattle(true);
-  if (battle.hearts <= 0) return endBattle(false);
-  renderBattle();
-}
-
-function endBattle(won) {
-  const { total, defeated, monster } = battle;
-  battle = null;
-  const xp = won ? total * 15 : defeated * 5;
-  const coins = won ? total * 10 : 0;
-  gainXp(xp);
-  player.coins += coins;
-  if (won) daily().battlesWon += 1;
-  savePlayer();
-  renderHeader();
-  renderers.battle();
-
-  showModal(
-    el("div", { style: "font-size:48px" }, won ? "🏆" : "💀"),
-    el("h3", {}, won ? "Victory!" : "Defeated…"),
-    el("p", {}, won ? `You vanquished the ${monster.name}.` : `The ${monster.name} got the better of you. Study and return!`),
-    el("div", { class: "reward" }, el("span", {}, `+${xp} XP`), coins ? el("span", {}, `+${coins} 🪙`) : null),
-    el("div", { class: "modal-actions" }, el("button", { class: "btn-small", onclick: closeModal }, "Continue"))
-  );
-}
-
-// ================= WORLD =================
-let worldScene = null;
-
-function renderMobInfoPanel(mob) {
-  const panel = $("#mobInfoPanel");
-  if (!mob) {
-    panel.hidden = true;
-    panel.replaceChildren();
+    fight.queue.push(card);
+    encounterPanel.showCard(fight.queue[0], fight.mob, playerHpState());
     return;
   }
-  panel.replaceChildren(
-    el("div", { class: "mob-info-head" },
-      el("img", { class: "mob-info-portrait", src: mob.portrait, alt: "" }),
-      el("div", { class: "mob-info-text" },
-        el("div", { class: "mob-info-name" }, mob.name, el("span", { class: "tag" }, `Lv ${mob.level}`)),
-        el("div", { class: "mob-info-hp" }, `${mob.cardsRemaining} / ${mob.cardsToKill} HP`)
-      )
-    )
-  );
-  panel.hidden = false;
+
+  const result = window.Cardslayer.resolveRound({ player, mob: fight.mob, grade });
+  player.hp = result.playerHp;
+  fight.mob.hp = result.mobHp;
+  savePlayer();
+
+  encounterPanel.retract();
+  const hits = [
+    { attacker: "player", damage: result.playerDamageDealt, isCrit: result.isCrit },
+    { attacker: "mob", damage: result.mobDamageDealt },
+  ];
+  if (result.order === "mob") hits.reverse();
+  await worldScene.playHit(hits.filter((hit) => hit.damage > 0));
+  encounterPanel.restore();
+
+  if (result.mobDefeated) {
+    const mob = fight.mob;
+    worldScene.endCombat({ mobDefeated: true });
+    encounterPanel.hide();
+    fight = null;
+    gainXp(mob.xpReward);
+    player.coins += mob.coinReward;
+    daily().battlesWon += 1;
+    savePlayer();
+    renderHeader();
+    showModal(
+      el("div", { style: "font-size:48px" }, "🏆"),
+      el("h3", {}, "Victory!"),
+      el("p", {}, `You vanquished the ${mob.name}.`),
+      el("div", { class: "reward" }, el("span", {}, `+${mob.xpReward} XP`), el("span", {}, `+${mob.coinReward} 🪙`)),
+      el("div", { class: "modal-actions" }, el("button", { class: "btn-small", onclick: closeModal }, "Continue"))
+    );
+    return;
+  }
+
+  if (result.playerDefeated) {
+    fight = null;
+    encounterPanel.hide();
+    worldScene.endCombat({ mobDefeated: false });
+    await playerDefeatAndRespawn();
+    return;
+  }
+
+  encounterPanel.showCard(fight.queue[0], fight.mob, playerHpState());
+}
+
+async function playerDefeatAndRespawn() {
+  const fade = $("#defeatFade");
+  fade.hidden = false;
+  await new Promise((r) => setTimeout(r, 20));
+  fade.classList.add("is-visible");
+  await new Promise((r) => setTimeout(r, 500));
+
+  player.hp = player.stats.hp;
+  savePlayer();
+  renderHeader();
+  worldScene.respawnPlayer();
+
+  await new Promise((r) => setTimeout(r, 200));
+  fade.classList.remove("is-visible");
+  await new Promise((r) => setTimeout(r, 500));
+  fade.hidden = true;
 }
 
 renderers.world = async () => {
-  if (worldScene) return;
+  if (worldScene) {
+    // Re-entering World from another tab: the encounter sheet is a plain
+    // absolute-positioned overlay (see .encounter-sheet in style.css), so it
+    // does not get reset just because this view was hidden -- a message left
+    // over from a previous handleCombatStart bail-out (e.g. "Pick an active
+    // deck") would otherwise keep covering the mobs, unclickable, forever.
+    // Only clear it when no fight is actually in progress.
+    if (!fight) encounterPanel.hide();
+    return;
+  }
+  encounterPanel = new window.Cardslayer.EncounterPanel({
+    mountElement: $("#encounterPanelRoot"),
+    onGrade: handleGrade,
+  });
   worldScene = new window.Cardslayer.WorldScene({
     mountElement: $("#worldRoot"),
-    onMobSelected: renderMobInfoPanel,
+    onMobSelected: handleMobSelected,
+    onCombatStart: handleCombatStart,
   });
   await worldScene.loadZone("data/zones/plains.json");
 };
