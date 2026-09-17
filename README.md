@@ -35,7 +35,7 @@ Architecture in one paragraph: game rules live in `src/game/` as pure functions 
 
 ## Deploy
 
-One-time setup and the deploy button: **`docs/DEPLOY.md`**. After setup, deploying is `git push origin main:deploy`.
+Hosted on [Railway](https://railway.com). One-time setup: **`docs/DEPLOY.md`**. After setup, deploying is `git push origin main:deploy`.
 
 ## Files
 
@@ -49,7 +49,7 @@ One-time setup and the deploy button: **`docs/DEPLOY.md`**. After setup, deployi
 | `server.js`, `server/` | Game server: static files, HTTP API, WebSocket rooms, SQLite |
 | `data/zones/` | Zone pages (used by both browser and server) |
 | `tools/` | Zone index builder, test bot |
-| `Dockerfile`, `fly.toml`, `.github/workflows/` | Production image, Fly.io config, CI + deploy |
+| `Dockerfile`, `railway.json`, `.github/workflows/` | Production image, Railway config, CI tests |
 | `assets/` | Web-sized art; `assets/originals/` holds the full-resolution source images |
 | `vendor/` | Third-party browser libraries, pinned versions (see `vendor/README.md`) |
 

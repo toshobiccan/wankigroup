@@ -4,7 +4,7 @@
 //
 //   npm run bot                                   -> 1 bot against http://localhost:5173
 //   npm run bot -- --count 3                      -> 3 bots
-//   npm run bot -- --server https://cardslayer.fly.dev --zone plains1
+//   npm run bot -- --server https://cardslayer-production.up.railway.app --zone plains1
 //
 // Each bot is a normal guest account, so the server treats it like anyone else.
 

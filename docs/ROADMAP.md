@@ -14,7 +14,7 @@ Built on `feature/multiplayer-foundation` (design: `docs/specs/2026-09-17-multip
 - **Game server** (`server/`): guest accounts → optional username/password, SQLite storage, server-side rewards, WebSocket rooms with the agreed instance ids (`plains1-0001`, 5 players each), shared mob HP, rewards to everyone fighting a mob when it falls, server-side 5 s respawns, reconnect + rejoin.
 - **Client**: sign-in screens, connection dot + room badge, other players visible and walking in World, local mode kept for offline/static hosting (`?offline`).
 - **Decks stay on the device** in both modes; only grades and card counts reach the server.
-- **Deploy ready**: Dockerfile, Fly.io config (Stockholm), GitHub Actions test + deploy workflows, `docs/DEPLOY.md`. One-time account setup is the only step left.
+- **Deploy ready**: Dockerfile, Railway config (`railway.json`, switched from Fly.io the same day at toshobiccan's request), GitHub Actions tests, `docs/DEPLOY.md`. One-time Railway project setup is the only step left.
 - **Testing aids**: `npm run bot` (fake players), 75 automated tests incl. real HTTP + WebSocket runs.
 - Behaviour changes: deck-import rewards capped at 3 per day; a mob nobody is fighting heals to full; mob respawn moved from `WorldScene` into `Room`.
 - Fixed along the way: page transitions could loop forever between two pages when the canvas had zero width; engaging a mob could send a stale position one frame before arrival.
@@ -77,7 +77,7 @@ Reasoning, not a decision — flag disagreement before starting any of these.
 1. ~~Finish the stat formulas~~ **Done (2026-09-16).**
 2. ~~Inventory UI shell~~ **Done (2026-09-16)**, built directly on request ahead of this order — the real remaining work (drop system, item definitions, equip slots + stat bonuses, the "class"/buff concept) is unblocked by stats now being live, but still needs its own design pass; not yet scheduled below.
 3. ~~AQ-style map paging~~ **Done (2026-09-16).**
-4. ~~Resolve the data storage / backend question~~ **Done (2026-09-17)** — multiplayer foundation built. Next multiplayer step when the team wants to test: one-time Fly.io setup in `docs/DEPLOY.md`, then deploy.
+4. ~~Resolve the data storage / backend question~~ **Done (2026-09-17)** — multiplayer foundation built. Next multiplayer step when the team wants to test: one-time Railway setup in `docs/DEPLOY.md`, then deploy.
 5. **Sprites and animations** (#5) — largely gated on an art pipeline decision that was researched earlier (Spine/PixiJS runtime, God Mode AI, Layer.ai, Character Animator) but never finalized. Revisit that decision before investing engineering time here, since it determines the actual file format/integration work.
 6. **Aesthetic overhaul** (#6) — lowest urgency, no hard dependency on anything else. Good candidate to pick up opportunistically or hand to a design-focused pass whenever the team wants it, independent of the above order.
 

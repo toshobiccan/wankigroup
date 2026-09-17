@@ -1,5 +1,6 @@
 # Production image: the game server + the browser app it serves, one container.
-# Build locally with:  docker build -t cardslayer . && docker run -p 8080:8080 -v cardslayer-data:/data cardslayer
+# Railway builds this automatically (see railway.json and docs/DEPLOY.md).
+# Locally:  docker build -t cardslayer . && docker run -p 8080:8080 -e DATABASE_PATH=/data/cardslayer.db -v cardslayer-data:/data cardslayer
 FROM node:24-slim
 
 ENV NODE_ENV=production
@@ -10,10 +11,9 @@ RUN npm ci --omit=dev && npm cache clean --force
 
 COPY . .
 
-# /data is a persistent volume in production (see fly.toml) -- the SQLite
-# database must survive restarts and deploys.
+# The database location comes from the host: Railway's volume is found through
+# RAILWAY_VOLUME_MOUNT_PATH, anything else sets DATABASE_PATH (server/config.js).
 ENV PORT=8080 \
-    DATABASE_PATH=/data/cardslayer.db \
     TRUST_PROXY=true
 EXPOSE 8080
 

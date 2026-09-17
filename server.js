@@ -11,6 +11,9 @@ await server.listen();
 
 const mode = config.online ? `online mode, database ${config.databasePath}` : "offline mode (static files only)";
 console.log(`Cardslayer ${config.version} running at http://localhost:${config.port} -- ${mode}`);
+if (config.online && config.missingVolume) {
+  console.warn("WARNING: no Railway volume attached -- accounts and progress will be lost on the next deploy. See docs/DEPLOY.md, step 4.");
+}
 
 let shuttingDown = false;
 for (const signal of ["SIGINT", "SIGTERM"]) {

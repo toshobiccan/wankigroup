@@ -1,58 +1,66 @@
-# Deploying the multiplayer server
+# Deploying the multiplayer server (Railway)
 
-Everything is prepared: the production image (`Dockerfile`), the Fly.io config (`fly.toml`) and a GitHub Actions workflow (`.github/workflows/deploy.yml`) that tests, creates the app + database volume on first run, deploys and smoke-tests. What's left is a one-time account setup only a human can do.
+Everything in the repo is ready: the production image (`Dockerfile`), Railway's build/deploy settings (`railway.json`: Docker build, health check on `/api/health`, restart on crash) and a GitHub test workflow that Railway waits for. What's left is a one-time project setup in the Railway dashboard that only a human can do.
 
-**Where it runs:** [Fly.io](https://fly.io), one small machine in Stockholm (`arn`) with a 1 GB volume for the SQLite database. It sleeps when nobody is connected and wakes on the next visit, so a test server costs very little (Fly bills by usage; a card is required on the account).
+**How it runs:** one Railway service built from this repo's `deploy` branch, one replica, with a volume for the SQLite database. Railway watches the branch, so after setup **deploying = pushing to `deploy`** — no tokens, no CLI, no GitHub secrets.
+
+**Cost:** Railway bills by usage on top of a plan (Hobby is a few dollars a month and includes some usage; new accounts get trial credit). A small test server with a few players stays at the low end.
 
 ---
 
-## One-time setup (≈10 minutes, can be done from a phone)
+## One-time setup (≈10 minutes, works from a phone)
 
-1. **Create a Fly.io account** at https://fly.io/app/sign-up and add a payment card (Billing).
-2. **Create a deploy token**: https://fly.io/dashboard → *Tokens* → *Create token* → type **Organization**, org **personal**, name `github-deploy`, no expiry (or a long one). Copy the token — it is shown once.
-   - It must be an *organization* token: the first deploy creates the app, which an app-scoped token can't do.
-3. **Give the token to GitHub**: https://github.com/toshobiccan/wankigroup/settings/secrets/actions → *New repository secret* → name `FLY_API_TOKEN`, value = the token.
-4. *(Only if needed)* The app name `cardslayer` must be unique on all of Fly.io. If the first deploy fails with "name has already been taken", change `app = "cardslayer"` in `fly.toml` (e.g. `cardslayer-game`) and deploy again.
+1. **Create the `deploy` branch** (so Railway has something to watch). Ask Claude, or run:
+   ```bash
+   git push origin main:deploy
+   ```
+2. **Create a Railway account** at https://railway.com (sign in with GitHub) and pick a plan that allows volumes (Hobby or higher; the trial works to start).
+3. **Create the project**: *New Project* → *Deploy from GitHub repo* → allow access to `toshobiccan/wankigroup` → select it. Railway finds `railway.json` and the `Dockerfile` by itself.
+4. **Add the volume** — required, otherwise every deploy wipes all accounts: on the project canvas right-click → *Volume* (or `Ctrl/⌘+K` → "volume") → attach it to the service → **mount path `/data`**. The server picks it up automatically through `RAILWAY_VOLUME_MOUNT_PATH`.
+5. **Service settings** (click the service → *Settings*):
+   - *Source* → **Branch: `deploy`**, and turn on **Wait for CI** (deploys only after the GitHub tests pass).
+   - *Networking* → **Generate Domain**. If it asks for a port, enter **8080**.
+   - *Deploy* → keep **1 replica** (Railway doesn't allow more with a volume anyway, and rooms live in one server's memory).
+   - Optional: *Region* → an EU region (closest to Norway).
+6. Railway deploys once right away. Open the generated domain (something like `https://wankigroup-production.up.railway.app`) — you should get the sign-in screen.
 
-Nobody ever has to install `flyctl` or Docker locally — GitHub builds and deploys.
+No variables need to be set. Optional ones are listed under "Settings" below.
 
 ## Deploy
-
-Push the code you want live to the `deploy` branch:
 
 ```bash
 git push origin main:deploy
 ```
 
-…or open GitHub → *Actions* → *Deploy* → *Run workflow*. Follow progress in the Actions tab; the last step prints the health check.
-
-The game is then at **https://cardslayer.fly.dev** (or `https://<your-app-name>.fly.dev`). Share that link — it's the full app, online mode, with accounts.
+GitHub runs the tests, Railway sees the check pass, builds the Docker image, starts it, waits for `/api/health` to answer, then switches traffic over. Watch it under the service's *Deployments* tab.
 
 ## Test it
 
-- Open the link on two devices (or a normal + private browser window), pick two names, go to *World*: you should see each other and the room badge (top right) should say `plains1-0001 · 2 players`.
+- Open the domain on two devices (or a normal + private window), pick two names, go to *World*: you should see each other, and the room badge (top right) should say `plains1-0001 · 2 players`.
 - No second person around? Run bots against the live server from any computer with the repo:
-
   ```bash
-  npm run bot -- --server https://cardslayer.fly.dev --count 3
+  npm run bot -- --server https://<your-domain>.up.railway.app --count 3
   ```
-
-- Health and live room stats: https://cardslayer.fly.dev/api/health
+- Health and live room stats: `https://<your-domain>/api/health`.
 
 ## Operating it
 
 | Task | How |
 | --- | --- |
-| Logs | fly.io dashboard → app → *Monitoring*, or `flyctl logs -a cardslayer` |
-| Roll back | Re-run an older successful *Deploy* run, or push an older commit: `git push --force origin <commit>:deploy` |
-| Stop the server | dashboard → *Machines* → stop (it also sleeps by itself when idle) |
-| Back up the database | `flyctl ssh sftp get /data/cardslayer.db ./cardslayer-backup.db -a cardslayer`, or use the volume snapshots in the dashboard (Fly takes one daily) |
-| Settings | `fly.toml` `[env]`, or secrets: `flyctl secrets set NAME=value -a cardslayer` |
+| Logs | Service → *Deployments* → a deployment → *View logs*. A startup line `WARNING: no Railway volume attached` means step 4 was missed. |
+| Roll back | Service → *Deployments* → an older successful one → ⋯ → *Redeploy* |
+| Stop the server | Service → *Deployments* → the active one → ⋯ → *Remove* (push to `deploy` again to bring it back) |
+| Back up the database | Volume → *Backups* on plans that include them; otherwise copy `/data/cardslayer.db` out with the Railway CLI |
+| Settings | Service → *Variables* |
 
-Server settings (all optional): `PORT`, `HOST`, `ONLINE` (`false` = static app only), `DATABASE_PATH`, `ALLOWED_ORIGINS` (comma separated, for a frontend/native shell on another origin), `TRUST_PROXY`, `AUTH_RATE_LIMIT_PER_MINUTE`, `LOG_REQUESTS`, `APP_VERSION`. See `server/config.js`.
+Server settings (all optional): `ONLINE` (`false` = static app only), `DATABASE_PATH` (overrides the volume path), `ALLOWED_ORIGINS` (comma separated, for a frontend/native shell on another origin), `AUTH_RATE_LIMIT_PER_MINUTE`, `LOG_REQUESTS`, `APP_VERSION`. `PORT` and `TRUST_PROXY` are already set in the Dockerfile. See `server/config.js`.
 
 ## Limits of this setup (fine for testing, revisit before a public launch)
 
-- **One machine only.** Rooms live in that machine's memory and the database is a file on its volume, so the app must not be scaled to more machines (the workflow deploys with `--ha=false`). Scaling out later means Postgres (a new `Store` class) plus routing each room to one machine.
-- **Deploys disconnect players** for a few seconds; the client reconnects and rejoins its room by itself, but a fight in progress is cancelled.
-- **Grades are trusted.** Decks never leave the device, so the server can't check answers — it only enforces everything else (damage, HP, rewards, respawns, range, rate limits).
+- **One server only.** Rooms live in memory and the database is a file on the volume, so it must stay at one replica. Scaling out later means Postgres (a new `Store` class — Railway can host Postgres too) plus routing each room to one server.
+- **Deploys cause a few seconds of downtime** (Railway never runs two copies on one volume). The client shows "Reconnecting…" and rejoins its room by itself; a fight in progress is cancelled.
+- **Grades are trusted.** Decks never leave the device, so the server can't check answers — it enforces everything else (damage, HP, rewards, respawns, range, rate limits).
+
+## Not tied to Railway
+
+The server is a plain Docker container reading environment variables, so any host with Docker, WebSockets and a persistent disk works (Fly.io, Render with a disk, a VPS). Set `DATABASE_PATH` to a file on that host's persistent disk.

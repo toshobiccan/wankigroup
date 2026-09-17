@@ -12,7 +12,7 @@ Read this first. It summarises decisions made in an earlier Claude Code session 
 - `app.js` never changes `player` directly. It calls the session (`session.importedDeck`, `session.claimQuest`, `session.engage`, `session.grade`...) and re-renders on the `player` event.
 - Positions sent anywhere are zone fractions (0..1), not pixels.
 - `npm start` = online mode locally (guest sign-in, database in `.data/`). `npm run start:offline` or `?offline` = local mode. `npm run bot` = fake players to test with.
-- Deploy: `docs/DEPLOY.md` (Fly.io via GitHub Actions; push the `deploy` branch).
+- Deploy: `docs/DEPLOY.md` (Railway builds the `deploy` branch after the GitHub tests pass; `git push origin main:deploy`).
 
 ## What the project is
 

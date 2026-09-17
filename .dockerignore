@@ -13,5 +13,5 @@ assets/originals
 assets/animerte
 vitest.config.mjs
 Dockerfile
-fly.toml
+railway.json
 *.md
