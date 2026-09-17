@@ -2,7 +2,7 @@ name: Tests
 
 on:
   push:
-    branches: [main]
+    branches: [main, deploy] # Railway waits for this check before deploying the deploy branch
   pull_request:
 
 jobs:

@@ -69,7 +69,7 @@ Security basics in place: rate limits on sign-in/guest creation (per IP) and rew
 
 ## Deploy
 
-Docker image + Fly.io (Stockholm), one machine with a volume, GitHub Actions workflow triggered by pushing the `deploy` branch. See `docs/DEPLOY.md`.
+Docker image on Railway: one service, one replica, a volume for SQLite, deployed from the `deploy` branch once the GitHub test workflow passes. See `docs/DEPLOY.md`. (Fly.io was prepared first and swapped for Railway the same day; nothing in the app is host-specific beyond `RAILWAY_*` variable fallbacks in `server/config.js`.)
 
 ## Testing
 

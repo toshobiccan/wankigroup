@@ -42,7 +42,7 @@ export function readJson(req, limitBytes = 16 * 1024) {
 
 export function clientIp(req, trustProxy) {
   if (trustProxy) {
-    const forwarded = req.headers["fly-client-ip"] || req.headers["x-forwarded-for"];
+    const forwarded = req.headers["x-real-ip"] || req.headers["x-forwarded-for"];
     if (forwarded) return String(forwarded).split(",")[0].trim();
   }
   return req.socket.remoteAddress ?? "unknown";
