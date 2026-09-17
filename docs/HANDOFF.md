@@ -4,6 +4,16 @@ Read this first. It summarises decisions made in an earlier Claude Code session 
 
 **Note (2026-09-16):** this file is now partially stale — a full in-world combat system (real stats, `resolveRound()`, `WorldScene` walk-to-engage/camera-centering, `EncounterPanel`, mob respawn, Fight/Flee buttons) landed since this was written, and the "Next steps" below no longer reflect where the project actually is. See **`docs/ROADMAP.md`** for the current status log and feature backlog going forward — that file, not this section, is where "what's next" now lives.
 
+**Note (2026-09-17):** the game is now **multiplayer-ready** — read `docs/specs/2026-09-17-multiplayer-foundation-design.md` before touching game logic, `app.js` or `world-scene.js`. The short version is in "Multiplayer rules" below.
+
+## Multiplayer rules (2026-09-17)
+
+- Game rules live in `src/game/` (pure, tested) and run **both** in the browser (local mode) and on the server (online mode). Never put a rule (damage, rewards, quest logic, respawn) in `app.js` or `world-scene.js`.
+- `app.js` never changes `player` directly. It calls the session (`session.importedDeck`, `session.claimQuest`, `session.engage`, `session.grade`...) and re-renders on the `player` event.
+- Positions sent anywhere are zone fractions (0..1), not pixels.
+- `npm start` = online mode locally (guest sign-in, database in `.data/`). `npm run start:offline` or `?offline` = local mode. `npm run bot` = fake players to test with.
+- Deploy: `docs/DEPLOY.md` (Fly.io via GitHub Actions; push the `deploy` branch).
+
 ## What the project is
 
 A mobile/desktop game (iOS first, Windows second, Android later) where the player imports their own Anki flashcard decks (`.apkg`) and fights monsters by answering cards. Each correct answer (Hard/Good/Easy) damages the monster; "Again" costs a heart. XP, coins, gems, daily quests, later gear/inventory and possibly multiplayer. Art style: minimal 2D pixel art, side view, inspired by AdventureQuest Worlds but much simpler. The original pitch deck is `~/Desktop/wanki/wanki.pptx` (Norwegian, 27 slides).

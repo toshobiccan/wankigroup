@@ -1,0 +1,64 @@
+# Deploys the game server to Fly.io. Runs when the "deploy" branch is pushed
+# (git push origin main:deploy) or from the Actions tab ("Run workflow").
+# One-time setup: docs/DEPLOY.md.
+
+name: Deploy
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [deploy]
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check the Fly.io token is set
+        run: |
+          if [ -z "$FLY_API_TOKEN" ]; then
+            echo "::error::Add the FLY_API_TOKEN secret first (docs/DEPLOY.md, step 3)."
+            exit 1
+          fi
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm test
+
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+
+      # Idempotent: creates the app and its database volume the first time,
+      # does nothing on later deploys.
+      - name: Create app and volume if missing
+        run: |
+          APP=$(sed -n 's/^app = "\([^"]*\)".*/\1/p' fly.toml)
+          REGION=$(sed -n 's/^primary_region = "\([^"]*\)".*/\1/p' fly.toml)
+          if ! flyctl status --app "$APP" > /dev/null 2>&1; then
+            flyctl apps create "$APP" --org personal
+          fi
+          if ! flyctl volumes list --app "$APP" | grep -q cardslayer_data; then
+            flyctl volumes create cardslayer_data --app "$APP" --region "$REGION" --size 1 --yes
+          fi
+
+      - name: Deploy
+        run: flyctl deploy --remote-only --ha=false --env APP_VERSION=${GITHUB_SHA::7}
+
+      - name: Smoke test
+        run: |
+          APP=$(sed -n 's/^app = "\([^"]*\)".*/\1/p' fly.toml)
+          for attempt in 1 2 3 4 5 6; do
+            if curl -fsS "https://$APP.fly.dev/api/health"; then exit 0; fi
+            sleep 10
+          done
+          echo "::error::https://$APP.fly.dev/api/health did not answer"
+          exit 1
