@@ -729,6 +729,7 @@ function wireSessionEvents() {
     );
   });
   session.on("account", (account) => {
+    worldScene?.setOwnPlayerId(session.playerId);
     worldScene?.setOwnProfile({ role: account?.role ?? "guest" });
     if (!account && session.mode === "online") showLoginModal();
   });

@@ -1,6 +1,7 @@
 import * as PIXI from "../../vendor/pixi.min.mjs";
 import { clampToZone, stepTowardTarget, computeCameraX, computeCenteredCameraX } from "./world-movement.js";
 import { ROLE_COLORS, DEFAULT_ROLE, normalizeRole, cssColor } from "../game/roles.js";
+import { CHAT_MAX_LENGTH } from "../game/constants.js";
 
 const MOVE_SPEED = 220; // world-pixels/second
 const DEAD_ZONE_FRACTION = 0.4;
@@ -10,6 +11,8 @@ const APPROACH_DISTANCE = 60; // how close (world-pixels) the player walks befor
 const EDGE_TRANSITION_MARGIN = 4; // world-pixels from a page's exact edge that counts as "reached it"
 const MOVE_SEND_INTERVAL_MS = 100; // at most this often, movement intents go to the session (and the server)
 const CHAT_BUBBLE_MS = 4500; // how long a chat bubble stays up before fading
+const NAMEPLATE_OFFSET_Y = -PLAYER_HEIGHT - 4; // world-pixels above the head a nameplate sits
+const CHAT_BUBBLE_OFFSET_Y = -PLAYER_HEIGHT - 20; // world-pixels above the head a chat bubble sits
 const CHAT_LOG_MAX_LINES = 50; // oldest lines drop off past this
 // A page with no real art yet ("blank" in its JSON) gets a flat two-tone
 // placeholder instead of a missing-texture error -- same aspect ratio as
@@ -209,7 +212,7 @@ export class WorldScene {
       this._chatInput = document.createElement("input");
       this._chatInput.className = "chat-input";
       this._chatInput.type = "text";
-      this._chatInput.maxLength = 240; // matches CHAT_MAX_LENGTH in src/game/constants.js
+      this._chatInput.maxLength = CHAT_MAX_LENGTH;
       this._chatInput.placeholder = "Say something...";
       this._chatInput.addEventListener("keydown", (event) => {
         if (event.key !== "Enter") return;
@@ -693,10 +696,10 @@ export class WorldScene {
 
     if (isOwn) {
       if (this._ownBubbleTimer) clearTimeout(this._ownBubbleTimer);
-      if (this._ownBubble) { this.world.removeChild(this._ownBubble); this._ownBubble.destroy(); }
+      if (this._ownBubble) { const old = this._ownBubble; this._ownBubble = null; this.world.removeChild(old); old.destroy(); }
     } else {
       if (remote.bubbleTimer) clearTimeout(remote.bubbleTimer);
-      if (remote.bubble) { remote.container.removeChild(remote.bubble); remote.bubble.destroy(); }
+      if (remote.bubble) { const old = remote.bubble; remote.bubble = null; remote.container.removeChild(old); old.destroy(); }
     }
 
     const bubble = new PIXI.Text({
@@ -705,15 +708,23 @@ export class WorldScene {
     });
     bubble.anchor.set(0.5, 1);
     if (isOwn) {
-      bubble.position.set(this.player.position.x, this.player.position.y - PLAYER_HEIGHT - 20);
+      bubble.position.set(this.player.position.x, this.player.position.y + CHAT_BUBBLE_OFFSET_Y);
       this.world.addChild(bubble);
     } else {
-      bubble.position.set(0, -PLAYER_HEIGHT - 20);
+      bubble.position.set(0, CHAT_BUBBLE_OFFSET_Y);
       remote.container.addChild(bubble);
     }
 
+    // A second message for the same sender can arrive mid-fade and replace
+    // this bubble in the slot (see the "clear prior bubble" block above,
+    // which nulls the slot before destroying the old bubble). isCurrent()
+    // lets both the per-frame write and the completion no-op once that has
+    // happened, instead of writing to / double-destroying a stale bubble.
+    const isCurrent = () => (isOwn ? this._ownBubble : this.remotePlayers.get(id)?.bubble) === bubble;
+
     const timer = setTimeout(() => {
-      this._animate(300, (t) => { bubble.alpha = 1 - t; }).then(() => {
+      this._animate(300, (t) => { if (isCurrent()) bubble.alpha = 1 - t; }).then(() => {
+        if (!isCurrent()) return;
         bubble.parent?.removeChild(bubble);
         bubble.destroy();
         if (isOwn) { this._ownBubble = null; this._ownBubbleTimer = null; }
@@ -762,7 +773,7 @@ export class WorldScene {
         style: { fontSize: 11, fill: ROLE_COLORS[DEFAULT_ROLE], stroke: { color: 0x000000, width: 3 } },
       });
       label.anchor.set(0.5, 1);
-      label.position.set(0, -PLAYER_HEIGHT - 4);
+      label.position.set(0, NAMEPLATE_OFFSET_Y);
       container.addChild(label);
       // Behind our own character, so you always see yourself on top.
       this.world.addChildAt(container, Math.max(0, this.world.getChildIndex(this.player)));
@@ -835,8 +846,8 @@ export class WorldScene {
   // this.player -- see the note in loadZone) glued to this.player's current
   // world position every tick.
   _syncOwnOverlays() {
-    if (this._ownLabel) this._ownLabel.position.set(this.position.x, this.position.y - PLAYER_HEIGHT - 4);
-    if (this._ownBubble) this._ownBubble.position.set(this.position.x, this.position.y - PLAYER_HEIGHT - 20);
+    if (this._ownLabel) this._ownLabel.position.set(this.position.x, this.position.y + NAMEPLATE_OFFSET_Y);
+    if (this._ownBubble) this._ownBubble.position.set(this.position.x, this.position.y + CHAT_BUBBLE_OFFSET_Y);
   }
 
   _positionFrac() {
