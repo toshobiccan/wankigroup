@@ -6,8 +6,8 @@ const DEAD_ZONE_FRACTION = 0.4;
 const PLAYER_HEIGHT = 90; // world-pixels tall, roughly matches the ground band's scale
 const MOB_HEIGHT = 70; // a bit shorter than the player -- these are the weak, early mobs
 const APPROACH_DISTANCE = 60; // how close (world-pixels) the player walks before a fight actually starts
-const RESPAWN_DELAY_MS = 5000; // how long a defeated mob stays gone before it's back at full HP
 const EDGE_TRANSITION_MARGIN = 4; // world-pixels from a page's exact edge that counts as "reached it"
+const MOVE_SEND_INTERVAL_MS = 100; // at most this often, movement intents go to the session (and the server)
 // A page with no real art yet ("blank" in its JSON) gets a flat two-tone
 // placeholder instead of a missing-texture error -- same aspect ratio as
 // assets/world-background.png (1672x941) so it doesn't visually jar against
@@ -83,10 +83,16 @@ const GOBLIN_GLOW_OUTER_POINTS = [
 ];
 
 export class WorldScene {
-  constructor({ mountElement, onMobSelected, onCombatStart }) {
+  constructor({ mountElement, onMobSelected, onCombatStart, onPageEnter, onMoveIntent }) {
     this.mountElement = mountElement;
     this.onMobSelected = onMobSelected; // (mobData | null) -- fires on select, re-select of a different mob, and deselect
     this.onCombatStart = onCombatStart; // (mobData) -- fires once, when the player finishes walking up to an engaged mob
+    // (pageId, { x, y }) -- a page finished loading with the player standing at
+    // that zone-fraction position. app.js joins the matching room and hands the
+    // room's state back through applyRoomSnapshot().
+    this.onPageEnter = onPageEnter;
+    // ({ x, y, tx, ty }) -- zone fractions of where the player is and is walking to.
+    this.onMoveIntent = onMoveIntent;
     this.zone = null;
     this.pageId = null; // the current page's own id, e.g. "plains1"
     this.links = { prev: null, next: null }; // neighboring page ids this page connects to, or null
@@ -108,7 +114,7 @@ export class WorldScene {
     this.mobs = []; // [{ data, container, glow, hpFill, dead? }] -- click-to-select and
                     // combat are both wired up (see _onMobClick, playHit()). A defeated
                     // mob's entry stays here with dead:true and its container hidden
-                    // until it respawns (see endCombat, _scheduleRespawn).
+                    // until the room says it respawned (see endCombat, applyMobState).
     this.selectedMob = null; // the selected mob's own {data, container, glow, hpFill} record, or null
     this.inCombat = false;
     this._approaching = false; // true from the moment a fight is triggered until the walk-up finishes
@@ -119,6 +125,16 @@ export class WorldScene {
     this._lastDisplayHeight = 0;
     this._pointerHeld = false;
     this._suppressNextGroundClick = false;
+    this._playerTexture = null;
+    // Other players in the same room: id -> { view: {id,name,level,x,y,tx,ty}, container, sprite, label }.
+    // Positions are kept as zone fractions and converted to pixels every tick.
+    this.remotePlayers = new Map();
+    // Mob updates that arrive while that mob is mid-fight with us are held until
+    // endCombat(), so the server's "it died" never cuts our own hit animation short.
+    this._pendingMobStates = new Map();
+    this._lastMoveSentAt = 0;
+    this._moveSendTimer = null;
+    this._wasMoving = false;
   }
 
   // Public entry point -- called once by app.js with the starting page's
@@ -148,6 +164,7 @@ export class WorldScene {
       this.mountElement.appendChild(this._roomLabel);
 
       const playerTexture = await PIXI.Assets.load(PLAYER_TEXTURE_URL);
+      this._playerTexture = playerTexture;
       this.player = new PIXI.Sprite(playerTexture);
       this.player.anchor.set(0.5, 1); // feet at this.player.position
       this._playerBaseScale = PLAYER_HEIGHT / playerTexture.height;
@@ -223,7 +240,7 @@ export class WorldScene {
       // paths -- resolved against the server root, not the page that
       // happened to load this zone, so it's correct from both index.html
       // and dev/world-preview.html.
-      const backgroundUrl = new URL(zone.backgroundImage, `${location.origin}/`).href;
+      const backgroundUrl = new URL(zone.backgroundImage, document.baseURI).href;
       this._backgroundTexture = await PIXI.Assets.load(backgroundUrl);
       this.background = new PIXI.Sprite(this._backgroundTexture);
     }
@@ -252,7 +269,7 @@ export class WorldScene {
 
     for (const rawMobData of zone.mobs ?? []) {
       const mobData = { ...rawMobData, hp: rawMobData.stats.hp };
-      const mobUrl = new URL(mobData.image, `${location.origin}/`).href;
+      const mobUrl = new URL(mobData.image, document.baseURI).href;
       const mobTexture = await PIXI.Assets.load(mobUrl);
 
       const container = new PIXI.Container();
@@ -315,6 +332,7 @@ export class WorldScene {
     }
     this._layoutMobs();
     this._pageReady = true;
+    this.onPageEnter?.(zone.id, this._positionFrac());
   }
 
   // Removes everything specific to whichever page was previously loaded
@@ -335,6 +353,8 @@ export class WorldScene {
     this.selectedMob = null;
     this.inCombat = false;
     this._approaching = false;
+    this._pendingMobStates.clear();
+    this.clearRemotePlayers();
     for (const key of ["prev", "next"]) {
       if (this._arrows[key]) {
         this.world.removeChild(this._arrows[key]);
@@ -411,7 +431,7 @@ export class WorldScene {
   async _transitionToPage(pageId, entryEdge) {
     if (this._transitioning) return; // ignore a re-trigger while the fetch/rebuild is already in flight
     this._transitioning = true;
-    const url = new URL(`data/zones/${pageId}.json`, `${location.origin}/`).href;
+    const url = new URL(`data/zones/${pageId}.json`, document.baseURI).href;
     await this._loadPage(url, { entryEdge });
     this._transitioning = false;
   }
@@ -486,6 +506,7 @@ export class WorldScene {
       y: event.clientY - rect.top,
     };
     this.target = clampToZone(worldPoint, this.zone);
+    this._emitMove();
   }
 
   _onMobClick(mobEntry) {
@@ -512,6 +533,7 @@ export class WorldScene {
     const mobX = mobEntry.container.position.x;
     const approachX = mobX + (this.position.x < mobX ? -APPROACH_DISTANCE : APPROACH_DISTANCE);
     this.target = clampToZone({ x: approachX, y: this.position.y }, this.zone);
+    this._emitMove(true);
   }
 
   _deselectMob() {
@@ -526,36 +548,26 @@ export class WorldScene {
     this._deselectMob();
   }
 
-  // mobDefeated: true hides the fought mob and schedules its respawn (see
-  // _scheduleRespawn) instead of removing it for good; false leaves it
-  // exactly where it was (the player fled or lost). Either way, clears the
-  // selection glow and unlocks movement.
+  // mobDefeated: true hides the fought mob right away; false leaves it exactly
+  // where it was (the player fled or lost). Either way, clears the selection
+  // glow and unlocks movement. Respawning is the room's job (src/game/room.js):
+  // it arrives later as a mob state through applyMobState().
   endCombat({ mobDefeated }) {
     const entry = this.selectedMob;
     if (mobDefeated && entry) {
       entry.dead = true;
       entry.container.visible = false;
-      this._scheduleRespawn(entry);
     }
     if (entry) entry.glow.visible = false;
     this.selectedMob = null;
     this.inCombat = false;
     this._approaching = false; // defensive -- should already be false by the time a fight can end
+    if (entry && this._pendingMobStates.has(entry.data.id)) {
+      const pending = this._pendingMobStates.get(entry.data.id);
+      this._pendingMobStates.delete(entry.data.id);
+      this._applyMobStateNow(entry, pending);
+    }
     this.onMobSelected?.(null);
-  }
-
-  // Brings a defeated mob back after RESPAWN_DELAY_MS: full HP, visible
-  // again, hp bar repainted green. The entry stays in this.mobs and its
-  // container stays in this.world the whole time (just hidden) -- respawning
-  // is a state change on the same entry, not a re-creation.
-  _scheduleRespawn(entry) {
-    setTimeout(() => {
-      entry.data.hp = entry.data.stats.hp;
-      entry.dead = false;
-      entry.container.visible = true;
-      entry.container.alpha = 1; // undo the death fade from _playSingleHit
-      this._updateMobHpBar(entry);
-    }, RESPAWN_DELAY_MS);
   }
 
   // Snaps the player back to the zone's spawn point -- used after a defeat,
@@ -565,6 +577,155 @@ export class WorldScene {
     this.position = { x: this.zone.spawnX, y: this.zone.spawnY };
     this.target = { x: this.zone.spawnX, y: this.zone.spawnY };
     this.player.position.set(this.position.x, this.position.y);
+    this._emitMove(true);
+  }
+
+  // ---------- room state (from the session: local Room or the server) ----------
+
+  // A room snapshot from joinZone(): every mob's live state and everyone else here.
+  applyRoomSnapshot(snapshot) {
+    if (!snapshot) return;
+    for (const state of snapshot.mobs ?? []) this.applyMobState(state);
+    this.clearRemotePlayers();
+    for (const view of snapshot.players ?? []) this.upsertRemotePlayer(view, { snap: true });
+  }
+
+  // state: { id, hp, maxHp, dead }
+  applyMobState(state) {
+    const entry = this.mobs.find((m) => m.data.id === state.id);
+    if (!entry) return;
+    const fightingIt = this.selectedMob === entry && (this.inCombat || this._approaching);
+    if (fightingIt) {
+      this._pendingMobStates.set(state.id, state);
+      return;
+    }
+    this._applyMobStateNow(entry, state);
+  }
+
+  _applyMobStateNow(entry, state) {
+    entry.data.hp = state.hp;
+    entry.dead = state.dead;
+    entry.container.visible = !state.dead;
+    if (!state.dead) entry.container.alpha = 1; // undo the death fade from _playSingleHit
+    this._updateMobHpBar(entry);
+    if (state.dead && this.selectedMob === entry) this._deselectMob();
+  }
+
+  // Our own fight's round result: set the mob's HP before playHit() animates it.
+  setMobHp(mobId, hp) {
+    const entry = this.mobs.find((m) => m.data.id === mobId);
+    if (entry) entry.data.hp = hp;
+  }
+
+  // Someone else in the room hit a mob: show their damage number and the new HP.
+  showMobHit({ mobId, damage, hp }) {
+    const entry = this.mobs.find((m) => m.data.id === mobId);
+    if (!entry || entry.dead) return;
+    entry.data.hp = hp;
+    this._showFloatingDamage(entry.container, damage, false);
+    this._updateMobHpBar(entry);
+  }
+
+  // view: { id, name, level, x, y, tx, ty } in zone fractions. snap: jump
+  // straight to x/y (joining, respawn) instead of continuing from where we drew them.
+  upsertRemotePlayer(view, { snap = false } = {}) {
+    let remote = this.remotePlayers.get(view.id);
+    if (!remote) {
+      if (!this._playerTexture) return;
+      const container = new PIXI.Container();
+      const sprite = new PIXI.Sprite(this._playerTexture);
+      sprite.anchor.set(0.5, 1);
+      sprite.scale.set(this._playerBaseScale);
+      sprite.alpha = 0.92;
+      container.addChild(sprite);
+      const label = new PIXI.Text({
+        text: "",
+        style: { fontSize: 11, fill: 0xbfe3ff, stroke: { color: 0x000000, width: 3 } },
+      });
+      label.anchor.set(0.5, 1);
+      label.position.set(0, -PLAYER_HEIGHT - 4);
+      container.addChild(label);
+      // Behind our own character, so you always see yourself on top.
+      this.world.addChildAt(container, Math.max(0, this.world.getChildIndex(this.player)));
+      remote = { view: { ...view }, container, sprite, label, facingLeft: false };
+      this.remotePlayers.set(view.id, remote);
+      snap = true;
+    }
+    const drawn = { x: remote.view.x, y: remote.view.y };
+    remote.view = { ...remote.view, ...view };
+    // Keep gliding from where we drew them, unless told to jump or they are
+    // too far off (lag, a missed message) to glide believably.
+    const farOff = Math.hypot(view.x - drawn.x, view.y - drawn.y) > 0.15;
+    if (!snap && !farOff) Object.assign(remote.view, drawn);
+    remote.label.text = `${remote.view.name} · Lv ${remote.view.level}`;
+    this._placeRemote(remote, 0);
+  }
+
+  updateRemotePlayerProfile({ id, name, level }) {
+    const remote = this.remotePlayers.get(id);
+    if (!remote) return;
+    Object.assign(remote.view, { name, level });
+    remote.label.text = `${name} · Lv ${level}`;
+  }
+
+  removeRemotePlayer(id) {
+    const remote = this.remotePlayers.get(id);
+    if (!remote) return;
+    this.world.removeChild(remote.container);
+    remote.container.destroy({ children: true });
+    this.remotePlayers.delete(id);
+  }
+
+  clearRemotePlayers() {
+    for (const id of [...this.remotePlayers.keys()]) this.removeRemotePlayer(id);
+  }
+
+  // Walks a remote player toward their target at the same speed we walk.
+  _placeRemote(remote, deltaMS) {
+    if (!this.zone?.width || !this._lastDisplayHeight) return;
+    const width = this.zone.width;
+    const height = this._lastDisplayHeight;
+    const current = { x: remote.view.x * width, y: remote.view.y * height };
+    const target = { x: remote.view.tx * width, y: remote.view.ty * height };
+    const next = deltaMS > 0 ? stepTowardTarget(current, target, deltaMS, MOVE_SPEED) : current;
+    const dx = next.x - current.x;
+    if (dx > 0.01) remote.facingLeft = false;
+    else if (dx < -0.01) remote.facingLeft = true;
+    remote.view.x = next.x / width;
+    remote.view.y = next.y / height;
+    remote.container.position.set(next.x, next.y);
+    remote.sprite.scale.set(remote.facingLeft ? -this._playerBaseScale : this._playerBaseScale, this._playerBaseScale);
+  }
+
+  _positionFrac() {
+    const width = this.zone?.width || 1;
+    const height = this._lastDisplayHeight || 1;
+    return { x: this.position.x / width, y: this.position.y / height };
+  }
+
+  // Throttled: at most one intent per MOVE_SEND_INTERVAL_MS, always sending the
+  // latest one. force skips the wait (arriving, engaging, respawning).
+  _emitMove(force = false) {
+    if (!this.onMoveIntent || !this._pageReady) return;
+    const send = () => {
+      this._moveSendTimer = null;
+      this._lastMoveSentAt = performance.now();
+      const width = this.zone.width || 1;
+      const height = this._lastDisplayHeight || 1;
+      this.onMoveIntent({
+        x: this.position.x / width,
+        y: this.position.y / height,
+        tx: this.target.x / width,
+        ty: this.target.y / height,
+      });
+    };
+    const wait = MOVE_SEND_INTERVAL_MS - (performance.now() - this._lastMoveSentAt);
+    if (force || wait <= 0) {
+      clearTimeout(this._moveSendTimer);
+      send();
+    } else if (!this._moveSendTimer) {
+      this._moveSendTimer = setTimeout(send, wait);
+    }
   }
 
   // Runs onFrame(t) every tick for durationMs, t going from 0 to 1 linearly.
@@ -667,15 +828,31 @@ export class WorldScene {
     this.player.scale.x = this._facingLeft ? -this._playerBaseScale : this._playerBaseScale;
     this.player.position.set(this.position.x, this.position.y);
 
+    const moving = this.position.x !== this.target.x || this.position.y !== this.target.y;
+    if (this._wasMoving && !moving) this._emitMove(true); // arrived: tell others exactly where we stopped
+    this._wasMoving = moving;
+
+    for (const remote of this.remotePlayers.values()) this._placeRemote(remote, ticker.deltaMS);
+
     if (this._approaching && Math.abs(this.position.x - this.target.x) < 2) {
       this._approaching = false;
       this.inCombat = true;
+      // "Within 2px" can be a frame before we actually stop, so the last intent
+      // sent may still be the walk-up's start. The room checks we really stand
+      // next to the mob -- tell it exactly where we are before engaging.
+      this.position = { ...this.target };
+      this.player.position.set(this.position.x, this.position.y);
+      this._wasMoving = false;
+      this._emitMove(true);
       this.onCombatStart?.(this.selectedMob.data);
     }
 
     // Movement is already locked during combat/approach, so this can only
-    // fire from ordinary walking -- never mid-fight.
-    if (!this.inCombat && !this._approaching) {
+    // fire from ordinary walking -- never mid-fight. A degenerate zone width
+    // (the canvas laid out at 0px, e.g. loaded while hidden) puts x=0 on both
+    // edges at once and would bounce between two pages forever, so skip it.
+    const hasRealWidth = this.zone.width > EDGE_TRANSITION_MARGIN * 4;
+    if (!this.inCombat && !this._approaching && hasRealWidth) {
       if (this.position.x <= EDGE_TRANSITION_MARGIN && this.links.prev) {
         this._transitionToPage(this.links.prev, "right");
       } else if (this.position.x >= this.zone.width - EDGE_TRANSITION_MARGIN && this.links.next) {

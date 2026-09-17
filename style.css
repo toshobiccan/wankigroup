@@ -704,3 +704,57 @@ img.scene-layer { height: auto; }
 .modal-card p { margin: 6px 0; color: var(--text-dim); font-size: 14px; }
 .modal-card .reward { display: flex; justify-content: center; gap: 16px; margin: 14px 0; font-weight: 600; }
 .modal-actions { display: flex; gap: 8px; justify-content: center; margin-top: 14px; }
+
+/* ================= ACCOUNT & CONNECTION ================= */
+.icon-btn { position: relative; }
+.net-dot {
+  position: absolute; right: 0; top: 1px;
+  width: 8px; height: 8px; border-radius: 50%;
+  border: 1.5px solid #0b1322;
+  background: #6b7385;
+}
+.net-dot[data-state="open"] { background: #4cd137; box-shadow: 0 0 6px rgba(76, 209, 55, .7); }
+.net-dot[data-state="connecting"],
+.net-dot[data-state="reconnecting"] { background: #e8c547; animation: netPulse 1s ease-in-out infinite; }
+.net-dot[data-state="closed"] { background: #d1453b; }
+@keyframes netPulse { 50% { opacity: .35; } }
+
+.net-badge {
+  position: absolute; right: 8px; top: 8px; z-index: 4;
+  padding: 3px 8px;
+  border-radius: 10px;
+  background: rgba(8, 12, 22, .7);
+  border: 1px solid rgba(255, 255, 255, .12);
+  font-size: 10.5px; color: rgba(255, 255, 255, .85);
+  pointer-events: none;
+}
+.net-badge[data-state="reconnecting"], .net-badge[data-state="closed"] { color: #ffd98a; }
+
+.auth-form { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; text-align: left; }
+.text-input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid #34466a;
+  background: #0a1120;
+  color: var(--text);
+  font: inherit; font-size: 14px;
+}
+.text-input:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 2px rgba(212, 164, 65, .25); }
+.form-error { min-height: 1.2em; margin: 0 !important; color: #ff8a80 !important; font-size: 12.5px !important; }
+.link-btn {
+  margin-top: 10px;
+  color: var(--gold-light);
+  font-size: 13px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.btn-small:disabled { opacity: .6; cursor: default; }
+
+@media (prefers-reduced-motion: reduce) {
+  .net-dot { animation: none !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal-card, .view.is-active { animation: none !important; }
+}
