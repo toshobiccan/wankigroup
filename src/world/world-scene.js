@@ -1,5 +1,6 @@
 import * as PIXI from "../../vendor/pixi.min.mjs";
 import { clampToZone, stepTowardTarget, computeCameraX, computeCenteredCameraX } from "./world-movement.js";
+import { ROLE_COLORS, DEFAULT_ROLE, normalizeRole, cssColor } from "../game/roles.js";
 
 const MOVE_SPEED = 220; // world-pixels/second
 const DEAD_ZONE_FRACTION = 0.4;
@@ -8,6 +9,8 @@ const MOB_HEIGHT = 70; // a bit shorter than the player -- these are the weak, e
 const APPROACH_DISTANCE = 60; // how close (world-pixels) the player walks before a fight actually starts
 const EDGE_TRANSITION_MARGIN = 4; // world-pixels from a page's exact edge that counts as "reached it"
 const MOVE_SEND_INTERVAL_MS = 100; // at most this often, movement intents go to the session (and the server)
+const CHAT_BUBBLE_MS = 4500; // how long a chat bubble stays up before fading
+const CHAT_LOG_MAX_LINES = 50; // oldest lines drop off past this
 // A page with no real art yet ("blank" in its JSON) gets a flat two-tone
 // placeholder instead of a missing-texture error -- same aspect ratio as
 // assets/world-background.png (1672x941) so it doesn't visually jar against
@@ -83,7 +86,7 @@ const GOBLIN_GLOW_OUTER_POINTS = [
 ];
 
 export class WorldScene {
-  constructor({ mountElement, onMobSelected, onCombatStart, onPageEnter, onMoveIntent }) {
+  constructor({ mountElement, onMobSelected, onCombatStart, onPageEnter, onMoveIntent, onChatSend }) {
     this.mountElement = mountElement;
     this.onMobSelected = onMobSelected; // (mobData | null) -- fires on select, re-select of a different mob, and deselect
     this.onCombatStart = onCombatStart; // (mobData) -- fires once, when the player finishes walking up to an engaged mob
@@ -93,6 +96,8 @@ export class WorldScene {
     this.onPageEnter = onPageEnter;
     // ({ x, y, tx, ty }) -- zone fractions of where the player is and is walking to.
     this.onMoveIntent = onMoveIntent;
+    // (text) -- fires when the player submits a chat message from the chat input.
+    this.onChatSend = onChatSend;
     this.zone = null;
     this.pageId = null; // the current page's own id, e.g. "plains1"
     this.links = { prev: null, next: null }; // neighboring page ids this page connects to, or null
@@ -135,6 +140,14 @@ export class WorldScene {
     this._lastMoveSentAt = 0;
     this._moveSendTimer = null;
     this._wasMoving = false;
+    this._ownId = null;
+    this._ownName = "";
+    this._ownRole = DEFAULT_ROLE;
+    this._ownLabel = null; // PIXI.Text nameplate above this.player
+    this._ownBubble = null;
+    this._ownBubbleTimer = null;
+    this._chatLog = null; // DOM element, bottom-left scrollback (see loadZone)
+    this._chatInput = null; // DOM element, next to _chatLog
   }
 
   // Public entry point -- called once by app.js with the starting page's
@@ -170,6 +183,42 @@ export class WorldScene {
       this._playerBaseScale = PLAYER_HEIGHT / playerTexture.height;
       this.player.scale.set(this._playerBaseScale);
       this.world.addChild(this.player);
+
+      // NOT a child of this.player: this.player is itself the scaled sprite
+      // (scale ~0.07, to bring the raw source art down to PLAYER_HEIGHT) --
+      // unlike a remote player's {container, sprite, label} where only the
+      // sprite is scaled and label/bubble are unscaled siblings, this.player
+      // has no such wrapping container. A child of this.player would inherit
+      // that scale and render at ~7% size, effectively invisible. So this
+      // (and _ownBubble) live directly in this.world instead, world-space
+      // positioned, and kept in sync with this.player every tick (_onTick) --
+      // the same "text added straight to this.world" pattern _showFloatingDamage
+      // already uses for exactly this reason.
+      const ownLabel = new PIXI.Text({
+        text: "",
+        style: { fontSize: 11, fill: ROLE_COLORS[DEFAULT_ROLE], stroke: { color: 0x000000, width: 3 } },
+      });
+      ownLabel.anchor.set(0.5, 1);
+      this.world.addChild(ownLabel);
+      this._ownLabel = ownLabel;
+
+      this._chatLog = document.createElement("div");
+      this._chatLog.className = "chat-log";
+      this.mountElement.appendChild(this._chatLog);
+
+      this._chatInput = document.createElement("input");
+      this._chatInput.className = "chat-input";
+      this._chatInput.type = "text";
+      this._chatInput.maxLength = 240; // matches CHAT_MAX_LENGTH in src/game/constants.js
+      this._chatInput.placeholder = "Say something...";
+      this._chatInput.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter") return;
+        const text = this._chatInput.value.trim();
+        if (!text) return;
+        this._chatInput.value = "";
+        this.onChatSend?.(text);
+      });
+      this.mountElement.appendChild(this._chatInput);
 
       this.app.canvas.addEventListener("pointerdown", (event) => {
         if (this._suppressNextGroundClick) {
@@ -626,6 +675,76 @@ export class WorldScene {
     this._updateMobHpBar(entry);
   }
 
+  // msg: { id, name, role, text } -- from the session's "chat" event (see app.js).
+  showChatMessage({ id, name, role, text }) {
+    this._showChatBubble(id, text);
+    this._appendChatLogLine({ name, role, text });
+  }
+
+  _showChatBubble(id, text) {
+    const isOwn = id === this._ownId;
+    const remote = isOwn ? null : this.remotePlayers.get(id);
+    // For a remote player, the bubble is a child of their (unscaled)
+    // container, same as their label. For our own player, this.player IS
+    // the scaled sprite (see the note by _ownLabel's creation in loadZone),
+    // so the bubble goes straight into this.world instead and is repositioned
+    // every tick in _onTick, not parented to this.player.
+    if (!isOwn && !remote) return;
+
+    if (isOwn) {
+      if (this._ownBubbleTimer) clearTimeout(this._ownBubbleTimer);
+      if (this._ownBubble) { this.world.removeChild(this._ownBubble); this._ownBubble.destroy(); }
+    } else {
+      if (remote.bubbleTimer) clearTimeout(remote.bubbleTimer);
+      if (remote.bubble) { remote.container.removeChild(remote.bubble); remote.bubble.destroy(); }
+    }
+
+    const bubble = new PIXI.Text({
+      text,
+      style: { fontSize: 11, fill: 0xffffff, stroke: { color: 0x1a2438, width: 3 }, wordWrap: true, wordWrapWidth: 160, align: "center" },
+    });
+    bubble.anchor.set(0.5, 1);
+    if (isOwn) {
+      bubble.position.set(this.player.position.x, this.player.position.y - PLAYER_HEIGHT - 20);
+      this.world.addChild(bubble);
+    } else {
+      bubble.position.set(0, -PLAYER_HEIGHT - 20);
+      remote.container.addChild(bubble);
+    }
+
+    const timer = setTimeout(() => {
+      this._animate(300, (t) => { bubble.alpha = 1 - t; }).then(() => {
+        bubble.parent?.removeChild(bubble);
+        bubble.destroy();
+        if (isOwn) { this._ownBubble = null; this._ownBubbleTimer = null; }
+        else {
+          const r = this.remotePlayers.get(id);
+          if (r) { r.bubble = null; r.bubbleTimer = null; }
+        }
+      });
+    }, CHAT_BUBBLE_MS);
+
+    if (isOwn) { this._ownBubble = bubble; this._ownBubbleTimer = timer; }
+    else {
+      remote.bubble = bubble;
+      remote.bubbleTimer = timer;
+    }
+  }
+
+  _appendChatLogLine({ name, role, text }) {
+    if (!this._chatLog) return;
+    const line = document.createElement("div");
+    line.className = "chat-log-line";
+    const nameSpan = document.createElement("span");
+    nameSpan.className = "chat-log-name";
+    nameSpan.style.color = cssColor(role);
+    nameSpan.textContent = name;
+    line.append(nameSpan, document.createTextNode(": " + text));
+    this._chatLog.appendChild(line);
+    while (this._chatLog.children.length > CHAT_LOG_MAX_LINES) this._chatLog.removeChild(this._chatLog.firstChild);
+    this._chatLog.scrollTop = this._chatLog.scrollHeight;
+  }
+
   // view: { id, name, level, x, y, tx, ty } in zone fractions. snap: jump
   // straight to x/y (joining, respawn) instead of continuing from where we drew them.
   upsertRemotePlayer(view, { snap = false } = {}) {
@@ -640,14 +759,14 @@ export class WorldScene {
       container.addChild(sprite);
       const label = new PIXI.Text({
         text: "",
-        style: { fontSize: 11, fill: 0xbfe3ff, stroke: { color: 0x000000, width: 3 } },
+        style: { fontSize: 11, fill: ROLE_COLORS[DEFAULT_ROLE], stroke: { color: 0x000000, width: 3 } },
       });
       label.anchor.set(0.5, 1);
       label.position.set(0, -PLAYER_HEIGHT - 4);
       container.addChild(label);
       // Behind our own character, so you always see yourself on top.
       this.world.addChildAt(container, Math.max(0, this.world.getChildIndex(this.player)));
-      remote = { view: { ...view }, container, sprite, label, facingLeft: false };
+      remote = { view: { ...view }, container, sprite, label, facingLeft: false, bubble: null, bubbleTimer: null };
       this.remotePlayers.set(view.id, remote);
       snap = true;
     }
@@ -658,6 +777,7 @@ export class WorldScene {
     const farOff = Math.hypot(view.x - drawn.x, view.y - drawn.y) > 0.15;
     if (!snap && !farOff) Object.assign(remote.view, drawn);
     remote.label.text = `${remote.view.name} · Lv ${remote.view.level}`;
+    remote.label.style.fill = ROLE_COLORS[normalizeRole(remote.view.role)];
     this._placeRemote(remote, 0);
   }
 
@@ -668,9 +788,23 @@ export class WorldScene {
     remote.label.text = `${name} · Lv ${level}`;
   }
 
+  // Called by app.js whenever the signed-in player's name or role is known/changes.
+  setOwnProfile({ name, role } = {}) {
+    if (name !== undefined) this._ownName = name;
+    if (role !== undefined) this._ownRole = normalizeRole(role);
+    if (!this._ownLabel) return;
+    this._ownLabel.text = this._ownName;
+    this._ownLabel.style.fill = ROLE_COLORS[this._ownRole];
+  }
+
+  setOwnPlayerId(id) {
+    this._ownId = id;
+  }
+
   removeRemotePlayer(id) {
     const remote = this.remotePlayers.get(id);
     if (!remote) return;
+    if (remote.bubbleTimer) clearTimeout(remote.bubbleTimer);
     this.world.removeChild(remote.container);
     remote.container.destroy({ children: true });
     this.remotePlayers.delete(id);
@@ -695,6 +829,14 @@ export class WorldScene {
     remote.view.y = next.y / height;
     remote.container.position.set(next.x, next.y);
     remote.sprite.scale.set(remote.facingLeft ? -this._playerBaseScale : this._playerBaseScale, this._playerBaseScale);
+  }
+
+  // Keeps our own nameplate/bubble (both children of this.world, not of
+  // this.player -- see the note in loadZone) glued to this.player's current
+  // world position every tick.
+  _syncOwnOverlays() {
+    if (this._ownLabel) this._ownLabel.position.set(this.position.x, this.position.y - PLAYER_HEIGHT - 4);
+    if (this._ownBubble) this._ownBubble.position.set(this.position.x, this.position.y - PLAYER_HEIGHT - 20);
   }
 
   _positionFrac() {
@@ -827,6 +969,7 @@ export class WorldScene {
 
     this.player.scale.x = this._facingLeft ? -this._playerBaseScale : this._playerBaseScale;
     this.player.position.set(this.position.x, this.position.y);
+    this._syncOwnOverlays();
 
     const moving = this.position.x !== this.target.x || this.position.y !== this.target.y;
     if (this._wasMoving && !moving) this._emitMove(true); // arrived: tell others exactly where we stopped

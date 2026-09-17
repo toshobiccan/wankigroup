@@ -669,14 +669,24 @@ renderers.world = async () => {
     onCombatStart: handleCombatStart,
     onPageEnter: enterPage,
     onMoveIntent: (position) => session.moveTo(position),
+    onChatSend: async (text) => {
+      try {
+        await session.sendChat(text);
+      } catch (err) {
+        console.error("chat failed", err);
+      }
+    },
   });
   await worldScene.loadZone(`data/zones/${window.Cardslayer.game.START_ZONE_ID}.json`);
+  worldScene.setOwnPlayerId(session.playerId);
+  worldScene.setOwnProfile({ name: player?.name, role: session.account?.role ?? "guest" });
 };
 
 // ================= SESSION & ACCOUNT =================
 function wireSessionEvents() {
   session.on("player", (updated) => {
     player = updated;
+    worldScene?.setOwnProfile({ name: updated.name });
     renderHeader();
     const view = document.querySelector(".view.is-active")?.dataset.view;
     if (view === "quests") renderers.quests();
@@ -698,6 +708,7 @@ function wireSessionEvents() {
   session.on("mob", (state) => worldScene?.applyMobState(state));
   session.on("mobHit", (hit) => worldScene?.showMobHit(hit));
   session.on("combatEnded", handleCombatEnded);
+  session.on("chat", (msg) => worldScene?.showChatMessage(msg));
 
   session.on("connection", updateNetBadge);
   session.on("rejoined", (snapshot) => {
@@ -718,6 +729,7 @@ function wireSessionEvents() {
     );
   });
   session.on("account", (account) => {
+    worldScene?.setOwnProfile({ role: account?.role ?? "guest" });
     if (!account && session.mode === "online") showLoginModal();
   });
 }
