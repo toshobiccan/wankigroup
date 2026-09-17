@@ -1,0 +1,33 @@
+{
+  "id": "humanoid",
+  "bounds": { "height": 112, "groundY": 39 },
+  "bones": [
+    { "id": "hips", "parent": null, "x": 0, "y": 0 },
+    { "id": "rearThigh", "parent": "hips", "x": -7, "y": -3, "rotation": 0 },
+    { "id": "rearShin", "parent": "rearThigh", "x": 0, "y": 19, "rotation": 0 },
+    { "id": "rearFoot", "parent": "rearShin", "x": 0, "y": 17, "rotation": 0 },
+    { "id": "cape", "parent": "hips", "x": 1, "y": -24, "rotation": 0 },
+    { "id": "torso", "parent": "hips", "x": 0, "y": -27, "rotation": 0 },
+    { "id": "rearUpperArm", "parent": "torso", "x": -11, "y": -17, "rotation": 0 },
+    { "id": "rearForearm", "parent": "rearUpperArm", "x": 0, "y": 16, "rotation": 0 },
+    { "id": "rearHand", "parent": "rearForearm", "x": 0, "y": 14, "rotation": 0 },
+    { "id": "offhandMount", "parent": "rearHand", "x": 0, "y": 8, "rotation": 0 },
+    { "id": "head", "parent": "torso", "x": 0, "y": -28, "rotation": 0 },
+    { "id": "frontUpperArm", "parent": "torso", "x": 12, "y": -17, "rotation": 0 },
+    { "id": "frontForearm", "parent": "frontUpperArm", "x": 0, "y": 16, "rotation": 0 },
+    { "id": "frontHand", "parent": "frontForearm", "x": 0, "y": 14, "rotation": 0 },
+    { "id": "weaponMount", "parent": "frontHand", "x": 0, "y": 8, "rotation": 0 },
+    { "id": "frontThigh", "parent": "hips", "x": 7, "y": -3, "rotation": 0 },
+    { "id": "frontShin", "parent": "frontThigh", "x": 0, "y": 19, "rotation": 0 },
+    { "id": "frontFoot", "parent": "frontShin", "x": 0, "y": 17, "rotation": 0 }
+  ],
+  "slots": {
+    "helmet": { "attachments": [{ "bone": "head", "mode": "overlay", "layer": "armor" }] },
+    "cape": { "attachments": [{ "bone": "cape", "mode": "replace", "layer": "rear" }] },
+    "chestplate": { "attachments": [{ "bone": "torso", "mode": "replace", "layer": "armor" }, { "bone": "rearUpperArm", "mode": "overlay", "layer": "armor" }, { "bone": "frontUpperArm", "mode": "overlay", "layer": "armor" }] },
+    "leggings": { "attachments": [{ "bone": "hips", "mode": "overlay", "layer": "armor" }, { "bone": "rearThigh", "mode": "overlay", "layer": "armor" }, { "bone": "frontThigh", "mode": "overlay", "layer": "armor" }] },
+    "boots": { "attachments": [{ "bone": "rearFoot", "mode": "replace", "layer": "armor" }, { "bone": "frontFoot", "mode": "replace", "layer": "front" }] },
+    "weapon": { "attachments": [{ "bone": "weaponMount", "mode": "overlay", "layer": "front" }] },
+    "book": { "attachments": [{ "bone": "offhandMount", "mode": "overlay", "layer": "rear" }] }
+  }
+}

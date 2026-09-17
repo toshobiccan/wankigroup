@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Dancing+Script:wght@600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css?v=5" />
+  <link rel="stylesheet" href="flash-theme.css?v=1" />
 </head>
 <body>
   <div class="app">
@@ -15,7 +16,7 @@
     <header class="topbar">
       <div class="player">
         <div class="avatar">
-          <img src="assets/avatar.png" alt="" />
+          <img src="assets/world-character.png" alt="" />
           <span class="avatar-badge" aria-hidden="true">
             <svg viewBox="0 0 20 22"><path d="M10 1 L19 4 V11 Q19 18 10 21 Q1 18 1 11 V4Z" fill="#2a3448" stroke="#d9a943" stroke-width="1.6"/><path d="M10 6 L11.6 9.5 L15 10 L12.5 12.3 L13.2 16 L10 14.2 L6.8 16 L7.5 12.3 L5 10 L8.4 9.5Z" fill="#e9c469"/></svg>
           </span>
@@ -46,133 +47,7 @@
       <!-- ============ IMPORT DECK ============ -->
       <section class="view is-active" data-view="import">
         <div class="hero">
-          <svg class="hero-scene" viewBox="0 0 400 310" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-            <defs>
-              <linearGradient id="wall" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0" stop-color="#2c2a33" /><stop offset=".6" stop-color="#3b3029" /><stop offset="1" stop-color="#241a14" />
-              </linearGradient>
-              <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0" stop-color="#4f8fd0" /><stop offset=".55" stop-color="#9cc8ea" /><stop offset="1" stop-color="#e6f1f2" />
-              </linearGradient>
-              <linearGradient id="stone" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0" stop-color="#4a3e36" /><stop offset=".5" stop-color="#6b5a4b" /><stop offset="1" stop-color="#3a302a" />
-              </linearGradient>
-              <linearGradient id="desk" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0" stop-color="#6b4526" /><stop offset="1" stop-color="#2e1d10" />
-              </linearGradient>
-              <linearGradient id="cape" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0" stop-color="#3563b8" /><stop offset="1" stop-color="#17305f" />
-              </linearGradient>
-              <linearGradient id="hair" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0" stop-color="#9a5a2a" /><stop offset="1" stop-color="#5a2f14" />
-              </linearGradient>
-              <linearGradient id="parch" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0" stop-color="#f6e6bf" /><stop offset="1" stop-color="#dcc28c" />
-              </linearGradient>
-              <linearGradient id="bannerCloth" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0" stop-color="#1b3263" /><stop offset=".5" stop-color="#27468a" /><stop offset="1" stop-color="#162a55" />
-              </linearGradient>
-              <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0" stop-color="#f6dc8c" /><stop offset=".5" stop-color="#d4a441" /><stop offset="1" stop-color="#8f6420" />
-              </linearGradient>
-              <radialGradient id="lanternGlow" cx="50%" cy="50%" r="50%">
-                <stop offset="0" stop-color="#ffcf6b" stop-opacity=".85" /><stop offset=".4" stop-color="#ff9a2e" stop-opacity=".35" /><stop offset="1" stop-color="#ff9a2e" stop-opacity="0" />
-              </radialGradient>
-              <radialGradient id="flame" cx="50%" cy="60%" r="50%">
-                <stop offset="0" stop-color="#fff6c8" /><stop offset=".5" stop-color="#ffc24a" /><stop offset="1" stop-color="#d9661a" />
-              </radialGradient>
-              <radialGradient id="sunHaze" cx="50%" cy="80%" r="60%">
-                <stop offset="0" stop-color="#fff8dc" stop-opacity=".9" /><stop offset="1" stop-color="#fff8dc" stop-opacity="0" />
-              </radialGradient>
-              <clipPath id="archClip"><path d="M52 310 V120 Q52 20 190 20 Q328 20 328 120 V310Z" /></clipPath>
-              <clipPath id="leftArchClip"><path d="M-10 310 V150 Q-10 95 22 95 Q42 95 42 150 V310Z" /></clipPath>
-            </defs>
-
-            <!-- wall -->
-            <rect width="400" height="310" fill="url(#wall)" />
-            <g stroke="#1b1612" stroke-opacity=".35" stroke-width="1">
-              <path d="M0 40 H400 M0 80 H400 M0 120 H400 M0 160 H400 M0 200 H400" />
-              <path d="M30 0 V40 M90 40 V80 M340 0 V40 M370 80 V120 M20 120 V160 M360 160 V200" />
-            </g>
-
-            <!-- small left arch -->
-            <g clip-path="url(#leftArchClip)">
-              <rect x="-10" y="90" width="60" height="220" fill="url(#sky)" />
-              <path d="M-10 230 L5 190 L12 205 L22 170 L30 200 L42 185 V310 H-10Z" fill="#7390b8" opacity=".75" />
-              <rect x="14" y="150" width="8" height="60" fill="#6c89b3" /><path d="M12 150 L18 128 L24 150Z" fill="#3a5a92" />
-              <ellipse cx="10" cy="260" rx="30" ry="30" fill="#3f7a3a" /><ellipse cx="35" cy="250" rx="16" ry="24" fill="#4f9143" />
-            </g>
-            <path d="M-10 310 V150 Q-10 95 22 95 Q42 95 42 150 V310" fill="none" stroke="#5e4e40" stroke-width="7" />
-
-            <!-- main arch opening -->
-            <g clip-path="url(#archClip)">
-              <rect x="40" y="10" width="300" height="300" fill="url(#sky)" />
-              <ellipse cx="190" cy="250" rx="160" ry="90" fill="url(#sunHaze)" />
-              <!-- clouds -->
-              <g class="sky-clouds" fill="#ffffff" opacity=".85">
-                <ellipse cx="95" cy="110" rx="28" ry="9" /><ellipse cx="115" cy="104" rx="18" ry="9" />
-                <ellipse cx="280" cy="120" rx="30" ry="8" /><ellipse cx="262" cy="114" rx="16" ry="8" />
-                <ellipse cx="190" cy="148" rx="40" ry="7" opacity=".6" />
-              </g>
-              <!-- distant mountains -->
-              <path d="M40 235 L85 180 L120 215 L160 170 L195 205 L240 165 L285 210 L330 175 V310 H40Z" fill="#a9c4de" />
-              <path d="M40 255 L100 215 L150 240 L210 205 L270 238 L330 210 V310 H40Z" fill="#8fb0d0" />
-              <!-- castle -->
-              <g>
-                <rect x="170" y="175" width="70" height="80" fill="#7d9ac2" />
-                <rect x="170" y="175" width="35" height="80" fill="#6d8ab5" />
-                <path d="M170 175 v-6 h7 v6 h7 v-6 h7 v6 h7 v-6 h7 v6 h7 v-6 h7 v6 h7 v-6 h7 v6 h7 v-6 h7 v6" fill="#7d9ac2" />
-                <rect x="195" y="120" width="22" height="60" fill="#8aa6cc" /><rect x="195" y="120" width="11" height="60" fill="#7793bd" />
-                <path d="M191 122 L206 78 L221 122Z" fill="#3a5c98" /><path d="M206 78 L221 122 H206Z" fill="#2c4a80" />
-                <line x1="206" y1="78" x2="206" y2="68" stroke="#dfe7f2" stroke-width="1" /><path class="castle-flag" d="M206 68 l8 3 -8 3Z" fill="#d6463c" />
-                <rect x="160" y="150" width="16" height="70" fill="#86a2c9" /><path d="M157 152 L168 118 L179 152Z" fill="#3a5c98" />
-                <rect x="236" y="145" width="16" height="75" fill="#7390bb" /><path d="M233 147 L244 110 L255 147Z" fill="#2f4f88" />
-                <rect x="140" y="190" width="14" height="50" fill="#7d9ac2" /><path d="M137 192 L147 165 L157 192Z" fill="#3a5c98" />
-                <rect x="258" y="185" width="14" height="55" fill="#6d8ab5" /><path d="M255 187 L265 160 L275 187Z" fill="#2f4f88" />
-                <g fill="#2b3f63" opacity=".7">
-                  <rect x="203" y="135" width="5" height="9" rx="2.5" /><rect x="166" y="168" width="4" height="8" rx="2" /><rect x="242" y="165" width="4" height="8" rx="2" />
-                  <rect x="185" y="200" width="5" height="9" rx="2.5" /><rect x="220" y="200" width="5" height="9" rx="2.5" /><path d="M198 255 V238 Q205 228 212 238 V255Z" />
-                </g>
-              </g>
-              <!-- foreground trees & hills -->
-              <path d="M40 275 Q120 245 190 262 Q270 240 330 268 V310 H40Z" fill="#5f9a54" />
-              <g fill="#3c7536">
-                <ellipse cx="62" cy="200" rx="30" ry="46" /><ellipse cx="88" cy="235" rx="24" ry="34" fill="#4c8a42" />
-                <ellipse cx="318" cy="210" rx="26" ry="50" /><ellipse cx="296" cy="245" rx="22" ry="28" fill="#4c8a42" />
-              </g>
-            </g>
-            <!-- arch stones -->
-            <path d="M52 310 V120 Q52 20 190 20 Q328 20 328 120 V310" fill="none" stroke="url(#stone)" stroke-width="16" />
-            <path d="M52 310 V120 Q52 20 190 20 Q328 20 328 120 V310" fill="none" stroke="#231b16" stroke-width="16" stroke-dasharray="2 26" stroke-opacity=".5" />
-            <path d="M43 310 V120 Q43 11 190 11 Q337 11 337 120 V310" fill="none" stroke="#1d1712" stroke-width="2" stroke-opacity=".6" />
-            <!-- pillar right -->
-            <rect x="336" y="0" width="64" height="310" fill="#2c241f" />
-            <rect x="336" y="0" width="10" height="310" fill="#43372f" />
-
-            <!-- hanging banner -->
-            <g class="banner">
-              <rect x="342" y="22" width="58" height="5" rx="2" fill="#6b4a22" />
-              <circle cx="342" cy="24.5" r="4" fill="url(#gold)" />
-              <path d="M347 27 H398 V222 L372.5 206 L347 222Z" fill="url(#bannerCloth)" />
-              <path d="M351 31 H394 V214 L372.5 200 L351 214Z" fill="none" stroke="#d4a441" stroke-width="1.4" />
-              <g transform="translate(372.5 90)">
-                <path d="M0 -22 L4 -4 L22 0 L4 4 L0 22 L-4 4 L-22 0 L-4 -4Z" fill="url(#gold)" />
-                <path class="banner-star-glow" d="M0 -12 L3 -3 L12 0 L3 3 L0 12 L-3 3 L-12 0 L-3 -3Z" fill="#f6dc8c" transform="rotate(45)" opacity=".85" />
-                <circle r="3" fill="#8f6420" />
-              </g>
-              <g font-family="Cinzel, serif" font-weight="700" font-size="7.6" fill="#e9c469" text-anchor="middle" letter-spacing="0">
-                <text x="372.5" y="140">LEARN</text><text x="372.5" y="156">QUEST</text><text x="372.5" y="172">IMPROVE</text>
-              </g>
-            </g>
-
-            <!-- lantern glow + desk -->
-            <ellipse class="lantern-glow" cx="372" cy="262" rx="70" ry="60" fill="url(#lanternGlow)" />
-            <rect x="0" y="292" width="400" height="18" fill="url(#desk)" />
-            <rect x="0" y="292" width="400" height="2" fill="#8a5a31" />
-
-            <!-- vignette -->
-            <rect width="400" height="310" fill="none" stroke="#0a0e18" stroke-width="10" stroke-opacity=".35" />
-          </svg>
+          <img class="hero-art" src="assets/study-hall.png" alt="An adventurer and goblin studying flashcards in a castle library" />
 
           <!-- dust motes floating in the window light -->
           <div class="motes" aria-hidden="true">
@@ -183,29 +58,6 @@
             <i style="--x:55%;--d:10.5s;--delay:9s"></i><i style="--x:92%;--d:13.5s;--delay:5s"></i>
           </div>
 
-          <!-- painted scene layers -->
-          <div class="scene-layer books-left">
-            <img src="assets/books.png" alt="" />
-            <span class="book-label" style="top:22%">Medicine</span>
-            <span class="book-label" style="top:40.3%">Science</span>
-            <span class="book-label" style="top:57.7%">Languages</span>
-            <span class="book-label" style="top:74.6%">And More</span>
-          </div>
-          <div class="scene-layer hero-char" data-poke="hero">
-            <img src="assets/hero.png" alt="" />
-            <div class="scroll-text">Questions<br />Knowledge<br />Progress</div>
-          </div>
-          <img class="scene-layer books-owl" src="assets/books.png" alt="" />
-          <div class="scene-layer owl" data-poke="owl">
-            <img class="owl-wing owl-wing-l" src="assets/owl.png" alt="" />
-            <img class="owl-wing owl-wing-r" src="assets/owl.png" alt="" />
-            <img class="owl-body" src="assets/owl.png" alt="" />
-          </div>
-          <div class="owl-bubble" id="owlBubble" aria-live="polite"></div>
-          <div class="scene-layer lantern" data-poke="lantern">
-            <img src="assets/lantern.png" alt="" />
-            <span class="lantern-flame"></span>
-          </div>
 
           <!-- title plaque -->
           <div class="plaque">

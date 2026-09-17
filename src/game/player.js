@@ -29,8 +29,18 @@ export function createDefaultPlayer({ name = "Adventurer" } = {}) {
     hp: 100, // current HP -- persists across fights, separate from the max in stats.hp
     // Held-but-not-equipped items (see src/items.js). No drop system exists yet.
     inventory: { equipables: [], materials: [] },
-    // What's currently worn, one item per slot (or null) -- see src/items.js's EQUIP_SLOTS.
-    equipment: { helmet: null, cape: null, chestplate: null, leggings: null, boots: null, weapon: null, book: null },
+    // The visible starter kit proves every rig mount in the live game. These
+    // item ids remain stable when a later equip screen swaps in real loot.
+    equipment: {
+      helmet: { id: "starter-scout-helmet", name: "Scout Helmet" },
+      cape: { id: "starter-traveler-cape", name: "Traveler Cape" },
+      chestplate: { id: "starter-leather-chest", name: "Leather Tunic" },
+      leggings: { id: "starter-traveler-leggings", name: "Traveler Leggings" },
+      boots: { id: "starter-traveler-boots", name: "Traveler Boots" },
+      weapon: { id: "oak-practice-sword", name: "Oak Practice Sword" },
+      book: { id: "beginner-spellbook", name: "Beginner Spellbook" },
+    },
+    starterKitGranted: true,
     // The Inventory screen's Status tab: one selected class, one active buff.
     status: { selectedClass: null, activeBuff: null },
     daily: emptyDaily(""),
@@ -49,9 +59,15 @@ export function normalizePlayer(saved, { name } = {}) {
   const defaults = createDefaultPlayer({ name });
   const source = saved && typeof saved === "object" ? structuredClone(saved) : {};
   const player = { ...defaults, ...source };
-  for (const group of ["stats", "inventory", "equipment", "status", "daily"]) {
+  for (const group of ["stats", "inventory", "status", "daily"]) {
     player[group] = { ...defaults[group], ...(source[group] ?? {}) };
   }
+  // Existing saves from before the starter kit existed get it granted once,
+  // replacing their (all-null) equipment outright rather than merging --
+  // merging would keep the old explicit nulls and never show the kit.
+  // Anyone already granted the kit keeps whatever they've since equipped.
+  player.equipment = source.starterKitGranted ? { ...defaults.equipment, ...(source.equipment ?? {}) } : defaults.equipment;
+  player.starterKitGranted = true;
   if (name) player.name = name;
   player.schemaVersion = PLAYER_SCHEMA_VERSION;
   return player;
