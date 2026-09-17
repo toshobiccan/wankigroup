@@ -1,5 +1,6 @@
 import * as PIXI from "../../vendor/pixi.min.mjs";
 import { clampToZone, stepTowardTarget, computeCameraX, computeCenteredCameraX } from "./world-movement.js";
+import { RigActor } from "../sprites/rig-actor.js";
 
 const MOVE_SPEED = 220; // world-pixels/second
 const DEAD_ZONE_FRACTION = 0.4;
@@ -22,65 +23,12 @@ const ARROW_COLOR = 0xffd84d;
 // Resolved relative to this module's own file (not whichever HTML page loaded
 // it) since world-scene.js is used from both index.html and dev/world-preview.html.
 const PLAYER_TEXTURE_URL = new URL("../../assets/world-character.png", import.meta.url).href;
-
-// Two-tier selection glow for assets/mob-goblin.png specifically, extracted
-// from its own alpha channel via a real contour trace (cv2.findContours on
-// the alpha mask, dilated outward before tracing so the result already sits
-// clear of the body, then simplified) -- not a per-row min/max bridge, which
-// was cutting straight across gaps (between the sword arm and torso, between
-// the legs) and made the outline balloon outward as if it included the
-// ground. INNER is dilated ~55px (a close, soft glow); OUTER ~80px -- a
-// small additional dilation of the *same* base mask, at the same
-// simplification level, so it tracks the inner shape closely instead of
-// being an independently-traced, much coarser blob (which read as "boxy"
-// and disconnected from the glow beneath it). Both then rounded with one
-// pass of Chaikin corner-cutting to soften the polygon's angles into a
-// smoother curve. Both normalized so (0,0) is the sprite's own anchor point
-// (feet, horizontally centered), same space as anchor(0.5, 1). A different
-// mob image would need its own two contours the same way.
-const GOBLIN_GLOW_INNER_POINTS = [
-  [569, -961], [547, -971], [508, -974], [452, -970], [408.8, -989], [378.2, -1031],
-  [348.8, -1060.5], [320.2, -1077.5], [286.5, -1092], [247.5, -1104], [206, -1103.5], [162, -1090.5],
-  [116.8, -1103.2], [70.2, -1141.8], [8.5, -1175], [-68.5, -1203], [-118.5, -1215.2], [-141.5, -1211.8],
-  [-159.2, -1194.5], [-171.8, -1163.5], [-161.2, -1125.8], [-127.8, -1081.2], [-112.2, -1043.2], [-114.8, -1011.8],
-  [-111.8, -986.5], [-103.2, -967.5], [-113.5, -943.8], [-142.5, -915.2], [-183, -890.2], [-235, -868.8],
-  [-292.8, -829.5], [-356.2, -772.5], [-391.5, -723.8], [-398.5, -683.2], [-416.2, -654.2], [-444.8, -636.8],
-  [-466.5, -616], [-481.5, -592], [-488, -568.8], [-486, -546.2], [-509.2, -507.5], [-557.8, -452.5],
-  [-592.5, -396.8], [-613.5, -340.2], [-624, -275.5], [-624, -202.5], [-614.8, -159.8], [-596.2, -147.2],
-  [-575.8, -143.2], [-553.2, -147.8], [-517.2, -173.5], [-467.8, -220.5], [-428.2, -267.2], [-398.8, -313.8],
-  [-383.2, -326], [-381.8, -304], [-402.5, -241.5], [-445.5, -138.5], [-464.8, -77.5], [-460.2, -58.5],
-  [-446.8, -38.2], [-424.2, -16.8], [-359.5, -4.8], [-252.5, -2.2], [-192.2, -4.2], [-178.8, -10.8],
-  [-167, -26.8], [-157, -52.2], [-163, -85.5], [-185, -126.5], [-175.5, -179.5], [-134.5, -244.5],
-  [-104, -281.8], [-84, -291.2], [-58.5, -273.5], [-27.5, -228.5], [-4, -201.5], [12, -192.5],
-  [20, -171.2], [20, -137.8], [28.8, -112], [46.2, -94], [104.5, -80.2], [203.5, -70.8],
-  [283.2, -69], [343.8, -75], [380.2, -86.8], [392.8, -104.2], [397.2, -124.2], [393.8, -146.8],
-  [380.8, -171.5], [358.2, -198.5], [332.5, -218.5], [303.5, -231.5], [296.8, -275.5], [312.2, -350.5],
-  [334.5, -373.8], [363.5, -345.2], [393.5, -338.2], [424.5, -352.8], [450.8, -359.8], [472.2, -359.2],
-  [499.2, -374], [531.8, -404], [555.2, -439], [569.8, -479], [571.2, -519.8], [559.8, -561.2],
-  [538.5, -597.5], [507.5, -628.5], [471.8, -650.2], [431.2, -662.8], [396.5, -661], [367.5, -645],
-  [339, -644.5], [311, -659.5], [299.8, -671], [305.2, -679], [322.2, -680.8], [350.8, -676.2],
-  [375.5, -680.5], [396.5, -693.5], [421, -726], [449, -778], [493, -824.2], [553, -864.8],
-  [582.2, -902.8], [580.8, -938.2],
-];
-const GOBLIN_GLOW_OUTER_POINTS = [
-  [-164.5, -1228.8], [-183.5, -1212.2], [-195.8, -1191], [-201.2, -1165], [-186.5, -1125.8], [-151.5, -1073.2],
-  [-133.5, -1026.5], [-132.5, -985.5], [-142.2, -954.2], [-162.8, -932.8], [-196.8, -912.2], [-244.2, -892.8],
-  [-303.5, -851.2], [-374.5, -787.8], [-413.5, -736.8], [-420.5, -698.2], [-444, -661.2], [-484, -625.8],
-  [-506.5, -592.5], [-511.5, -561.5], [-535, -521.8], [-577, -473.2], [-605.2, -428], [-619.8, -386],
-  [-627, -307], [-627, -191], [-617.8, -128.8], [-599.2, -120.2], [-577.8, -117.5], [-553.2, -120.5],
-  [-517, -144], [-469, -188], [-456.8, -179.5], [-480.2, -118.5], [-481.5, -66.2], [-460.5, -22.8],
-  [-375, -1], [-225, -1], [-144.2, -17.2], [-132.8, -49.8], [-135.2, -87], [-151.8, -129],
-  [-141.5, -178], [-104.5, -234], [-66.8, -239.5], [-28.2, -194.5], [-7.5, -156.8], [-4.5, -126.2],
-  [8.5, -99], [31.5, -75], [95.5, -57.5], [200.5, -46.5], [283.8, -43.5], [345.2, -48.5],
-  [385.5, -59.2], [404.5, -75.8], [416.5, -99], [421.5, -129], [412, -162.5], [388, -199.5],
-  [362.5, -226.2], [335.5, -242.8], [325.5, -269.2], [332.5, -305.8], [353, -319.5], [387, -310.5],
-  [428.8, -314.8], [478.2, -332.2], [524.8, -366.8], [568.2, -418.2], [593, -458], [599, -486],
-  [595.5, -523.5], [582.5, -570.5], [559.5, -611], [526.5, -645], [490.8, -670], [452.2, -686],
-  [445.5, -717.8], [470.5, -765.2], [513, -809.2], [573, -849.8], [605.5, -889.8], [610.5, -929.2],
-  [599.2, -961.2], [571.8, -985.8], [528.8, -997.2], [470.2, -995.8], [422.5, -1017], [385.5, -1061],
-  [332.2, -1096], [262.8, -1122], [207.8, -1129.8], [167.2, -1119.2], [136.2, -1125.8], [114.8, -1149.2],
-  [52, -1181.2], [-52, -1221.8], [-116.8, -1240.8], [-142.2, -1238.2],
-];
+const PLAYER_RIG_URL = new URL("../../data/rigs/humanoid.json", import.meta.url).href;
+const PLAYER_CLIP_URLS = {
+  idle: new URL("../../data/animations/humanoid/idle.json", import.meta.url).href,
+  run: new URL("../../data/animations/humanoid/run.json", import.meta.url).href,
+  attack: new URL("../../data/animations/humanoid/attack.json", import.meta.url).href,
+};
 
 export class WorldScene {
   constructor({ mountElement, onMobSelected, onCombatStart }) {
@@ -115,6 +63,7 @@ export class WorldScene {
     this._resizeObserver = null;
     this._backgroundTexture = null;
     this._playerBaseScale = 1;
+    this._isRigPlayer = false;
     this._facingLeft = false; // the source art faces right by default
     this._lastDisplayHeight = 0;
     this._pointerHeld = false;
@@ -147,11 +96,24 @@ export class WorldScene {
       this._roomLabel.className = "room-label";
       this.mountElement.appendChild(this._roomLabel);
 
-      const playerTexture = await PIXI.Assets.load(PLAYER_TEXTURE_URL);
-      this.player = new PIXI.Sprite(playerTexture);
-      this.player.anchor.set(0.5, 1); // feet at this.player.position
-      this._playerBaseScale = PLAYER_HEIGHT / playerTexture.height;
-      this.player.scale.set(this._playerBaseScale);
+      try {
+        const [rig, idle, run, attack] = await Promise.all([
+          fetch(PLAYER_RIG_URL).then((response) => response.json()),
+          fetch(PLAYER_CLIP_URLS.idle).then((response) => response.json()),
+          fetch(PLAYER_CLIP_URLS.run).then((response) => response.json()),
+          fetch(PLAYER_CLIP_URLS.attack).then((response) => response.json()),
+        ]);
+        this.player = new RigActor({ rig, clips: { idle, run, attack } });
+        this.player.setDisplayHeight(PLAYER_HEIGHT);
+        this._isRigPlayer = true;
+      } catch (error) {
+        console.warn("WorldScene: rig failed to load; using the legacy player sprite", error);
+        const playerTexture = await PIXI.Assets.load(PLAYER_TEXTURE_URL);
+        this.player = new PIXI.Sprite(playerTexture);
+        this.player.anchor.set(0.5, 1); // feet at this.player.position
+        this._playerBaseScale = PLAYER_HEIGHT / playerTexture.height;
+        this.player.scale.set(this._playerBaseScale);
+      }
       this.world.addChild(this.player);
 
       this.app.canvas.addEventListener("pointerdown", (event) => {
@@ -259,18 +221,11 @@ export class WorldScene {
 
       const mobScale = MOB_HEIGHT / mobTexture.height;
 
-      // Selection glow -- drawn first so it sits behind the sprite. Two
-      // layers, both tracing the goblin's real contour (already expanded
-      // outward from the actual alpha edge, see the constants above) rather
-      // than a generic shape: a soft filled glow close to the body, and a
-      // crisp stroked line further out. The sprite itself is flipped
-      // (-mobScale) to face left; both outlines' x gets the same negation
-      // so they line up with the flipped sprite.
+      // Ground marker stays readable with any character silhouette.
       const glow = new PIXI.Graphics()
-        .poly(GOBLIN_GLOW_INNER_POINTS.flatMap(([x, y]) => [x * -mobScale, y * mobScale]))
-        .fill({ color: 0xffd84d, alpha: 0.4 })
-        .poly(GOBLIN_GLOW_OUTER_POINTS.flatMap(([x, y]) => [x * -mobScale, y * mobScale]))
-        .stroke({ color: 0xffe27a, width: 3, alpha: 0.95 });
+        .ellipse(0, -3, 30, 8)
+        .fill({ color: 0xc7b775, alpha: 0.4 })
+        .stroke({ color: 0xf1d991, width: 2, alpha: 0.95 });
       glow.visible = false;
       container.addChild(glow);
 
@@ -605,6 +560,8 @@ export class WorldScene {
     const lungeDir = Math.sign(defenderContainer.position.x - attackerContainer.position.x) || 1;
     const baseX = attackerContainer.position.x;
 
+    if (isPlayerAttacking && this._isRigPlayer) this.player.playOnce("attack");
+
     await this._animate(150, (t) => { attackerContainer.position.x = baseX + lungeDir * 20 * t; });
     await this._animate(150, (t) => { attackerContainer.position.x = baseX + lungeDir * 20 * (1 - t); });
     attackerContainer.position.x = baseX;
@@ -664,7 +621,14 @@ export class WorldScene {
     if (dx > 0.01) this._facingLeft = false;
     else if (dx < -0.01) this._facingLeft = true;
 
-    this.player.scale.x = this._facingLeft ? -this._playerBaseScale : this._playerBaseScale;
+    if (this._isRigPlayer) {
+      const isMoving = Math.abs(dx) > 0.01;
+      if (!this.player.isPlayingOnce) this.player.play(isMoving ? "run" : "idle");
+      this.player.faceLeft(this._facingLeft);
+      this.player.update(ticker.deltaMS);
+    } else {
+      this.player.scale.x = this._facingLeft ? -this._playerBaseScale : this._playerBaseScale;
+    }
     this.player.position.set(this.position.x, this.position.y);
 
     if (this._approaching && Math.abs(this.position.x - this.target.x) < 2) {
