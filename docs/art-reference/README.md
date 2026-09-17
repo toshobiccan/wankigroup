@@ -17,6 +17,9 @@ consistent, on-style results.
   theme).
 - `human-base.png` — a third example output from the character template,
   a bare-chested human base body.
+- `rig-asset-prompts.md` — the production recipe and copy-ready Astra
+  prompts for the animated cutout rig, including body pieces, wearables,
+  weapon, and book.
 
 ## The style, in short
 
