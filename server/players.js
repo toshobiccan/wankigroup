@@ -4,6 +4,7 @@
 
 import { EventEmitter } from "node:events";
 import { normalizePlayer } from "../src/game/player.js";
+import { DEFAULT_ROLE, normalizeRole } from "../src/game/roles.js";
 
 export class PlayerService extends EventEmitter {
   constructor({ store, saveDelayMs = 1000, timers = globalThis }) {
@@ -12,7 +13,9 @@ export class PlayerService extends EventEmitter {
     this.saveDelayMs = saveDelayMs;
     this.timers = timers;
     this.cache = new Map(); // accountId -> player
-    this.roles = new Map(); // accountId -> role, cached from the account at load() time
+    this.roles = new Map(); // accountId -> role. Re-read on every load(), so a role
+                             // change lands on the next load() (reconnect / API call);
+                             // live mid-session updates are not supported.
     this.pendingSaves = new Map(); // accountId -> timer
   }
 
@@ -25,12 +28,12 @@ export class PlayerService extends EventEmitter {
       this.cache.set(account.id, player);
       if (!saved) this.store.savePlayer(account.id, player);
     }
-    this.roles.set(account.id, account.role ?? "guest");
+    this.roles.set(account.id, normalizeRole(account.role));
     return player;
   }
 
   getRole(accountId) {
-    return this.roles.get(accountId) ?? "guest";
+    return this.roles.get(accountId) ?? DEFAULT_ROLE;
   }
 
   get(accountId) {
@@ -63,6 +66,7 @@ export class PlayerService extends EventEmitter {
   release(accountId) {
     this.flush(accountId);
     this.cache.delete(accountId);
+    this.roles.delete(accountId);
   }
 
   flushAll() {
