@@ -9,7 +9,7 @@ function startServer(env = {}) {
   const config = loadConfig({ PORT: "0", HOST: "127.0.0.1", AUTH_RATE_LIMIT_PER_MINUTE: "1000", ...env });
   const store = config.online ? new MemoryStore() : undefined;
   const server = createGameServer(config, { store, log: { info() {}, error() {} } });
-  return server.listen().then((address) => ({ server, base: `http://127.0.0.1:${address.port}`, port: address.port }));
+  return server.listen().then((address) => ({ server, store, base: `http://127.0.0.1:${address.port}`, port: address.port }));
 }
 
 async function api(base, method, path, { body, token } = {}) {
@@ -131,6 +131,28 @@ describe("server (online)", () => {
     await api(ctx.base, "POST", "/api/auth/logout", { token: login.data.token });
     expect((await api(ctx.base, "GET", "/api/me", { token: login.data.token })).status).toBe(401);
     expect((await api(ctx.base, "GET", "/api/me", { token })).status).toBe(200); // other session untouched
+  });
+
+  it("accounts default to guest and register bumps to player", async () => {
+    const created = await guest("Tester");
+    expect(created.account.role).toBe("guest");
+
+    const { data } = await api(ctx.base, "POST", "/api/auth/register", {
+      token: created.token,
+      body: { username: "tester1", password: "hunter22" },
+    });
+    expect(data.account.role).toBe("player");
+  });
+
+  it("setRole elevates an account and register does not undo it", async () => {
+    const created = await guest("Vip");
+    ctx.store.setRole(created.account.id, "scholar");
+
+    const { data } = await api(ctx.base, "POST", "/api/auth/register", {
+      token: created.token,
+      body: { username: "vip1", password: "hunter22" },
+    });
+    expect(data.account.role).toBe("scholar");
   });
 
   it("rejects a WebSocket with a bad token", async () => {

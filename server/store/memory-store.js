@@ -7,7 +7,7 @@
 //   loadPlayer(accountId) -> saved player object | null
 //   savePlayer(accountId, player)
 //   close()
-// account: { id, displayName, username, passwordHash, createdAt }
+// account: { id, displayName, username, passwordHash, role, createdAt }
 
 import crypto from "node:crypto";
 
@@ -22,7 +22,7 @@ export class MemoryStore {
   }
 
   createAccount({ displayName }) {
-    const account = { id: crypto.randomUUID(), displayName, username: null, passwordHash: null, createdAt: this.now() };
+    const account = { id: crypto.randomUUID(), displayName, username: null, passwordHash: null, role: "guest", createdAt: this.now() };
     this.accounts.set(account.id, account);
     return { ...account };
   }
@@ -45,6 +45,12 @@ export class MemoryStore {
     const account = this.accounts.get(accountId);
     if (!account) throw new Error("unknown_account");
     Object.assign(account, { username, passwordHash });
+  }
+
+  setRole(accountId, role) {
+    const account = this.accounts.get(accountId);
+    if (!account) throw new Error("unknown_account");
+    account.role = role;
   }
 
   createSession(accountId, tokenHash) {

@@ -29,10 +29,13 @@ const MIGRATIONS = [
      state TEXT NOT NULL,
      updated_at INTEGER NOT NULL
    );`,
+  `ALTER TABLE accounts ADD COLUMN role TEXT NOT NULL DEFAULT 'guest';`,
 ];
 
 const toAccount = (row) =>
-  row ? { id: row.id, displayName: row.display_name, username: row.username, passwordHash: row.password_hash, createdAt: row.created_at } : null;
+  row
+    ? { id: row.id, displayName: row.display_name, username: row.username, passwordHash: row.password_hash, role: row.role, createdAt: row.created_at }
+    : null;
 
 export class SqliteStore {
   constructor({ filename, now = Date.now }) {
@@ -67,8 +70,8 @@ export class SqliteStore {
   }
 
   createAccount({ displayName }) {
-    const account = { id: crypto.randomUUID(), displayName, username: null, passwordHash: null, createdAt: this.now() };
-    this.db.prepare("INSERT INTO accounts (id, display_name, created_at) VALUES (?, ?, ?)").run(account.id, displayName, account.createdAt);
+    const account = { id: crypto.randomUUID(), displayName, username: null, passwordHash: null, role: "guest", createdAt: this.now() };
+    this.db.prepare("INSERT INTO accounts (id, display_name, role, created_at) VALUES (?, ?, ?, ?)").run(account.id, displayName, account.role, account.createdAt);
     return account;
   }
 
@@ -90,6 +93,11 @@ export class SqliteStore {
       if (/UNIQUE/i.test(err.message)) throw new Error("username_taken");
       throw err;
     }
+  }
+
+  setRole(accountId, role) {
+    const { changes } = this.db.prepare("UPDATE accounts SET role = ? WHERE id = ?").run(role, accountId);
+    if (!changes) throw new Error("unknown_account");
   }
 
   createSession(accountId, tokenHash) {

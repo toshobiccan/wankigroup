@@ -22,7 +22,7 @@ import {
 import { HttpError, RateLimiter, applyCors, clientIp, isOriginAllowed, readJson, sendJson } from "./http-utils.js";
 
 export function accountView(account) {
-  return { id: account.id, displayName: account.displayName, username: account.username, isGuest: !account.username };
+  return { id: account.id, displayName: account.displayName, username: account.username, isGuest: !account.username, role: account.role };
 }
 
 export function createApi({ config, store, players, world }) {
@@ -61,6 +61,7 @@ export function createApi({ config, store, players, world }) {
       const password = check(validatePassword(body.password));
       try {
         store.setCredentials(account.id, { username, passwordHash: await hashPassword(password) });
+        if (account.role === "guest") store.setRole(account.id, "player");
       } catch (err) {
         if (err.message === "username_taken") throw new HttpError(409, "username_taken");
         throw err;
