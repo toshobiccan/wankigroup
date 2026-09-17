@@ -1,0 +1,17 @@
+# Keep the image small: only what the server runs and the browser loads.
+.git
+.github
+.claude
+.superpowers
+.data
+node_modules
+docs
+test
+dev
+tools
+assets/originals
+assets/animerte
+vitest.config.mjs
+Dockerfile
+fly.toml
+*.md

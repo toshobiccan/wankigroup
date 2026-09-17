@@ -4,6 +4,23 @@ Living backlog and status log for the project, kept alongside `docs/HANDOFF.md` 
 
 ---
 
+## 2026-09-17 — Multiplayer foundation (decision + build)
+
+**Decision (toshobiccan):** multiplayer is a goal, so everything is built multiplayer-ready from now on, prepared so that starting multiplayer tests is just a deploy. Resolves backlog item 4 and the "Multiplayer" / "Anki deck hosting" open questions below.
+
+Built on `feature/multiplayer-foundation` (design: `docs/specs/2026-09-17-multiplayer-foundation-design.md`):
+
+- **Shared rules** in `src/game/` (player save, rewards, quests, one flashcard round, `Room`), used unchanged by the browser (local mode) and the server (online mode).
+- **Game server** (`server/`): guest accounts → optional username/password, SQLite storage, server-side rewards, WebSocket rooms with the agreed instance ids (`plains1-0001`, 5 players each), shared mob HP, rewards to everyone fighting a mob when it falls, server-side 5 s respawns, reconnect + rejoin.
+- **Client**: sign-in screens, connection dot + room badge, other players visible and walking in World, local mode kept for offline/static hosting (`?offline`).
+- **Decks stay on the device** in both modes; only grades and card counts reach the server.
+- **Deploy ready**: Dockerfile, Fly.io config (Stockholm), GitHub Actions test + deploy workflows, `docs/DEPLOY.md`. One-time account setup is the only step left.
+- **Testing aids**: `npm run bot` (fake players), 75 automated tests incl. real HTTP + WebSocket runs.
+- Behaviour changes: deck-import rewards capped at 3 per day; a mob nobody is fighting heals to full; mob respawn moved from `WorldScene` into `Room`.
+- Fixed along the way: page transitions could loop forever between two pages when the canvas had zero width; engaging a mob could send a stale position one frame before arrival.
+
+---
+
 ## 2026-09-16 (later still) — AQ-style multi-page maps
 
 `src/world/world-scene.js` (`13390c6`): `WorldScene` now hosts a chain of connected pages instead of one static zone, AQ-style — walk to a page's edge and it loads the next one, landing you just inside the matching edge of the new page. Zone JSON gains `"links": {"prev", "next"}`; the existing zone is renamed `plains.json` → `plains1.json` (id `"plains1"`) and links forward to a new `plains2.json` — a **blank** page (no background image, no mobs) rendered as a flat placeholder at the same aspect ratio as the real art, exactly per spec ("make rooms blank except for the one that has been created"). A small pulsing arrow marks any edge that has a link, and the current page's `displayName` shows in small text, bottom-left.
@@ -47,7 +64,7 @@ Source: team Discord conversation (hoye4083), summarizing what's done and what's
    - **Materials** — mob drops (e.g. goblin "scraps"), spent at a smith to craft/upgrade armor. The list renders and stacks correctly, but no drop system exists yet, so it's always empty in practice.
    - **Status** (renamed from "buffs" in the latest team message) — equip a class, then choose which buff is active if you have more than one unlocked. Same story: list renders, nothing to show yet, and the "class" concept still isn't defined anywhere (see Open Questions).
 3. ~~**Map system, AQ-style.**~~ **Done (2026-09-16, see above).** Edge-to-next-page transitions, blank placeholder pages, edge arrows, and the page-name label are all live. Not built (deliberately, per the request): the multiplayer per-room instancing (`plains1-0001` etc.) — see Open Questions.
-4. **Data storage / backend.** Where does a player's inventory and game state actually live? Should imported Anki decks be uploaded to a server? If multiplayer is wanted, a login/account system is required first. **This is flagged as an open question, not a committed decision** — see below.
+4. ~~**Data storage / backend.**~~ **Decided and built (2026-09-17, see above).** Progression lives on the server in online mode (SQLite), in localStorage in local mode; decks stay on the device; guest accounts with optional password.
 5. **Sprites and animations.** Real per-frame character/mob animation, beyond the current single static image + hand-rolled tween "hit" effect.
 6. **Aesthetic overhaul.** Restyle menus and buttons to match the intended flash-game look — current UI is functional but not final art direction.
 
@@ -60,12 +77,12 @@ Reasoning, not a decision — flag disagreement before starting any of these.
 1. ~~Finish the stat formulas~~ **Done (2026-09-16).**
 2. ~~Inventory UI shell~~ **Done (2026-09-16)**, built directly on request ahead of this order — the real remaining work (drop system, item definitions, equip slots + stat bonuses, the "class"/buff concept) is unblocked by stats now being live, but still needs its own design pass; not yet scheduled below.
 3. ~~AQ-style map paging~~ **Done (2026-09-16).**
-4. **Resolve the data storage / backend question** (#4) as a decision, before writing any server code: is multiplayer actually a goal for launch, or a later stretch goal? That answer changes the storage design completely (client-only IndexedDB/localStorage, which is what exists today, vs. a real backend + accounts). Worth a short dedicated design conversation rather than assuming an answer. Next up.
+4. ~~Resolve the data storage / backend question~~ **Done (2026-09-17)** — multiplayer foundation built. Next multiplayer step when the team wants to test: one-time Fly.io setup in `docs/DEPLOY.md`, then deploy.
 5. **Sprites and animations** (#5) — largely gated on an art pipeline decision that was researched earlier (Spine/PixiJS runtime, God Mode AI, Layer.ai, Character Animator) but never finalized. Revisit that decision before investing engineering time here, since it determines the actual file format/integration work.
 6. **Aesthetic overhaul** (#6) — lowest urgency, no hard dependency on anything else. Good candidate to pick up opportunistically or hand to a design-focused pass whenever the team wants it, independent of the above order.
 
 ## Open questions (need a team decision, not just code)
 
-- **Multiplayer:** in scope for launch, or a later stretch goal? *(2026-09-17, toshobiccan: undecided, but leaning towards building it in from the start if the game is going to have it at all.)* Determines whether a login/account system and server-side storage are needed at all right now. If/when it happens, the room-instancing id scheme is already specified: `plains1-0001`, `plains1-0002`, ... (multiple parallel instances of the same page, ~4-5 players each, some rooms allowing more) — not implemented, just the naming decided.
+- ~~**Multiplayer:** in scope?~~ **Decided 2026-09-17: yes, built in from the start** (see the 2026-09-17 entry). Still open within it: shared-mob reward split (today everyone fighting gets the full reward), chat/parties, and whether guests should be allowed at public launch.
 - **Buff "classes":** not defined anywhere yet — what are the classes, and what buffs does each grant?
-- **Anki deck hosting:** decks currently live only in the player's own browser (IndexedDB). Uploading them to a server is only needed if multiplayer/cross-device sync is a goal — same dependency as the login-system question above.
+- ~~**Anki deck hosting:**~~ **Decided 2026-09-17: decks stay on the device** (privacy, size, deck copyright). Consequence: grades can't be verified by the server, and a player's decks don't follow them to a new device — they re-import there. Revisit only if cross-device deck sync becomes a real request.

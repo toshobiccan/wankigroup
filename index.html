@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Dancing+Script:wght@600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=4" />
+  <link rel="stylesheet" href="style.css?v=5" />
 </head>
 <body>
   <div class="app">
@@ -35,7 +35,8 @@
             <svg viewBox="0 0 20 22"><path d="M10 1 L18 7 L15 20 H5 L2 7Z" fill="#3d8bff"/><path d="M10 1 L18 7 H2Z" fill="#8cc4ff"/><path d="M6 7 L10 20 L14 7Z" fill="#5aa4ff"/><path d="M10 1 L6 7 H14Z" fill="#c8e4ff"/></svg>
           </span><span id="gems">0</span>
         </div>
-        <button class="icon-btn" aria-label="Settings">
+        <button class="icon-btn" id="settingsBtn" aria-label="Account and settings">
+          <span class="net-dot" id="netDot" hidden></span>
           <svg viewBox="0 0 24 24"><path fill="#c9ced8" d="M19.4 13a7.6 7.6 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.4 7.4 0 0 0-1.7-1L15 3.3h-4l-.4 2.6a7.4 7.4 0 0 0-1.7 1l-2.5-1-2 3.5L6.6 11a7.6 7.6 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1a7.4 7.4 0 0 0 1.7 1l.4 2.6h4l.4-2.6a7.4 7.4 0 0 0 1.7-1l2.5 1 2-3.5ZM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z" transform="translate(-1 0)"/></svg>
         </button>
       </div>
@@ -300,6 +301,7 @@
       <!-- ============ WORLD ============ -->
       <section class="view" data-view="world">
         <div id="worldRoot" class="world-root"></div>
+        <div id="netBadge" class="net-badge" hidden></div>
         <div id="encounterPanelRoot"></div>
         <div id="defeatFade" class="defeat-fade" hidden></div>
       </section>
@@ -334,9 +336,9 @@
     </div>
   </div>
 
-  <script src="db.js?v=4"></script>
-  <script src="anki-import.js?v=4"></script>
-  <script src="app.js?v=4"></script>
-  <script type="module" src="src/world/bootstrap.js?v=2"></script>
+  <script src="db.js?v=5"></script>
+  <script src="anki-import.js?v=5"></script>
+  <script src="app.js?v=5"></script>
+  <script type="module" src="src/world/bootstrap.js?v=3"></script>
 </body>
 </html>

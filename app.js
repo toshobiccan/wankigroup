@@ -1,79 +1,47 @@
 // ================= PLAYER STATE =================
-const XP_PER_LEVEL = 1000;
-const STORAGE_KEY = "cardslayer-player";
+// The session (src/net/session.js) owns the player: localStorage in local
+// mode, the game server in online mode. `player` below is only the latest copy
+// to render -- never change it directly; ask the session instead
+// (session.importedDeck, session.claimQuest, session.grade, ...), which applies
+// the shared rules in src/game/ and hands back the updated player.
+let session = null;
+let player = null;
 
-const defaultPlayer = {
-  name: "Adventurer",
-  level: 1,
-  xp: 0,
-  coins: 0,
-  gems: 0,
-  activeDeckId: null,
-  stats: {
-    hp: 100,
-    attackDamage: 12,
-    magicDamage: 0,
-    armor: 2,
-    magicResist: 2,
-    attackSpeed: 10,
-    luck: 0,
-  },
-  hp: 100, // current HP -- persists across fights, separate from the max in stats.hp
-  // Held-but-not-equipped items. equipables: Item[] (see src/items.js, kind
-  // "equipable"). materials: { item, quantity }[] -- quantity has no upper
-  // bound, materials stack infinitely in theory. No item has been created
-  // yet (no drop system exists), so both start empty for every player.
-  inventory: { equipables: [], materials: [] },
-  // What's currently worn, one item per slot (or null) -- see src/items.js's
-  // EQUIP_SLOTS. Separate from inventory.equipables (held) the same way a
-  // real RPG splits "in your bag" from "on your body". No equip UI/logic
-  // exists yet -- this is just the slot structure for when it does.
-  equipment: { helmet: null, cape: null, chestplate: null, leggings: null, boots: null, weapon: null, book: null },
-  // The Inventory screen's Status tab: one selected class, one active buff
-  // (both null until classes/buffs exist -- see src/items.js's createClass/createBuff).
-  status: { selectedClass: null, activeBuff: null },
-  daily: { date: "", reviewed: 0, battlesWon: 0, imported: 0, claimed: [] },
-};
+// Which imported deck fights draw cards from. Decks live only on this device
+// (IndexedDB), so this is a per-device setting, not part of the synced player.
+const DEVICE_KEY = "cardslayer-device";
+const device = loadDevice();
 
-function loadPlayer() {
-  // structuredClone, not a shallow spread of defaultPlayer itself -- otherwise every
-  // first-run player's player.stats/player.inventory would be the *same* nested
-  // object as defaultPlayer's, and the first push into inventory.materials would
-  // silently mutate the shared default for every other player in this session too.
+function loadDevice() {
+  let saved = {};
   try {
-    return { ...structuredClone(defaultPlayer), ...JSON.parse(localStorage.getItem(STORAGE_KEY)) };
-  } catch {
-    return structuredClone(defaultPlayer);
+    saved = JSON.parse(localStorage.getItem(DEVICE_KEY)) ?? {};
+  } catch {}
+  if (saved.activeDeckId === undefined) {
+    // Before sessions existed, the active deck was stored inside the player save.
+    try {
+      saved.activeDeckId = JSON.parse(localStorage.getItem("cardslayer-player"))?.activeDeckId ?? null;
+    } catch {
+      saved.activeDeckId = null;
+    }
   }
+  return saved;
 }
 
-const player = loadPlayer();
-
-function savePlayer() {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(player)); } catch {}
+function setActiveDeck(deckId) {
+  device.activeDeckId = deckId;
+  try {
+    localStorage.setItem(DEVICE_KEY, JSON.stringify(device));
+  } catch {}
 }
 
-function today() {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function daily() {
-  if (player.daily?.date !== today()) {
-    player.daily = { date: today(), reviewed: 0, battlesWon: 0, imported: 0, claimed: [] };
-  }
-  return player.daily;
-}
-
-function gainXp(amount) {
-  player.xp += amount;
-  while (player.xp >= XP_PER_LEVEL) {
-    player.xp -= XP_PER_LEVEL;
-    player.level += 1;
-    player.gems += 10;
-  }
+function xpPerLevel() {
+  return window.Cardslayer?.game?.XP_PER_LEVEL ?? 1000;
 }
 
 function renderHeader() {
+  if (!player) return;
+  const XP_PER_LEVEL = xpPerLevel();
   const fmt = (n) => n.toLocaleString("en-US");
   document.getElementById("playerName").textContent = player.name;
   document.getElementById("playerLevel").textContent = `Lv ${player.level}`;
@@ -105,8 +73,21 @@ function showModal(...content) {
   $("#modal").hidden = false;
 }
 
+// A locked modal (signing in, "playing elsewhere") can't be dismissed by
+// clicking the backdrop.
+let modalLocked = false;
+
+function lockModal() {
+  modalLocked = true;
+}
+
+function unlockModal() {
+  modalLocked = false;
+}
+
 function closeModal() {
   $("#modal").hidden = true;
+  modalLocked = false;
 }
 
 // ================= NAVIGATION =================
@@ -154,6 +135,10 @@ fileInput.addEventListener("change", () => {
 async function importFile(file) {
   const title = $("#dropTitle");
   const hint = $("#dropHint");
+  if (!session || session.needsLogin) {
+    hint.textContent = "Sign in first, then import your deck";
+    return;
+  }
   if (!/\.(apkg|colpkg)$/i.test(file.name)) {
     hint.textContent = "Please choose an .apkg file exported from Anki";
     return;
@@ -179,25 +164,30 @@ async function importFile(file) {
       }))
     );
 
-    const xp = Math.min(500, 50 + cards.length);
-    const coins = 100;
-    gainXp(xp);
-    player.coins += coins;
-    daily().imported += 1;
-    savePlayer();
-    renderHeader();
+    // The deck is already saved on this device; the reward goes through the
+    // session (the server, when online) and is capped per day.
+    let rewardLine;
+    try {
+      const { reward, rewarded } = await session.importedDeck(cards.length);
+      rewardLine = rewarded
+        ? el("div", { class: "reward" }, el("span", {}, `+${reward.xp} XP`), el("span", {}, `+${reward.coins} 🪙`))
+        : el("p", {}, "No reward this time -- you've hit today's import reward limit.");
+    } catch (err) {
+      console.error("import reward failed", err);
+      rewardLine = el("p", {}, "Your deck is saved, but the reward couldn't be collected (no connection).");
+    }
 
     showModal(
       el("h3", {}, "Deck Imported!"),
       el("p", {}, `“${name}” — ${cards.length} cards are ready for battle.`),
-      el("div", { class: "reward" }, el("span", {}, `+${xp} XP`), el("span", {}, `+${coins} 🪙`)),
+      rewardLine,
       el(
         "div",
         { class: "modal-actions" },
         el("button", { class: "btn-small btn-ghost", onclick: closeModal }, "Later"),
         el("button", {
           class: "btn-small",
-          onclick: () => { closeModal(); player.activeDeckId = deckId; savePlayer(); go("world"); },
+          onclick: () => { closeModal(); setActiveDeck(deckId); go("world"); },
         }, "⚔️ Fight With This Deck")
       )
     );
@@ -235,7 +225,7 @@ renderers.home = async () => {
       const cards = await DB.cardsForDeck(d.id);
       const due = cards.filter((c) => c.due <= now).length;
       const learned = cards.filter((c) => c.reps > 0).length;
-      const isActive = player.activeDeckId === d.id;
+      const isActive = device.activeDeckId === d.id;
       return el("div", { class: `panel deck-card${isActive ? " is-active-deck" : ""}` },
         el("div", { class: "deck-icon" }, d.name.trim()[0]?.toUpperCase() || "A"),
         el("div", { class: "deck-meta" },
@@ -244,7 +234,7 @@ renderers.home = async () => {
         ),
         el("button", {
           class: `btn-small${isActive ? " btn-ghost" : ""}`,
-          onclick: () => { player.activeDeckId = d.id; savePlayer(); renderers.home(); },
+          onclick: () => { setActiveDeck(d.id); renderers.home(); },
         }, isActive ? "Active ✓" : "Set Active")
       );
     })
@@ -253,41 +243,32 @@ renderers.home = async () => {
 };
 
 // ================= QUESTS =================
-const QUESTS = [
-  { id: "review20", title: "Review 20 cards", goal: 20, key: "reviewed", reward: { coins: 150, xp: 100 } },
-  { id: "win1", title: "Win a battle", goal: 1, key: "battlesWon", reward: { coins: 100, gems: 5 } },
-  { id: "import1", title: "Import a deck", goal: 1, key: "imported", reward: { coins: 50, xp: 50 } },
-];
-
 renderers.quests = () => {
-  const d = daily();
-  const rows = QUESTS.map((q) => {
-    const progress = Math.min(d[q.key], q.goal);
-    const claimed = d.claimed.includes(q.id);
-    const ready = progress >= q.goal && !claimed;
+  if (!player) return;
+  const rows = window.Cardslayer.game.questView(player).map((q) => {
     const rewardText = Object.entries(q.reward)
       .map(([k, v]) => `+${v} ${{ coins: "🪙", gems: "💎", xp: "XP" }[k]}`)
       .join("  ");
     return el("div", { class: "panel deck-card" },
-      el("div", { class: "deck-icon" }, claimed ? "✓" : "!"),
+      el("div", { class: "deck-icon" }, q.claimed ? "✓" : "!"),
       el("div", { class: "deck-meta" },
         el("div", { class: "deck-name" }, q.title),
-        el("div", { class: "deck-sub" }, `${progress} / ${q.goal} · ${rewardText}`),
-        el("div", { class: "quest-bar" }, el("div", { style: `width:${(progress / q.goal) * 100}%` }))
+        el("div", { class: "deck-sub" }, `${q.progress} / ${q.goal} · ${rewardText}`),
+        el("div", { class: "quest-bar" }, el("div", { style: `width:${(q.progress / q.goal) * 100}%` }))
       ),
       el("button", {
-        class: `btn-small ${ready ? "" : "btn-ghost"}`,
-        onclick: () => {
-          if (!ready) return;
-          d.claimed.push(q.id);
-          player.coins += q.reward.coins || 0;
-          player.gems += q.reward.gems || 0;
-          gainXp(q.reward.xp || 0);
-          savePlayer();
-          renderHeader();
-          renderers.quests();
+        class: `btn-small ${q.ready ? "" : "btn-ghost"}`,
+        onclick: async (event) => {
+          if (!q.ready) return;
+          event.currentTarget.disabled = true;
+          try {
+            await session.claimQuest(q.id); // the "player" event re-renders header and this list
+          } catch (err) {
+            console.error("claiming quest failed", err);
+            renderers.quests();
+          }
         },
-      }, claimed ? "Done" : "Claim")
+      }, q.claimed ? "Done" : "Claim")
     );
   });
   $("#questList").replaceChildren(...rows);
@@ -433,6 +414,7 @@ function renderInventoryList() {
 }
 
 renderers.inventory = () => {
+  if (!player) return;
   renderInventoryLeft();
   renderInventoryTabs();
   renderInventoryList();
@@ -462,10 +444,23 @@ function schedule(card, grade) {
 }
 
 // ================= WORLD / COMBAT =================
+// Card scheduling stays on this device (decks never leave it); everything else
+// about a fight -- damage, mob HP, rewards, defeat -- is decided by the session's
+// Room (src/game/room.js), locally or on the server.
 let worldScene = null;
 let encounterPanel = null;
-let fight = null; // { mob, queue } while a fight is in progress; null otherwise
+let fight = null; // { mob, queue, endedWithRewards? } while a fight is in progress; null otherwise
 let gradeInFlight = false; // true while a single handleGrade() call is resolving -- blocks double-taps on the grade buttons
+const roomPeople = new Set(); // ids of the other players in our current room (for the badge)
+let currentRoomId = null;
+
+const FIGHT_ERRORS = {
+  mob_gone: "Too late -- that monster is already down.",
+  too_far: "Get a little closer first.",
+  already_fighting: "You're already in a fight.",
+  offline: "No connection to the server right now.",
+  timeout: "The server didn't answer. Try again.",
+};
 
 // Shared recovery path for handleCombatStart/handleGrade: any thrown/rejected
 // error inside either leaves worldScene.inCombat latched true with no other
@@ -476,6 +471,7 @@ function bailOutOfFight(err) {
   fight = null;
   encounterPanel.hide();
   worldScene.endCombat({ mobDefeated: false });
+  session.flee().catch(() => {});
 }
 
 function buildFightQueue(deckCards) {
@@ -501,13 +497,10 @@ function handleMobSelected(mob) {
 
 async function handleCombatStart(mobData) {
   try {
-    if (!player.activeDeckId) {
+    if (!device.activeDeckId) {
       // Bail out of the engaged state entirely (not just skip the fight) --
       // otherwise WorldScene stays latched in inCombat/_approaching and every
-      // later click on this mob or the ground is silently swallowed, since
-      // both _onMobClick and _setTargetFromPointer early-return while either
-      // flag is set. endCombat({mobDefeated:false}) is the same recovery path
-      // already used for an actual combat loss below.
+      // later click on this mob or the ground is silently swallowed.
       worldScene.endCombat({ mobDefeated: false });
       encounterPanel.showMessage({
         text: "Pick an active deck on Home first.",
@@ -516,10 +509,17 @@ async function handleCombatStart(mobData) {
       });
       return;
     }
-    const cards = await DB.cardsForDeck(player.activeDeckId);
+    const cards = await DB.cardsForDeck(device.activeDeckId);
     if (!cards.length) {
       worldScene.endCombat({ mobDefeated: false });
       encounterPanel.showMessage({ text: "This deck has no cards - import more or pick another." });
+      return;
+    }
+    try {
+      await session.engage(mobData.id);
+    } catch (err) {
+      worldScene.endCombat({ mobDefeated: false });
+      encounterPanel.showMessage({ text: FIGHT_ERRORS[err.code] ?? "Couldn't start that fight." });
       return;
     }
     fight = { mob: mobData, queue: buildFightQueue(cards) };
@@ -529,58 +529,58 @@ async function handleCombatStart(mobData) {
   }
 }
 
+// Someone else landed the killing blow on the mob we were fighting. We still
+// get the reward (the room already gave it); just end our side of the fight.
+function handleCombatEnded({ mobId, rewards }) {
+  if (!fight || fight.mob.id !== mobId) return;
+  if (gradeInFlight) {
+    fight.endedWithRewards = rewards; // handleGrade finishes its animation first, then wraps up
+    return;
+  }
+  finishWithVictory(rewards);
+}
+
+function finishWithVictory(rewards) {
+  const mob = fight.mob;
+  worldScene.endCombat({ mobDefeated: true });
+  encounterPanel.hide();
+  fight = null;
+  showModal(
+    el("div", { style: "font-size:48px" }, "🏆"),
+    el("h3", {}, "Victory!"),
+    el("p", {}, `You vanquished the ${mob.name}.`),
+    el("div", { class: "reward" }, el("span", {}, `+${rewards?.xp ?? 0} XP`), el("span", {}, `+${rewards?.coins ?? 0} 🪙`)),
+    el("div", { class: "modal-actions" }, el("button", { class: "btn-small", onclick: closeModal }, "Continue"))
+  );
+}
+
 async function handleGrade(grade) {
   if (!fight || gradeInFlight) return;
   gradeInFlight = true;
   try {
     const card = fight.queue.shift();
     await schedule(card, grade);
-    daily().reviewed += 1;
+    const result = await session.grade(grade);
+    if (!fight) return;
+    if (fight.endedWithRewards) return finishWithVictory(fight.endedWithRewards);
 
-    if (grade === "again") {
-      savePlayer(); // schedule() already persisted the card itself via DB.putCard; this covers the daily().reviewed quest counter
+    if (result.again) {
       fight.queue.push(card);
       encounterPanel.showCard(fight.queue[0], fight.mob, playerHpState());
       return;
     }
 
-    const result = window.Cardslayer.resolveRound({ player, mob: fight.mob, grade });
-    player.hp = result.playerHp;
-    fight.mob.hp = result.mobHp;
-    savePlayer();
-
+    worldScene.setMobHp(fight.mob.id, result.mobHp);
     encounterPanel.retract();
-    const hits = [
-      { attacker: "player", damage: result.playerDamageDealt, isCrit: result.isCrit },
-      { attacker: "mob", damage: result.mobDamageDealt, isCrit: result.mobIsCrit },
-    ];
-    if (result.order === "mob") hits.reverse();
-    await worldScene.playHit(hits.filter((hit) => hit.damage > 0));
+    await worldScene.playHit(result.hits);
     // Skip restore() on a fight-ending result -- the victory/defeat paths below
     // call hide() a couple statements later, and restore() then hide() back to
     // back would fire two competing CSS height transitions for nothing visible.
-    if (!result.mobDefeated && !result.playerDefeated) encounterPanel.restore();
+    const fightOver = result.mobDefeated || result.playerDefeated || fight.endedWithRewards;
+    if (!fightOver) encounterPanel.restore();
 
-    if (result.mobDefeated) {
-      const mob = fight.mob;
-      worldScene.endCombat({ mobDefeated: true });
-      encounterPanel.hide();
-      fight = null;
-      const coinReward = window.Cardslayer.applyLuckDropBonus(mob.coinReward, player.stats.luck);
-      gainXp(mob.xpReward);
-      player.coins += coinReward;
-      daily().battlesWon += 1;
-      savePlayer();
-      renderHeader();
-      showModal(
-        el("div", { style: "font-size:48px" }, "🏆"),
-        el("h3", {}, "Victory!"),
-        el("p", {}, `You vanquished the ${mob.name}.`),
-        el("div", { class: "reward" }, el("span", {}, `+${mob.xpReward} XP`), el("span", {}, `+${coinReward} 🪙`)),
-        el("div", { class: "modal-actions" }, el("button", { class: "btn-small", onclick: closeModal }, "Continue"))
-      );
-      return;
-    }
+    if (result.mobDefeated) return finishWithVictory(result.rewards);
+    if (fight.endedWithRewards) return finishWithVictory(fight.endedWithRewards);
 
     if (result.playerDefeated) {
       fight = null;
@@ -590,23 +590,22 @@ async function handleGrade(grade) {
       return;
     }
 
-    // The active deck's card queue is consumed one card per non-"again" grade
-    // (buildFightQueue() hands back the whole active deck once); combat keeps
-    // going until the mob or the player drops, not until cards run out, so an
-    // empty queue here just means the deck is small -- recycle it from the same
-    // active deck rather than crashing on fight.queue[0] === undefined below.
+    // The deck's queue is consumed one card per non-"again" grade; combat keeps
+    // going until the mob or the player drops, so recycle a small deck.
     if (!fight.queue.length) {
-      const cards = await DB.cardsForDeck(player.activeDeckId);
+      const cards = await DB.cardsForDeck(device.activeDeckId);
       fight.queue = buildFightQueue(cards);
     }
     encounterPanel.showCard(fight.queue[0], fight.mob, playerHpState());
   } catch (err) {
+    if (fight?.endedWithRewards) return finishWithVictory(fight.endedWithRewards);
     bailOutOfFight(err);
   } finally {
     gradeInFlight = false;
   }
 }
 
+// The room already restored HP and moved us to spawn; this is the visual half.
 async function playerDefeatAndRespawn() {
   const fade = $("#defeatFade");
   fade.hidden = false;
@@ -614,9 +613,6 @@ async function playerDefeatAndRespawn() {
   fade.classList.add("is-visible");
   await new Promise((r) => setTimeout(r, 500));
 
-  player.hp = player.stats.hp;
-  savePlayer();
-  renderHeader();
   worldScene.respawnPlayer();
 
   await new Promise((r) => setTimeout(r, 200));
@@ -625,14 +621,39 @@ async function playerDefeatAndRespawn() {
   fade.hidden = true;
 }
 
+// WorldScene finished loading a page: join that page's room and show who and
+// what is already there.
+async function enterPage(pageId, position) {
+  if (fight) {
+    fight = null;
+    encounterPanel.hide();
+  }
+  try {
+    const snapshot = await session.joinZone(pageId, position);
+    if (worldScene.pageId !== pageId) return; // already walked on to another page
+    applyRoom(snapshot);
+  } catch (err) {
+    console.error("joining the room failed", err);
+    currentRoomId = null;
+    updateNetBadge();
+  }
+}
+
+function applyRoom(snapshot) {
+  worldScene.applyRoomSnapshot(snapshot);
+  currentRoomId = snapshot.roomId;
+  roomPeople.clear();
+  for (const other of snapshot.players) roomPeople.add(other.id);
+  updateNetBadge();
+}
+
 renderers.world = async () => {
+  if (!session || !player) return;
   if (worldScene) {
     // Re-entering World from another tab: the encounter sheet is a plain
     // absolute-positioned overlay (see .encounter-sheet in style.css), so it
-    // does not get reset just because this view was hidden -- a message left
-    // over from a previous handleCombatStart bail-out (e.g. "Pick an active
-    // deck") would otherwise keep covering the mobs, unclickable, forever.
-    // Only clear it when no fight is actually in progress.
+    // does not get reset just because this view was hidden -- only clear it
+    // when no fight is actually in progress.
     if (!fight) encounterPanel.hide();
     return;
   }
@@ -646,9 +667,216 @@ renderers.world = async () => {
     mountElement: $("#worldRoot"),
     onMobSelected: handleMobSelected,
     onCombatStart: handleCombatStart,
+    onPageEnter: enterPage,
+    onMoveIntent: (position) => session.moveTo(position),
   });
-  await worldScene.loadZone("data/zones/plains1.json");
+  await worldScene.loadZone(`data/zones/${window.Cardslayer.game.START_ZONE_ID}.json`);
 };
+
+// ================= SESSION & ACCOUNT =================
+function wireSessionEvents() {
+  session.on("player", (updated) => {
+    player = updated;
+    renderHeader();
+    const view = document.querySelector(".view.is-active")?.dataset.view;
+    if (view === "quests") renderers.quests();
+    if (view === "inventory") renderers.inventory();
+  });
+
+  session.on("playerJoined", ({ player: other }) => {
+    worldScene?.upsertRemotePlayer(other, { snap: true });
+    roomPeople.add(other.id);
+    updateNetBadge();
+  });
+  session.on("playerLeft", ({ id }) => {
+    worldScene?.removeRemotePlayer(id);
+    roomPeople.delete(id);
+    updateNetBadge();
+  });
+  session.on("playerMoved", (other) => worldScene?.upsertRemotePlayer(other, { snap: Boolean(other.snap) }));
+  session.on("playerUpdated", (profile) => worldScene?.updateRemotePlayerProfile(profile));
+  session.on("mob", (state) => worldScene?.applyMobState(state));
+  session.on("mobHit", (hit) => worldScene?.showMobHit(hit));
+  session.on("combatEnded", handleCombatEnded);
+
+  session.on("connection", updateNetBadge);
+  session.on("rejoined", (snapshot) => {
+    // The server lost track of any fight while we were disconnected.
+    if (fight) {
+      fight = null;
+      encounterPanel.hide();
+      worldScene.endCombat({ mobDefeated: false });
+    }
+    if (worldScene && snapshot.zoneId === worldScene.pageId) applyRoom(snapshot);
+  });
+  session.on("kicked", () => {
+    lockModal();
+    showModal(
+      el("h3", {}, "Playing somewhere else"),
+      el("p", {}, "This account just signed in on another tab or device."),
+      el("div", { class: "modal-actions" }, el("button", { class: "btn-small", onclick: () => location.reload() }, "Play here instead"))
+    );
+  });
+  session.on("account", (account) => {
+    if (!account && session.mode === "online") showLoginModal();
+  });
+}
+
+const AUTH_ERRORS = {
+  name_length: "Names are 2-20 characters.",
+  name_characters: "Use letters, numbers, spaces, - or _.",
+  username_format: "Usernames are 3-20 characters: a-z, 0-9 or _.",
+  password_too_short: "Passwords need at least 8 characters.",
+  password_too_long: "That password is too long.",
+  username_taken: "That username is taken.",
+  invalid_credentials: "Wrong username or password.",
+  already_registered: "This account already has a login.",
+  too_many_requests: "Too many attempts -- wait a minute and try again.",
+  offline: "Can't reach the server.",
+};
+
+function authErrorText(err) {
+  return AUTH_ERRORS[err.code] ?? "Something went wrong. Try again.";
+}
+
+function input(attrs) {
+  return el("input", { class: "text-input", ...attrs });
+}
+
+// A small form inside the modal: fields, one submit button, an error line.
+function authForm({ title, intro, fields, submitLabel, onSubmit, footer }) {
+  const error = el("p", { class: "form-error", role: "alert" });
+  const submit = el("button", { class: "btn-small", type: "submit" }, submitLabel);
+  const form = el("form", { class: "auth-form" }, ...fields, error, el("div", { class: "modal-actions" }, submit));
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    error.textContent = "";
+    submit.disabled = true;
+    try {
+      await onSubmit();
+    } catch (err) {
+      error.textContent = authErrorText(err);
+      submit.disabled = false;
+    }
+  });
+  showModal(el("h3", {}, title), intro ? el("p", {}, intro) : null, form, footer ?? null);
+  fields[0]?.focus();
+}
+
+async function afterSignIn() {
+  player = session.player;
+  renderHeader();
+  unlockModal();
+  closeModal();
+  updateNetBadge();
+  if (worldScene?.pageId) enterPage(worldScene.pageId, worldScene._positionFrac());
+  const view = document.querySelector(".view.is-active")?.dataset.view;
+  renderers[view]?.();
+}
+
+function showLoginModal() {
+  lockModal();
+  const name = input({ name: "displayName", maxlength: "20", placeholder: "Adventurer name", autocomplete: "nickname", required: "" });
+  authForm({
+    title: "Welcome, adventurer",
+    intro: "Pick a name to start playing. You can protect your account with a password later.",
+    fields: [name],
+    submitLabel: "Start playing",
+    onSubmit: async () => {
+      await session.startAsGuest(name.value);
+      await afterSignIn();
+    },
+    footer: el("button", { class: "link-btn", type: "button", onclick: showSignInModal }, "I already have an account"),
+  });
+}
+
+function showSignInModal() {
+  lockModal();
+  const username = input({ name: "username", maxlength: "20", placeholder: "Username", autocomplete: "username", required: "" });
+  const password = input({ name: "password", type: "password", placeholder: "Password", autocomplete: "current-password", required: "" });
+  authForm({
+    title: "Sign in",
+    fields: [username, password],
+    submitLabel: "Sign in",
+    onSubmit: async () => {
+      await session.login(username.value, password.value);
+      await afterSignIn();
+    },
+    footer: el("button", { class: "link-btn", type: "button", onclick: showLoginModal }, "New here? Play as a guest"),
+  });
+}
+
+function showAccountModal() {
+  if (!session) return;
+  if (session.mode === "local") {
+    showModal(
+      el("h3", {}, "Offline mode"),
+      el("p", {}, "No game server here, so your progress is saved on this device only."),
+      el("div", { class: "modal-actions" }, el("button", { class: "btn-small", onclick: closeModal }, "OK"))
+    );
+    return;
+  }
+  if (session.needsLogin) return showLoginModal();
+
+  const { account } = session;
+  const signOut = el("button", {
+    class: "btn-small btn-ghost",
+    onclick: async () => {
+      if (account.isGuest && !confirm("You haven't set a password, so you won't be able to get this guest account back. Sign out anyway?")) return;
+      await session.logout();
+      location.reload();
+    },
+  }, "Sign out");
+
+  if (!account.isGuest) {
+    showModal(
+      el("h3", {}, account.displayName),
+      el("p", {}, `Signed in as @${account.username}.`),
+      el("div", { class: "modal-actions" }, signOut, el("button", { class: "btn-small", onclick: closeModal }, "Close"))
+    );
+    return;
+  }
+
+  const username = input({ name: "username", maxlength: "20", placeholder: "Choose a username", autocomplete: "username", required: "" });
+  const password = input({ name: "password", type: "password", placeholder: "Choose a password (8+ characters)", autocomplete: "new-password", required: "" });
+  authForm({
+    title: account.displayName,
+    intro: "You're playing as a guest. Add a username and password to keep this character and sign in on other devices.",
+    fields: [username, password],
+    submitLabel: "Secure my account",
+    onSubmit: async () => {
+      await session.register(username.value, password.value);
+      showModal(
+        el("h3", {}, "Account secured"),
+        el("p", {}, `You can now sign in anywhere as @${session.account.username}.`),
+        el("div", { class: "modal-actions" }, el("button", { class: "btn-small", onclick: closeModal }, "Nice"))
+      );
+    },
+    footer: el("div", { class: "modal-actions" }, signOut),
+  });
+}
+
+// Header dot on the settings button + the world view's room badge.
+function updateNetBadge() {
+  const dot = $("#netDot");
+  const badge = $("#netBadge");
+  if (!session) return;
+  const state = session.mode === "local" ? "local" : session.connection;
+  dot.dataset.state = state;
+  dot.hidden = false;
+  dot.title = { local: "Offline mode", open: "Online", reconnecting: "Reconnecting…", connecting: "Connecting…", closed: "Not connected" }[state] ?? state;
+
+  if (session.mode === "local") {
+    badge.textContent = "Offline mode";
+  } else if (state !== "open") {
+    badge.textContent = state === "reconnecting" ? "Reconnecting…" : "Not connected";
+  } else {
+    const count = currentRoomId ? roomPeople.size + 1 : 0;
+    badge.textContent = currentRoomId ? `${currentRoomId} · ${count} ${count === 1 ? "player" : "players"}` : "Online";
+  }
+  badge.dataset.state = state;
+  badge.hidden = false;
+}
 
 // ================= SCENE PLAY =================
 const OWL_LINES = ["Hoo! Ready to study?", "Drop a deck here!", "Knowledge is power!", "Hoo-hoo! 📚", "Let's beat some cards!"];
@@ -682,6 +910,35 @@ setTimeout(() => {
 }, 1200);
 
 // ================= BOOT =================
-$("#modal").addEventListener("click", (e) => { if (e.target.id === "modal") closeModal(); });
-daily();
-renderHeader();
+$("#modal").addEventListener("click", (e) => { if (e.target.id === "modal" && !modalLocked) closeModal(); });
+$("#settingsBtn").addEventListener("click", showAccountModal);
+
+// src/world/bootstrap.js is an ES module, so it runs after this script.
+function whenModulesReady() {
+  if (window.Cardslayer?.ready) return Promise.resolve();
+  return new Promise((resolve) => window.addEventListener("cardslayer:ready", resolve, { once: true }));
+}
+
+async function boot() {
+  await whenModulesReady();
+  try {
+    session = await window.Cardslayer.createSession();
+  } catch (err) {
+    // A server said it was online but then failed us (e.g. down mid-start):
+    // keep the app usable offline rather than showing a dead screen.
+    console.error("game server unavailable, starting in offline mode", err);
+    session = await window.Cardslayer.createSession({ forceLocal: true });
+  }
+  wireSessionEvents();
+  updateNetBadge();
+  if (session.needsLogin) {
+    showLoginModal();
+    return;
+  }
+  player = session.player;
+  renderHeader();
+  const view = document.querySelector(".view.is-active")?.dataset.view;
+  if (view && view !== "import") renderers[view]?.();
+}
+
+boot();
