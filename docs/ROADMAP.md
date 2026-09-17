@@ -34,7 +34,7 @@ Source: team Discord conversation (hoye4083), summarizing what's done and what's
 
 - **Movement** — mouse and touch both work. Tap the ground to walk there; hold down to keep moving continuously (like League of Legends). A click/tap indicator animation is planned but not yet built.
 - **Mobs** — goblins only so far. They have the same stat block as the player (HP, attack speed, attack damage, etc.). Defeated mobs respawn so they can be farmed.
-  - ⚠️ **Discrepancy to resolve:** the Discord message says mobs respawn after **5 seconds**; the actual shipped behavior (this session, verified in-browser) is **6 seconds** (`RESPAWN_DELAY_MS` in `src/world/world-scene.js`). Not changed here — flagging so the team can confirm which number is intended.
+  - **Resolved (2026-09-17):** respawn is **5 seconds**, as in the Discord message (`RESPAWN_DELAY_MS` in `src/world/world-scene.js`, was 6s).
 - **Combat mechanics** — tap a mob once to select it, tap again (or use the Fight/Flee buttons) to engage. A flashcard appears; grading it Again/Hard/Good/Easy deals damage. Every exchange checks attack speed — whoever's higher swings first (Pokémon-style), turn-based, with a flashcard between each round. Explicitly called out as needing further tuning, but functional.
   - **Planned follow-up** (not yet built): auto-detect when an Anki card is multiple-choice and, for those cards specifically, deal damage on a correct pick and miss on a wrong one — instead of the player self-grading via Again/Hard/Good/Easy.
 - **Map** — a background is generated from a prompt (shared with the team the day before this message). The prompt can also ask for the walkable ground vs. non-walkable sky to be auto-coded from the image. If the background is wider than the screen, the camera auto-scrolls as the character nears the edge.
@@ -66,7 +66,6 @@ Reasoning, not a decision — flag disagreement before starting any of these.
 
 ## Open questions (need a team decision, not just code)
 
-- **Respawn timer:** 5s (Discord) vs. 6s (shipped) — which is correct?
-- **Multiplayer:** in scope for launch, or a later stretch goal? Determines whether a login/account system and server-side storage are needed at all right now. If/when it happens, the room-instancing id scheme is already specified: `plains1-0001`, `plains1-0002`, ... (multiple parallel instances of the same page, ~4-5 players each, some rooms allowing more) — not implemented, just the naming decided.
+- **Multiplayer:** in scope for launch, or a later stretch goal? *(2026-09-17, toshobiccan: undecided, but leaning towards building it in from the start if the game is going to have it at all.)* Determines whether a login/account system and server-side storage are needed at all right now. If/when it happens, the room-instancing id scheme is already specified: `plains1-0001`, `plains1-0002`, ... (multiple parallel instances of the same page, ~4-5 players each, some rooms allowing more) — not implemented, just the naming decided.
 - **Buff "classes":** not defined anywhere yet — what are the classes, and what buffs does each grant?
 - **Anki deck hosting:** decks currently live only in the player's own browser (IndexedDB). Uploading them to a server is only needed if multiplayer/cross-device sync is a goal — same dependency as the login-system question above.

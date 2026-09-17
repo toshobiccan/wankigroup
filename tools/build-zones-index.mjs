@@ -5,7 +5,7 @@
 // generated file instead. Run again any time a zone is added or renamed.
 import fs from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 export function buildZonesIndex(zonesDir) {
   if (!fs.existsSync(zonesDir)) return [];
@@ -27,4 +27,6 @@ function main() {
   console.log(`Wrote data/zones/index.json: ${index.length} map(s) -- ${index.map((z) => z.displayName).join(", ")}`);
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) main();
+// pathToFileURL, not a hand-built "file://" string -- on Windows argv[1] is
+// "C:\..." and the two would never match, so main() silently never ran.
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) main();

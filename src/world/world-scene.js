@@ -6,7 +6,7 @@ const DEAD_ZONE_FRACTION = 0.4;
 const PLAYER_HEIGHT = 90; // world-pixels tall, roughly matches the ground band's scale
 const MOB_HEIGHT = 70; // a bit shorter than the player -- these are the weak, early mobs
 const APPROACH_DISTANCE = 60; // how close (world-pixels) the player walks before a fight actually starts
-const RESPAWN_DELAY_MS = 6000; // how long a defeated mob stays gone before it's back at full HP
+const RESPAWN_DELAY_MS = 5000; // how long a defeated mob stays gone before it's back at full HP
 const EDGE_TRANSITION_MARGIN = 4; // world-pixels from a page's exact edge that counts as "reached it"
 // A page with no real art yet ("blank" in its JSON) gets a flat two-tone
 // placeholder instead of a missing-texture error -- same aspect ratio as
