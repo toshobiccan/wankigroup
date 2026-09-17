@@ -1,0 +1,16 @@
+{
+  "name": "cardslayer",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Battle monsters by answering your flashcards. Works with decks exported from Anki.",
+  "scripts": {
+    "start": "node server.js",
+    "test": "vitest run"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "vitest": "^5.0.1"
+  }
+}

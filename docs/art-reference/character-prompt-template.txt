@@ -1,0 +1,92 @@
+Create a full-body 2D fantasy game character for CARDSLAYER.
+
+CHARACTER:
+[CHARACTER DESCRIPTION]
+
+CARDSLAYER CHARACTER ART STYLE:
+
+Early-to-mid 2000s browser Flash fantasy RPG aesthetic. Clean hand-drawn vector-game appearance, designed to look like an actual sprite from an old browser MMORPG rather than modern digital concept art.
+
+Use very thick, confident, near-black outer outlines around the entire silhouette. Internal outlines should also be dark and clearly visible, but slightly thinner than the outer contour.
+
+Use simple angular geometry and slightly exaggerated proportions. Characters should have moderately large heads, broad readable hands and feet, and a strong recognizable silhouette. Adult or young-adult proportions — NOT chibi, NOT childlike, and NOT realistically proportioned.
+
+The character must remain immediately readable when displayed very small on screen.
+
+FACE:
+Extremely simple face designed for a small game sprite.
+Visible colored eyes with thick dark outlines.
+Simple small nose indication if necessary.
+Small straight or slightly expressive mouth.
+Minimal facial anatomy.
+No realistic facial rendering.
+No detailed eyelashes, lips, skin texture, pores, or complex facial shading.
+Expression: [EXPRESSION].
+
+SHADING:
+Simple flat cel shading.
+Base color plus ONE darker shadow tone for most surfaces.
+Occasional small highlight only when necessary.
+Large clean shadow shapes.
+No soft shadows.
+No gradients.
+No realistic lighting.
+No ambient occlusion.
+No glossy rendering.
+No complex texture.
+Avoid excessive small details.
+
+LINEWORK:
+Strong black/dark-brown outlines are one of the dominant visual features.
+Outer silhouette lines should be particularly thick.
+Clean but slightly handmade Flash-vector feeling.
+Avoid ultra-perfect modern vector smoothness.
+
+COLOR:
+Moderately saturated fantasy colors.
+Clear separation between adjacent shapes.
+Limited color palette.
+Colors should remain readable at thumbnail size.
+
+DETAIL LEVEL:
+LOW TO MEDIUM.
+Prioritize silhouette, large shapes and color blocks over decoration.
+Remove details that would disappear when the character is shown at approximately 150–250 pixels tall.
+Accessories should be large and iconic rather than numerous and intricate.
+
+POSE:
+Neutral three-quarter standing pose facing slightly to the right.
+Feet clearly separated.
+Arms clearly readable from torso.
+Entire character visible from head to feet.
+Suitable as a reusable RPG character sprite.
+
+COMPOSITION:
+One isolated character.
+Centered.
+Full body.
+Plain white background.
+Generous empty space around character.
+No scenery.
+No UI.
+No text.
+No logo.
+No frame.
+
+IMPORTANT STYLE EXCLUSIONS:
+NOT anime.
+NOT manga.
+NOT chibi.
+NOT children's cartoon.
+NOT realistic.
+NOT painterly.
+NOT 3D.
+NOT Pixar.
+NOT mobile-game splash art.
+NOT modern polished AI concept art.
+NOT highly detailed fantasy illustration.
+NOT glossy.
+NOT cinematic.
+NOT soft-rendered.
+
+The final image should feel like a simple, iconic hand-drawn vector sprite made for a fantasy browser MMORPG around 2005–2010.

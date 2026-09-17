@@ -9,11 +9,13 @@ const types = {
   ".html": "text/html; charset=utf-8",
   ".css": "text/css; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
+  ".mjs": "text/javascript; charset=utf-8",
   ".json": "application/json",
   ".png": "image/png",
   ".jpg": "image/jpeg",
   ".svg": "image/svg+xml",
   ".webp": "image/webp",
+  ".wasm": "application/wasm",
 };
 
 http
@@ -36,4 +38,4 @@ http
       res.end(data);
     });
   })
-  .listen(port, () => console.log(`Anki Quest running at http://localhost:${port}`));
+  .listen(port, () => console.log(`Cardslayer running at http://localhost:${port}`));

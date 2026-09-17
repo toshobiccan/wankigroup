@@ -1,18 +1,18 @@
-# Anki Quest
+# Cardslayer
 
-Turn your Anki flashcards into a learning adventure. Import an `.apkg` deck exported from Anki, then battle monsters by answering your cards — earn XP, coins and gems, and complete daily quests.
+Turn your flashcards into a learning adventure. Works with decks exported from Anki. Import an `.apkg` deck exported from Anki, then battle monsters by answering your cards — earn XP, coins and gems, and complete daily quests.
 
 ## Run it
 
 Requires [Node.js](https://nodejs.org).
 
 ```bash
-node server.js
+npm start
 ```
 
 Open http://localhost:5173 (designed for a phone-sized screen, ~400 px wide — use your browser's device toolbar on desktop).
 
-It is a plain static site, so it also works on GitHub Pages or any static host. An internet connection is needed for the fonts and the libraries that read Anki files (JSZip, sql.js, fzstd, loaded from CDNs).
+It is a plain static site, so it also works on GitHub Pages or any static host. The libraries that read Anki files (JSZip, sql.js, fzstd) are bundled in `vendor/`, so importing works offline. Only the Google Fonts still load from the internet; the app falls back to system fonts without them.
 
 ## How it works
 
@@ -32,3 +32,12 @@ It is a plain static site, so it also works on GitHub Pages or any static host. 
 | `db.js` | IndexedDB storage |
 | `server.js` | Tiny static file server |
 | `assets/` | Web-sized art; `assets/originals/` holds the full-resolution source images |
+| `vendor/` | Third-party browser libraries, pinned versions (see `vendor/README.md`) |
+
+## Naming
+
+"Anki" is a registered trademark of Ankitects. The product name is **Cardslayer**. Saying that the app *works with Anki decks* is fine (descriptive use); putting "Anki" in the product name, app title, or store listing title is not.
+
+## Docs
+
+- `docs/specs/2026-09-15-character-art-pipeline-design.md` — how player/mob sprites are produced, stored and rendered (PixiJS, layered 64×64 pixel art).

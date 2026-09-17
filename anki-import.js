@@ -2,11 +2,12 @@
 // An .apkg is a zip holding a SQLite collection: "collection.anki21b" (zstd-compressed, Anki 2.1.50+),
 // "collection.anki21" or the legacy "collection.anki2".
 const AnkiImport = (() => {
+  // Bundled locally (see vendor/README.md) so importing works offline and inside the packaged apps.
   const LIBS = {
-    jszip: "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js",
-    sqljs: "https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.js",
-    sqlwasm: "https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.wasm",
-    fzstd: "https://cdn.jsdelivr.net/npm/fzstd@0.1.1/umd/index.js",
+    jszip: "vendor/jszip.min.js",
+    sqljs: "vendor/sql-wasm.js",
+    sqlwasm: "vendor/sql-wasm.wasm",
+    fzstd: "vendor/fzstd.umd.js",
   };
 
   const loaded = {};

@@ -5,7 +5,7 @@ const DB = (() => {
   function open() {
     if (dbPromise) return dbPromise;
     dbPromise = new Promise((resolve, reject) => {
-      const req = indexedDB.open("anki-quest", 1);
+      const req = indexedDB.open("cardslayer", 1);
       req.onupgradeneeded = () => {
         const db = req.result;
         db.createObjectStore("decks", { keyPath: "id" });
