@@ -155,6 +155,11 @@ describe("server (online)", () => {
     expect(data.account.role).toBe("scholar");
   });
 
+  it("setRole rejects an unknown role", async () => {
+    const created = await guest("Bad");
+    expect(() => ctx.store.setRole(created.account.id, "wizard")).toThrow("invalid_role");
+  });
+
   it("rejects a WebSocket with a bad token", async () => {
     const client = await connect(ctx.port);
     const closed = new Promise((resolve) => client.ws.on("close", (code) => resolve(code)));
@@ -248,6 +253,7 @@ describe("SqliteStore", () => {
     expect(store.loadPlayer(account.id)).toEqual({ level: 4 });
     store.deleteSession("hash1");
     expect(store.getAccountBySession("hash1")).toBeNull();
+    expect(() => store.setRole(account.id, "wizard")).toThrow("invalid_role");
     store.close();
   });
 });

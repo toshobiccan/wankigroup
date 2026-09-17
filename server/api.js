@@ -15,6 +15,7 @@
 
 import { PROTOCOL_VERSION, WS_PATH } from "../src/net/protocol.js";
 import { recordDeckImport, claimQuest } from "../src/game/progression.js";
+import { DEFAULT_ROLE } from "../src/game/roles.js";
 import {
   createSessionToken, hashSessionToken, hashPassword, verifyPassword,
   validateDisplayName, validateUsername, validatePassword,
@@ -61,7 +62,7 @@ export function createApi({ config, store, players, world }) {
       const password = check(validatePassword(body.password));
       try {
         store.setCredentials(account.id, { username, passwordHash: await hashPassword(password) });
-        if (account.role === "guest") store.setRole(account.id, "player");
+        if (account.role === DEFAULT_ROLE) store.setRole(account.id, "player");
       } catch (err) {
         if (err.message === "username_taken") throw new HttpError(409, "username_taken");
         throw err;

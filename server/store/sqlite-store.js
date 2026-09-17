@@ -7,6 +7,7 @@ import path from "node:path";
 import crypto from "node:crypto";
 import { DatabaseSync } from "node:sqlite";
 import { SESSION_TTL_MS } from "./memory-store.js";
+import { ROLES, DEFAULT_ROLE } from "../../src/game/roles.js";
 
 // Append-only: never edit a migration that has shipped, add a new one.
 const MIGRATIONS = [
@@ -29,6 +30,7 @@ const MIGRATIONS = [
      state TEXT NOT NULL,
      updated_at INTEGER NOT NULL
    );`,
+  // Literal 'guest' -- SQL can't reference the DEFAULT_ROLE JS constant. Keep in sync.
   `ALTER TABLE accounts ADD COLUMN role TEXT NOT NULL DEFAULT 'guest';`,
 ];
 
@@ -70,7 +72,7 @@ export class SqliteStore {
   }
 
   createAccount({ displayName }) {
-    const account = { id: crypto.randomUUID(), displayName, username: null, passwordHash: null, role: "guest", createdAt: this.now() };
+    const account = { id: crypto.randomUUID(), displayName, username: null, passwordHash: null, role: DEFAULT_ROLE, createdAt: this.now() };
     this.db.prepare("INSERT INTO accounts (id, display_name, role, created_at) VALUES (?, ?, ?, ?)").run(account.id, displayName, account.role, account.createdAt);
     return account;
   }
@@ -96,6 +98,7 @@ export class SqliteStore {
   }
 
   setRole(accountId, role) {
+    if (!ROLES.includes(role)) throw new Error("invalid_role");
     const { changes } = this.db.prepare("UPDATE accounts SET role = ? WHERE id = ?").run(role, accountId);
     if (!changes) throw new Error("unknown_account");
   }

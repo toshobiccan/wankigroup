@@ -2,6 +2,7 @@
 //   createAccount({ displayName }) -> account
 //   getAccount(id) / getAccountByUsername(username) -> account | null
 //   setCredentials(accountId, { username, passwordHash })  (throws "username_taken")
+//   setRole(accountId, role)  (throws "invalid_role" if role is not in ROLES)
 //   createSession(accountId, tokenHash) / deleteSession(tokenHash)
 //   getAccountBySession(tokenHash) -> account | null
 //   loadPlayer(accountId) -> saved player object | null
@@ -10,6 +11,7 @@
 // account: { id, displayName, username, passwordHash, role, createdAt }
 
 import crypto from "node:crypto";
+import { ROLES, DEFAULT_ROLE } from "../../src/game/roles.js";
 
 export const SESSION_TTL_MS = 90 * 24 * 60 * 60 * 1000; // sliding: every use extends it
 
@@ -22,7 +24,7 @@ export class MemoryStore {
   }
 
   createAccount({ displayName }) {
-    const account = { id: crypto.randomUUID(), displayName, username: null, passwordHash: null, role: "guest", createdAt: this.now() };
+    const account = { id: crypto.randomUUID(), displayName, username: null, passwordHash: null, role: DEFAULT_ROLE, createdAt: this.now() };
     this.accounts.set(account.id, account);
     return { ...account };
   }
@@ -48,6 +50,7 @@ export class MemoryStore {
   }
 
   setRole(accountId, role) {
+    if (!ROLES.includes(role)) throw new Error("invalid_role");
     const account = this.accounts.get(accountId);
     if (!account) throw new Error("unknown_account");
     account.role = role;
