@@ -9,6 +9,7 @@
 // Positions are zone fractions (0..1), never pixels -- see src/game/room.js.
 
 import { GRADES } from "../game/encounter.js";
+import { CHAT_MAX_LENGTH } from "../game/constants.js";
 
 export const PROTOCOL_VERSION = 1;
 export const WS_PATH = "/ws";
@@ -22,6 +23,7 @@ export const CLIENT_MESSAGES = {
   grade: "grade", // { grade } -> data: { result }
   flee: "flee", // {} -> data: {}
   ping: "ping", // {} -> pushes "pong"
+  chat: "chat", // { text } -> result; broadcasts a "chat" push to the whole room
 };
 
 export const SERVER_EVENTS = [
@@ -35,6 +37,7 @@ export const SERVER_EVENTS = [
   "mob", // { id, hp, maxHp, dead }
   "mobHit", // { mobId, byId, damage, hp } -- someone else hit a mob
   "combatEnded", // { mobId, reason, rewards } -- someone else finished your fight
+  "chat", // { id, name, role, text, ts } -- someone in your room said something (including you)
   "kicked", // { reason } -- e.g. signed in from another tab
   "pong",
 ];
@@ -75,6 +78,11 @@ export function parseClientMessage(raw) {
       return { ok: true, message: { type: "grade", rid, grade: data.grade } };
     case "flee":
       return { ok: true, message: { type: "flee", rid } };
+    case "chat":
+      if (typeof data.text !== "string" || data.text.length === 0 || data.text.length > CHAT_MAX_LENGTH) {
+        return { ok: false, error: "bad_chat" };
+      }
+      return { ok: true, message: { type: "chat", rid, text: data.text } };
     case "ping":
       return { ok: true, message: { type: "ping" } };
     default:

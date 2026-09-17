@@ -152,3 +152,35 @@ describe("Room roles", () => {
     expect(joinedEvent.payload.player.role).toBe("guest");
   });
 });
+
+describe("Room chat", () => {
+  it("broadcasts to everyone in the room, including the sender", () => {
+    const ctx = setup({ withRoles: true });
+    ctx.join("p1", "scholar");
+    ctx.join("p2", "guest");
+    ctx.events.length = 0;
+
+    const result = ctx.room.chat("p1", "hello world");
+    expect(result).toEqual({ ok: true });
+
+    const chatEvents = ctx.events.filter((e) => e.type === "chat");
+    expect(chatEvents).toHaveLength(1);
+    expect(chatEvents[0].target).toBeNull();
+    expect(chatEvents[0].payload).toMatchObject({ id: "p1", name: "p1", role: "scholar", text: "hello world" });
+    expect(typeof chatEvents[0].payload.ts).toBe("number");
+  });
+
+  it("trims whitespace and rejects an all-whitespace message", () => {
+    const ctx = setup();
+    ctx.join("p1");
+    expect(ctx.room.chat("p1", "  padded  ").ok).toBe(true);
+    ctx.events.length = 0;
+    expect(ctx.room.chat("p1", "   ")).toEqual({ ok: false, error: "empty_message" });
+    expect(ctx.events.filter((e) => e.type === "chat")).toHaveLength(0);
+  });
+
+  it("rejects chat from someone not in the room", () => {
+    const ctx = setup();
+    expect(ctx.room.chat("ghost", "hi")).toEqual({ ok: false, error: "not_in_room" });
+  });
+});

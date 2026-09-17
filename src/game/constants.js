@@ -21,3 +21,6 @@ export const MAX_REWARDED_IMPORTS_PER_DAY = 3;
 // within this fraction of the zone's width. Movement is client-driven, so this
 // stops "fight anything from anywhere" without needing server-side pathing.
 export const ENGAGE_RANGE_FRAC = 0.25;
+
+// A chat message longer than this is rejected outright by parseClientMessage.
+export const CHAT_MAX_LENGTH = 240;

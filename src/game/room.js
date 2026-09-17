@@ -14,7 +14,7 @@
 // Positions are fractions of the zone (x: 0..1 across its width, y: 0..1 down
 // its height), never pixels -- every screen renders the zone at its own size.
 
-import { DEFAULT_ROOM_CAPACITY, ENGAGE_RANGE_FRAC, RESPAWN_DELAY_MS } from "./constants.js";
+import { CHAT_MAX_LENGTH, DEFAULT_ROOM_CAPACITY, ENGAGE_RANGE_FRAC, RESPAWN_DELAY_MS } from "./constants.js";
 import { GRADES, applyDefeat, applyKill, resolveGrade } from "./encounter.js";
 import { todayKey } from "./player.js";
 import { DEFAULT_ROLE } from "./roles.js";
@@ -116,6 +116,20 @@ export class Room {
     const member = this.members.get(playerId);
     if (!member) return { ok: false, error: "not_in_room" };
     this._leaveFight(member);
+    return { ok: true };
+  }
+
+  // Room-scoped: broadcast to everyone currently in this instance, including
+  // the sender, so the client has one code path for rendering any chat
+  // message rather than a separate "it's my own" optimistic-echo case.
+  // Length is already bounded by parseClientMessage's CHAT_MAX_LENGTH before
+  // this is ever called -- this only has to catch "trims down to nothing".
+  chat(playerId, text) {
+    const member = this.members.get(playerId);
+    if (!member) return { ok: false, error: "not_in_room" };
+    const trimmed = typeof text === "string" ? text.trim() : "";
+    if (!trimmed) return { ok: false, error: "empty_message" };
+    this.emit("chat", { id: member.id, name: member.name, role: member.role, text: trimmed, ts: Date.now() }, null);
     return { ok: true };
   }
 
