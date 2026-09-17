@@ -81,6 +81,10 @@ export class LocalSession extends Emitter {
     this._roomCall((room) => room.flee(LOCAL_ID));
   }
 
+  async sendChat(text) {
+    this._roomCall((room) => room.chat(LOCAL_ID, text));
+  }
+
   _roomCall(call) {
     if (!this._room) throw new SessionError("not_in_room");
     const result = call(this._room);

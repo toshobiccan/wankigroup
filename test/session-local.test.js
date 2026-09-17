@@ -66,4 +66,16 @@ describe("LocalSession", () => {
     expect(mobEvents.at(-1)).toMatchObject({ id: "goblin_1", dead: false, hp: 40 });
     vi.useRealTimers();
   });
+
+  it("chat broadcasts to the local room (yourself included, since offline has no one else)", async () => {
+    const session = await start();
+    const onChat = vi.fn();
+    session.on("chat", onChat);
+    await session.joinZone("plains1");
+
+    await session.sendChat("  hello  ");
+    expect(onChat).toHaveBeenCalledWith(expect.objectContaining({ id: "local", text: "hello", role: "guest" }));
+
+    await expect(session.sendChat("   ")).rejects.toThrow(SessionError);
+  });
 });

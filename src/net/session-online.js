@@ -7,7 +7,7 @@ import { WorldSocket } from "./world-socket.js";
 const TOKEN_KEY = "cardslayer-token";
 
 // Events the server pushes that the app listens to directly (see protocol.js).
-const FORWARDED_EVENTS = ["playerJoined", "playerLeft", "playerMoved", "playerUpdated", "mob", "mobHit", "combatEnded"];
+const FORWARDED_EVENTS = ["playerJoined", "playerLeft", "playerMoved", "playerUpdated", "mob", "mobHit", "combatEnded", "chat"];
 
 export class OnlineSession extends Emitter {
   constructor({ baseUrl, wsPath, storage }) {
@@ -116,6 +116,10 @@ export class OnlineSession extends Emitter {
 
   async flee() {
     await this._requireSocket().request("flee");
+  }
+
+  async sendChat(text) {
+    await this._requireSocket().request("chat", { text });
   }
 
   async _signedIn({ token, account, player }) {
