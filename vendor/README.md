@@ -7,5 +7,6 @@ Third-party code loaded by the browser at runtime. Kept in the repo (instead of 
 | `jszip.min.js` | JSZip | 3.10.1 | MIT | https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js |
 | `sql-wasm.js`, `sql-wasm.wasm` | sql.js (SQLite compiled to WebAssembly) | 1.10.3 | MIT (SQLite itself is public domain) | https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/ |
 | `fzstd.umd.js` | fzstd (zstd decompression) | 0.1.1 | MIT | https://cdn.jsdelivr.net/npm/fzstd@0.1.1/umd/index.js |
+| `pixi.min.mjs` | PixiJS | 8.20.1 | MIT | https://unpkg.com/pixi.js@8.20.1/dist/pixi.min.mjs |
 
 None of these are AGPL. No code from the Anki project itself is used.

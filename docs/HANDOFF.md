@@ -2,6 +2,8 @@
 
 Read this first. It summarises decisions made in an earlier Claude Code session so the current session can continue without re-deriving them.
 
+**Note (2026-09-16):** this file is now partially stale — a full in-world combat system (real stats, `resolveRound()`, `WorldScene` walk-to-engage/camera-centering, `EncounterPanel`, mob respawn, Fight/Flee buttons) landed since this was written, and the "Next steps" below no longer reflect where the project actually is. See **`docs/ROADMAP.md`** for the current status log and feature backlog going forward — that file, not this section, is where "what's next" now lives.
+
 ## What the project is
 
 A mobile/desktop game (iOS first, Windows second, Android later) where the player imports their own Anki flashcard decks (`.apkg`) and fights monsters by answering cards. Each correct answer (Hard/Good/Easy) damages the monster; "Again" costs a heart. XP, coins, gems, daily quests, later gear/inventory and possibly multiplayer. Art style: minimal 2D pixel art, side view, inspired by AdventureQuest Worlds but much simpler. The original pitch deck is `~/Desktop/wanki/wanki.pptx` (Norwegian, 27 slides).

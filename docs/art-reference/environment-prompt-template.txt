@@ -1,0 +1,102 @@
+Create a 2D fantasy game environment background for CARDSLAYER.
+
+ENVIRONMENT:
+[ENVIRONMENT DESCRIPTION]
+
+CARDSLAYER ENVIRONMENT ART STYLE:
+
+Early-to-mid 2000s browser Flash fantasy RPG environment.
+
+The environment must visually belong to the same game as simple thick-outlined cel-shaded fantasy characters.
+
+Use clean, simplified vector-like shapes, bold silhouettes and restrained cel shading.
+
+BACKGROUND DETAIL LEVEL:
+LOW.
+
+This is a GAMEPLAY BACKGROUND, not concept art.
+
+The player and enemies will be placed on top of this environment and must remain much more visually prominent than the scenery.
+
+Use large simple shapes rather than many small objects.
+
+LINEWORK:
+Dark, clearly visible outlines around major foreground and midground objects.
+Thicker outlines on objects closer to the player.
+Slightly thinner or softer outlines on distant scenery.
+Avoid outlining every tiny environmental feature.
+
+SHADING:
+Simple flat colors.
+Maximum approximately 2–3 tones per major object.
+Large cel-shaded shadow shapes.
+No gradients.
+No realistic lighting.
+No detailed textures.
+No photorealistic grass, rocks, water or clouds.
+
+GROUND / WALKABILITY:
+VERY IMPORTANT:
+
+The playable walking area must be immediately obvious.
+
+Create a broad, mostly flat foreground and middle-ground surface where characters can stand and move.
+
+Keep the playable ground relatively empty.
+
+Do not cover the walking area with excessive grass, rocks, flowers, bushes or props.
+
+Use environmental boundaries such as water, cliffs, trees, rocks, fences or elevation changes to make non-walkable areas visually obvious.
+
+The environment should communicate:
+"This area is playable."
+"This area is scenery."
+
+COMPOSITION:
+Design the scene so the important gameplay area remains useful when cropped to BOTH:
+16:9 landscape
+and
+9:16 portrait.
+
+Keep essential gameplay terrain and landmarks near the central portion of the composition.
+
+Do not place essential features only at the far left or right edges.
+
+Create enough additional scenery around the central gameplay area to allow responsive cropping.
+
+DEPTH:
+Use approximately three simple layers:
+
+1. Foreground / playable ground
+2. Midground landmarks
+3. Simplified distant background
+
+Do not create excessive atmospheric depth.
+
+COLOR:
+Moderately saturated fantasy palette.
+Background colors should generally be slightly less intense than character colors.
+Strong separation between ground, obstacles and distant scenery.
+
+IMPORTANT STYLE EXCLUSIONS:
+NOT realistic.
+NOT painterly.
+NOT anime landscape.
+NOT highly detailed.
+NOT 3D.
+NOT isometric.
+NOT modern mobile-game background.
+NOT cinematic concept art.
+NOT photorealistic.
+NOT soft digital painting.
+NOT excessive vegetation.
+NOT detailed texture work.
+NOT polished AI fantasy artwork.
+
+The result should feel like a hand-drawn vector environment from a fantasy browser MMORPG made around 2005–2010, but with an original visual identity.
+
+No characters.
+No enemies.
+No UI.
+No text.
+No logo.

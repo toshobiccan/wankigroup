@@ -8,14 +8,42 @@ const defaultPlayer = {
   xp: 0,
   coins: 0,
   gems: 0,
+  activeDeckId: null,
+  stats: {
+    hp: 100,
+    attackDamage: 12,
+    magicDamage: 0,
+    armor: 2,
+    magicResist: 2,
+    attackSpeed: 10,
+    luck: 0,
+  },
+  hp: 100, // current HP -- persists across fights, separate from the max in stats.hp
+  // Held-but-not-equipped items. equipables: Item[] (see src/items.js, kind
+  // "equipable"). materials: { item, quantity }[] -- quantity has no upper
+  // bound, materials stack infinitely in theory. No item has been created
+  // yet (no drop system exists), so both start empty for every player.
+  inventory: { equipables: [], materials: [] },
+  // What's currently worn, one item per slot (or null) -- see src/items.js's
+  // EQUIP_SLOTS. Separate from inventory.equipables (held) the same way a
+  // real RPG splits "in your bag" from "on your body". No equip UI/logic
+  // exists yet -- this is just the slot structure for when it does.
+  equipment: { helmet: null, cape: null, chestplate: null, leggings: null, boots: null, weapon: null, book: null },
+  // The Inventory screen's Status tab: one selected class, one active buff
+  // (both null until classes/buffs exist -- see src/items.js's createClass/createBuff).
+  status: { selectedClass: null, activeBuff: null },
   daily: { date: "", reviewed: 0, battlesWon: 0, imported: 0, claimed: [] },
 };
 
 function loadPlayer() {
+  // structuredClone, not a shallow spread of defaultPlayer itself -- otherwise every
+  // first-run player's player.stats/player.inventory would be the *same* nested
+  // object as defaultPlayer's, and the first push into inventory.materials would
+  // silently mutate the shared default for every other player in this session too.
   try {
-    return { ...defaultPlayer, ...JSON.parse(localStorage.getItem(STORAGE_KEY)) };
+    return { ...structuredClone(defaultPlayer), ...JSON.parse(localStorage.getItem(STORAGE_KEY)) };
   } catch {
-    return { ...defaultPlayer };
+    return structuredClone(defaultPlayer);
   }
 }
 
@@ -85,10 +113,15 @@ function closeModal() {
 const renderers = {};
 
 function go(view) {
+  const previousView = document.querySelector(".view.is-active")?.dataset.view;
+  if (previousView === "world" && previousView !== view) worldScene?.pause();
+
   document.querySelectorAll(".view").forEach((v) => v.classList.toggle("is-active", v.dataset.view === view));
   document.querySelectorAll(".nav-item").forEach((b) => b.classList.toggle("is-active", b.dataset.target === view));
   $(".views").scrollTop = 0;
   renderers[view]?.();
+
+  if (view === "world") worldScene?.resume();
 }
 
 document.querySelectorAll(".nav-item").forEach((btn) => btn.addEventListener("click", () => go(btn.dataset.target)));
@@ -162,7 +195,10 @@ async function importFile(file) {
         "div",
         { class: "modal-actions" },
         el("button", { class: "btn-small btn-ghost", onclick: closeModal }, "Later"),
-        el("button", { class: "btn-small", onclick: () => { closeModal(); startBattle(deckId); } }, "⚔️ Start Battle")
+        el("button", {
+          class: "btn-small",
+          onclick: () => { closeModal(); player.activeDeckId = deckId; savePlayer(); go("world"); },
+        }, "⚔️ Fight With This Deck")
       )
     );
   } catch (err) {
@@ -199,13 +235,17 @@ renderers.home = async () => {
       const cards = await DB.cardsForDeck(d.id);
       const due = cards.filter((c) => c.due <= now).length;
       const learned = cards.filter((c) => c.reps > 0).length;
-      return el("div", { class: "panel deck-card" },
+      const isActive = player.activeDeckId === d.id;
+      return el("div", { class: `panel deck-card${isActive ? " is-active-deck" : ""}` },
         el("div", { class: "deck-icon" }, d.name.trim()[0]?.toUpperCase() || "A"),
         el("div", { class: "deck-meta" },
-          el("div", { class: "deck-name" }, d.name),
+          el("div", { class: "deck-name" }, d.name, isActive ? el("span", { class: "tag" }, "Active") : null),
           el("div", { class: "deck-sub" }, `${d.cardCount} cards · ${learned} learned · ${due} due`)
         ),
-        el("button", { class: "btn-small", onclick: () => startBattle(d.id) }, "⚔️")
+        el("button", {
+          class: `btn-small${isActive ? " btn-ghost" : ""}`,
+          onclick: () => { player.activeDeckId = d.id; savePlayer(); renderers.home(); },
+        }, isActive ? "Active ✓" : "Set Active")
       );
     })
   );
@@ -253,107 +293,152 @@ renderers.quests = () => {
   $("#questList").replaceChildren(...rows);
 };
 
-// ================= BATTLE =================
-const MONSTERS = [
-  { name: "Forgetful Goblin", icon: "👺" },
-  { name: "Cram Wraith", icon: "👻" },
-  { name: "Procrastination Wolf", icon: "🐺" },
-  { name: "Syllabus Spider", icon: "🕷️" },
-  { name: "Exam Dragon", icon: "🐉" },
+// ================= INVENTORY =================
+// Plain-English explanation (shown in color) plus the exact formula (shown
+// greyed out) for each stat, taken straight from src/world/combat.js's real
+// math -- kept here as copy, not re-derived, so a stat's tooltip can never
+// drift from what the game actually does with it.
+const STAT_INFO = [
+  { key: "hp", label: "HP", plain: "How much damage you can take before you're defeated.",
+    math: "Current / max HP. Reaching 0 during a fight ends it in defeat." },
+  { key: "attackDamage", label: "Attack Damage", plain: "How hard your physical hits land.",
+    math: "dmg = round(max(1, attackDamage − target's armor) × grade × crit). Grade: Hard ×0.7, Good ×1.0, Easy ×1.5." },
+  { key: "magicDamage", label: "Magic Damage", plain: "How hard your magic hits land, on top of physical damage.",
+    math: "dmg = round(max(1, magicDamage − target's magicResist) × grade × crit). 0 today, so this adds nothing yet." },
+  { key: "armor", label: "Armor", plain: "Reduces the physical damage you take.",
+    math: "incoming physical dmg = max(1, attacker's attackDamage − armor). At least 1 always gets through." },
+  { key: "magicResist", label: "Magic Resist", plain: "Reduces the magic damage you take.",
+    math: "incoming magic dmg = max(1, attacker's magicDamage − magicResist). At least 1 always gets through if any magic damage lands." },
+  { key: "attackSpeed", label: "Attack Speed", plain: "Decides who swings first each round.",
+    math: "Higher attackSpeed swings first (ties favor you). A lethal first hit skips the other side's swing entirely." },
+  { key: "luck", label: "Luck", plain: "Raises your crit chance and how much gold you earn from victories.",
+    math: "Crit chance = min(50%, luck × 1%); crits deal ×1.5 damage. Coin reward × (1 + min(100%, luck × 2%))." },
 ];
-const SESSION_SIZE = 10;
-const MAX_HEARTS = 3;
-let battle = null;
 
-renderers.battle = async () => {
-  if (battle) return renderBattle();
-  const decks = await DB.listDecks();
-  const root = $("#battleRoot");
-  if (!decks.length) {
+const INVENTORY_TABS = [
+  { key: "equipables", label: "Equip" },
+  { key: "materials", label: "Materials" },
+  { key: "status", label: "Status" },
+];
+
+let inventoryView = "character"; // "character" | "stats" -- what the left panel currently shows
+let inventoryTab = "equipables"; // which of the three lists the right panel currently shows
+const expandedStats = new Set(); // stat keys whose grey math line is currently shown
+
+function renderInventoryLeft() {
+  const root = $("#inventoryLeft");
+  if (inventoryView === "stats") {
+    const rows = STAT_INFO.map((stat) => {
+      const expanded = expandedStats.has(stat.key);
+      return el("div", {
+        class: "stat-row",
+        onclick: () => {
+          if (expanded) expandedStats.delete(stat.key);
+          else expandedStats.add(stat.key);
+          renderInventoryLeft();
+        },
+      },
+        el("div", { class: "stat-row-head" },
+          el("span", { class: "stat-name" }, stat.label),
+          el("span", { class: "stat-value" }, String(player.stats[stat.key]))
+        ),
+        el("div", { class: "stat-plain" }, stat.plain),
+        expanded ? el("div", { class: "stat-math" }, stat.math) : null
+      );
+    });
     root.replaceChildren(
-      el("div", { class: "panel empty-state" },
-        "Import a deck to find monsters to fight.",
-        el("br"),
-        el("button", { class: "btn-small", onclick: () => go("import") }, "Import Deck")
+      el("div", { class: "inventory-stats" },
+        el("button", { class: "btn-small btn-ghost stats-back", onclick: () => { inventoryView = "character"; renderInventoryLeft(); } }, "‹ Back"),
+        el("div", { class: "stat-list" }, ...rows)
       )
     );
     return;
   }
+  // "character" view -- no equip slots yet (armor/helmet/weapon comes once
+  // sprites exist to actually show equipped gear on), just the character
+  // itself, name, level, and the way in to the stats view.
   root.replaceChildren(
-    ...decks.map((d) =>
-      el("div", { class: "panel deck-card" },
-        el("div", { class: "deck-icon" }, "⚔️"),
-        el("div", { class: "deck-meta" },
-          el("div", { class: "deck-name" }, d.name),
-          el("div", { class: "deck-sub" }, `${d.cardCount} cards`)
-        ),
-        el("button", { class: "btn-small", onclick: () => startBattle(d.id) }, "Fight")
+    el("div", { class: "inventory-character" },
+      el("img", { class: "inventory-portrait", src: "assets/world-character.png", alt: "" }),
+      el("div", { class: "inventory-name" }, player.name),
+      el("div", { class: "inventory-level" }, `Lv ${player.level}`),
+      el("button", { class: "btn-small", onclick: () => { inventoryView = "stats"; renderInventoryLeft(); } }, "Stats")
+    )
+  );
+}
+
+function renderInventoryTabs() {
+  const root = $("#inventoryTabs");
+  root.replaceChildren(
+    ...INVENTORY_TABS.map((tab) =>
+      el("button", {
+        class: `inventory-tab-btn${tab.key === inventoryTab ? " is-active" : ""}`,
+        onclick: () => { inventoryTab = tab.key; renderInventoryTabs(); renderInventoryList(); },
+      }, tab.label)
+    )
+  );
+}
+
+// One held item row: optional picture thumbnail, name + optional
+// description, optional stack-count badge for materials. item is a plain
+// Item object (see src/items.js) -- picture/description render only when
+// present, since no real item exists yet to supply either.
+function renderItemRow(item, quantity) {
+  return el("div", { class: "panel inventory-item" },
+    item.picture ? el("img", { class: "inventory-item-pic", src: item.picture, alt: "" }) : null,
+    el("div", { class: "inventory-item-info" },
+      el("div", { class: "inventory-item-name" }, item.name),
+      item.description ? el("div", { class: "inventory-item-desc" }, item.description) : null
+    ),
+    quantity != null ? el("div", { class: "inventory-item-qty" }, `×${quantity}`) : null
+  );
+}
+
+// The Status tab isn't a list -- it's exactly two fixed slots (per spec:
+// "status is selected class and active buff"), each either empty or
+// holding one Item (kind "class"/"buff").
+function renderStatusTab(root) {
+  const rows = [
+    { label: "Class", value: player.status.selectedClass, emptyText: "No class selected yet." },
+    { label: "Active Buff", value: player.status.activeBuff, emptyText: "No buff active yet." },
+  ].map(({ label, value, emptyText }) =>
+    el("div", { class: "panel inventory-item status-row" },
+      value?.picture ? el("img", { class: "inventory-item-pic", src: value.picture, alt: "" }) : null,
+      el("div", { class: "inventory-item-info" },
+        el("div", { class: "inventory-item-name" }, label),
+        el("div", { class: "inventory-item-desc" }, value ? value.name : emptyText)
       )
     )
   );
+  root.replaceChildren(...rows);
+}
+
+function renderInventoryList() {
+  const root = $("#inventoryList");
+  if (inventoryTab === "status") {
+    renderStatusTab(root);
+    return;
+  }
+  const entries = player.inventory[inventoryTab]; // equipables: Item[]; materials: {item, quantity}[]
+  if (!entries.length) {
+    const emptyText = inventoryTab === "equipables" ? "Nothing to equip yet." : "No materials yet.";
+    root.replaceChildren(el("div", { class: "panel empty-state" }, emptyText));
+    return;
+  }
+  root.replaceChildren(
+    ...entries.map((entry) =>
+      inventoryTab === "materials" ? renderItemRow(entry.item, entry.quantity) : renderItemRow(entry, null)
+    )
+  );
+}
+
+renderers.inventory = () => {
+  renderInventoryLeft();
+  renderInventoryTabs();
+  renderInventoryList();
 };
 
-async function startBattle(deckId) {
-  const cards = await DB.cardsForDeck(deckId);
-  const now = Date.now();
-  const due = cards.filter((c) => c.reps > 0 && c.due <= now).sort((a, b) => a.due - b.due);
-  const fresh = cards.filter((c) => c.reps === 0);
-  const queue = [...due, ...fresh].slice(0, SESSION_SIZE);
-  // Nothing due: practise the cards whose review is closest anyway.
-  if (!queue.length) queue.push(...cards.sort((a, b) => a.due - b.due).slice(0, SESSION_SIZE));
-
-  battle = {
-    deckId,
-    queue,
-    total: queue.length,
-    defeated: 0,
-    hearts: MAX_HEARTS,
-    revealed: false,
-    monster: MONSTERS[Math.floor(Math.random() * MONSTERS.length)],
-  };
-  go("battle");
-}
-
-function renderBattle() {
-  const root = $("#battleRoot");
-  const card = battle.queue[0];
-  const hpPct = ((battle.total - battle.defeated) / battle.total) * 100;
-
-  const arena = el("div", { class: "panel arena" },
-    el("div", { class: "monster-row" },
-      el("div", { class: "monster", id: "monster" }, battle.monster.icon),
-      el("div", { style: "flex:1" },
-        el("div", { class: "hp-label" },
-          el("strong", { style: "color:#fff" }, battle.monster.name),
-          el("span", {}, `${battle.total - battle.defeated} / ${battle.total} HP`)
-        ),
-        el("div", { class: "hp" }, el("div", { style: `width:${hpPct}%` })),
-        el("div", { class: "hearts" }, "❤️".repeat(battle.hearts) + "🖤".repeat(MAX_HEARTS - battle.hearts))
-      )
-    ),
-    el("div", { class: "flashcard", style: "white-space:pre-line" },
-      card.front,
-      battle.revealed ? el("div", { class: "answer" }, card.back || "—") : null
-    ),
-    battle.revealed
-      ? el("div", { class: "answer-actions" },
-          ...[
-            ["again", "Again", "miss"],
-            ["hard", "Hard", "7 dmg"],
-            ["good", "Good", "10 dmg"],
-            ["easy", "Easy", "crit!"],
-          ].map(([grade, label, sub]) =>
-            el("button", { class: `a-${grade}`, onclick: () => answer(grade) }, label, el("small", {}, sub))
-          )
-        )
-      : el("button", { class: "btn-primary reveal-btn", onclick: () => { battle.revealed = true; renderBattle(); } }, "Show Answer"),
-    el("div", { style: "text-align:center;margin-top:12px" },
-      el("button", { class: "btn-small btn-ghost", onclick: () => { battle = null; renderers.battle(); } }, "Flee")
-    )
-  );
-  root.replaceChildren(arena);
-}
-
+// ================= SCHEDULING =================
 function schedule(card, grade) {
   const DAY = 86_400_000;
   card.reps += 1;
@@ -376,65 +461,194 @@ function schedule(card, grade) {
   return DB.putCard(card);
 }
 
-function floatText(text, target, color) {
-  const rect = target.getBoundingClientRect();
-  const appRect = $(".app").getBoundingClientRect();
-  const node = el("div", {
-    class: "float-dmg",
-    style: `left:${rect.left - appRect.left + rect.width / 2 - 20}px;top:${rect.top - appRect.top}px;color:${color}`,
-  }, text);
-  $(".app").append(node);
-  setTimeout(() => node.remove(), 900);
+// ================= WORLD / COMBAT =================
+let worldScene = null;
+let encounterPanel = null;
+let fight = null; // { mob, queue } while a fight is in progress; null otherwise
+let gradeInFlight = false; // true while a single handleGrade() call is resolving -- blocks double-taps on the grade buttons
+
+// Shared recovery path for handleCombatStart/handleGrade: any thrown/rejected
+// error inside either leaves worldScene.inCombat latched true with no other
+// way out (no Flee button, by design), so any failure bails all the way out
+// to Idle using the same three-call pattern already used for a real loss.
+function bailOutOfFight(err) {
+  console.error(err);
+  fight = null;
+  encounterPanel.hide();
+  worldScene.endCombat({ mobDefeated: false });
 }
 
-async function answer(grade) {
-  const card = battle.queue.shift();
-  await schedule(card, grade);
-  daily().reviewed += 1;
+function buildFightQueue(deckCards) {
+  const now = Date.now();
+  const due = deckCards.filter((c) => c.reps > 0 && c.due <= now).sort((a, b) => a.due - b.due);
+  const fresh = deckCards.filter((c) => c.reps === 0);
+  const queue = [...due, ...fresh];
+  if (!queue.length) queue.push(...deckCards.sort((a, b) => a.due - b.due));
+  return queue;
+}
 
-  const monster = $("#monster");
-  if (grade === "again") {
-    battle.hearts -= 1;
-    battle.queue.push(card);
-    floatText("-1 ❤️", monster, "#ff6b6b");
-    $(".arena").classList.add("hero-hurt");
-  } else {
-    battle.defeated += 1;
-    player.coins += grade === "easy" ? 3 : 1;
-    monster.classList.add("hit");
-    floatText({ hard: "-7", good: "-10", easy: "CRIT!" }[grade], monster, "#ffd166");
+function playerHpState() {
+  return { hp: player.hp, maxHp: player.stats.hp };
+}
+
+function handleMobSelected(mob) {
+  if (!mob) {
+    encounterPanel.hide();
+    return;
   }
-  savePlayer();
-  renderHeader();
-
-  await new Promise((r) => setTimeout(r, 380));
-  battle.revealed = false;
-
-  if (battle.defeated >= battle.total) return endBattle(true);
-  if (battle.hearts <= 0) return endBattle(false);
-  renderBattle();
+  encounterPanel.showPeek(mob);
 }
 
-function endBattle(won) {
-  const { total, defeated, monster } = battle;
-  battle = null;
-  const xp = won ? total * 15 : defeated * 5;
-  const coins = won ? total * 10 : 0;
-  gainXp(xp);
-  player.coins += coins;
-  if (won) daily().battlesWon += 1;
+async function handleCombatStart(mobData) {
+  try {
+    if (!player.activeDeckId) {
+      // Bail out of the engaged state entirely (not just skip the fight) --
+      // otherwise WorldScene stays latched in inCombat/_approaching and every
+      // later click on this mob or the ground is silently swallowed, since
+      // both _onMobClick and _setTargetFromPointer early-return while either
+      // flag is set. endCombat({mobDefeated:false}) is the same recovery path
+      // already used for an actual combat loss below.
+      worldScene.endCombat({ mobDefeated: false });
+      encounterPanel.showMessage({
+        text: "Pick an active deck on Home first.",
+        actionLabel: "Go to Home",
+        onAction: () => go("home"),
+      });
+      return;
+    }
+    const cards = await DB.cardsForDeck(player.activeDeckId);
+    if (!cards.length) {
+      worldScene.endCombat({ mobDefeated: false });
+      encounterPanel.showMessage({ text: "This deck has no cards - import more or pick another." });
+      return;
+    }
+    fight = { mob: mobData, queue: buildFightQueue(cards) };
+    encounterPanel.showCard(fight.queue[0], fight.mob, playerHpState());
+  } catch (err) {
+    bailOutOfFight(err);
+  }
+}
+
+async function handleGrade(grade) {
+  if (!fight || gradeInFlight) return;
+  gradeInFlight = true;
+  try {
+    const card = fight.queue.shift();
+    await schedule(card, grade);
+    daily().reviewed += 1;
+
+    if (grade === "again") {
+      savePlayer(); // schedule() already persisted the card itself via DB.putCard; this covers the daily().reviewed quest counter
+      fight.queue.push(card);
+      encounterPanel.showCard(fight.queue[0], fight.mob, playerHpState());
+      return;
+    }
+
+    const result = window.Cardslayer.resolveRound({ player, mob: fight.mob, grade });
+    player.hp = result.playerHp;
+    fight.mob.hp = result.mobHp;
+    savePlayer();
+
+    encounterPanel.retract();
+    const hits = [
+      { attacker: "player", damage: result.playerDamageDealt, isCrit: result.isCrit },
+      { attacker: "mob", damage: result.mobDamageDealt, isCrit: result.mobIsCrit },
+    ];
+    if (result.order === "mob") hits.reverse();
+    await worldScene.playHit(hits.filter((hit) => hit.damage > 0));
+    // Skip restore() on a fight-ending result -- the victory/defeat paths below
+    // call hide() a couple statements later, and restore() then hide() back to
+    // back would fire two competing CSS height transitions for nothing visible.
+    if (!result.mobDefeated && !result.playerDefeated) encounterPanel.restore();
+
+    if (result.mobDefeated) {
+      const mob = fight.mob;
+      worldScene.endCombat({ mobDefeated: true });
+      encounterPanel.hide();
+      fight = null;
+      const coinReward = window.Cardslayer.applyLuckDropBonus(mob.coinReward, player.stats.luck);
+      gainXp(mob.xpReward);
+      player.coins += coinReward;
+      daily().battlesWon += 1;
+      savePlayer();
+      renderHeader();
+      showModal(
+        el("div", { style: "font-size:48px" }, "🏆"),
+        el("h3", {}, "Victory!"),
+        el("p", {}, `You vanquished the ${mob.name}.`),
+        el("div", { class: "reward" }, el("span", {}, `+${mob.xpReward} XP`), el("span", {}, `+${coinReward} 🪙`)),
+        el("div", { class: "modal-actions" }, el("button", { class: "btn-small", onclick: closeModal }, "Continue"))
+      );
+      return;
+    }
+
+    if (result.playerDefeated) {
+      fight = null;
+      encounterPanel.hide();
+      worldScene.endCombat({ mobDefeated: false });
+      await playerDefeatAndRespawn();
+      return;
+    }
+
+    // The active deck's card queue is consumed one card per non-"again" grade
+    // (buildFightQueue() hands back the whole active deck once); combat keeps
+    // going until the mob or the player drops, not until cards run out, so an
+    // empty queue here just means the deck is small -- recycle it from the same
+    // active deck rather than crashing on fight.queue[0] === undefined below.
+    if (!fight.queue.length) {
+      const cards = await DB.cardsForDeck(player.activeDeckId);
+      fight.queue = buildFightQueue(cards);
+    }
+    encounterPanel.showCard(fight.queue[0], fight.mob, playerHpState());
+  } catch (err) {
+    bailOutOfFight(err);
+  } finally {
+    gradeInFlight = false;
+  }
+}
+
+async function playerDefeatAndRespawn() {
+  const fade = $("#defeatFade");
+  fade.hidden = false;
+  await new Promise((r) => setTimeout(r, 20));
+  fade.classList.add("is-visible");
+  await new Promise((r) => setTimeout(r, 500));
+
+  player.hp = player.stats.hp;
   savePlayer();
   renderHeader();
-  renderers.battle();
+  worldScene.respawnPlayer();
 
-  showModal(
-    el("div", { style: "font-size:48px" }, won ? "🏆" : "💀"),
-    el("h3", {}, won ? "Victory!" : "Defeated…"),
-    el("p", {}, won ? `You vanquished the ${monster.name}.` : `The ${monster.name} got the better of you. Study and return!`),
-    el("div", { class: "reward" }, el("span", {}, `+${xp} XP`), coins ? el("span", {}, `+${coins} 🪙`) : null),
-    el("div", { class: "modal-actions" }, el("button", { class: "btn-small", onclick: closeModal }, "Continue"))
-  );
+  await new Promise((r) => setTimeout(r, 200));
+  fade.classList.remove("is-visible");
+  await new Promise((r) => setTimeout(r, 500));
+  fade.hidden = true;
 }
+
+renderers.world = async () => {
+  if (worldScene) {
+    // Re-entering World from another tab: the encounter sheet is a plain
+    // absolute-positioned overlay (see .encounter-sheet in style.css), so it
+    // does not get reset just because this view was hidden -- a message left
+    // over from a previous handleCombatStart bail-out (e.g. "Pick an active
+    // deck") would otherwise keep covering the mobs, unclickable, forever.
+    // Only clear it when no fight is actually in progress.
+    if (!fight) encounterPanel.hide();
+    return;
+  }
+  encounterPanel = new window.Cardslayer.EncounterPanel({
+    mountElement: $("#encounterPanelRoot"),
+    onGrade: handleGrade,
+    onFight: () => worldScene.engageSelectedMob(),
+    onFlee: () => worldScene.deselectMob(),
+  });
+  worldScene = new window.Cardslayer.WorldScene({
+    mountElement: $("#worldRoot"),
+    onMobSelected: handleMobSelected,
+    onCombatStart: handleCombatStart,
+  });
+  await worldScene.loadZone("data/zones/plains1.json");
+};
 
 // ================= SCENE PLAY =================
 const OWL_LINES = ["Hoo! Ready to study?", "Drop a deck here!", "Knowledge is power!", "Hoo-hoo! 📚", "Let's beat some cards!"];

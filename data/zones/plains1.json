@@ -1,0 +1,50 @@
+{
+  "id": "plains1",
+  "displayName": "Plains 1",
+  "backgroundImage": "assets/world-background.png",
+  "groundTopFrac": 0.7354,
+  "groundBottomFrac": 0.7737,
+  "spawnXFrac": 0.25,
+  "spawnYFrac": 0.7546,
+  "links": { "prev": null, "next": "plains2" },
+  "mobs": [
+    {
+      "id": "goblin_1",
+      "name": "Forgetful Goblin",
+      "level": 3,
+      "image": "assets/mob-goblin.png",
+      "portrait": "assets/mob-goblin-head.png",
+      "xFrac": 0.55,
+      "stats": {
+        "hp": 40,
+        "attackDamage": 6,
+        "magicDamage": 0,
+        "armor": 0,
+        "magicResist": 0,
+        "attackSpeed": 8,
+        "luck": 0
+      },
+      "xpReward": 50,
+      "coinReward": 15
+    },
+    {
+      "id": "goblin_2",
+      "name": "Forgetful Goblin",
+      "level": 3,
+      "image": "assets/mob-goblin.png",
+      "portrait": "assets/mob-goblin-head.png",
+      "xFrac": 0.72,
+      "stats": {
+        "hp": 40,
+        "attackDamage": 6,
+        "magicDamage": 0,
+        "armor": 0,
+        "magicResist": 0,
+        "attackSpeed": 8,
+        "luck": 0
+      },
+      "xpReward": 50,
+      "coinReward": 15
+    }
+  ]
+}
