@@ -15,9 +15,9 @@ The system must work in the existing plain JavaScript and PixiJS 8 application o
 
 The first version includes:
 
-- One male humanoid rig and one female humanoid rig.
-- Identical bone names and hierarchy for both rigs.
-- A female bind pose that is approximately 6% shorter, with narrower shoulders and adjusted torso, hip, and limb proportions.
+- One neutral humanoid rig used by every player appearance.
+- One stable set of bone pivots and proportions for all equipment.
+- Body traits and silhouette differences expressed through equipped armor rather than separate skeletons.
 - Shared additive animation clips: `idle`, `run`, and `attack`.
 - Static body and equipment textures attached to bones.
 - Existing procedural hit shake, damage text, death fade, and respawn behavior.
@@ -42,14 +42,14 @@ actor.destroy();
 Player actors additionally expose:
 
 ```js
-await actor.applyAppearance({ bodyType, skin, equipment });
+await actor.applyAppearance({ skin, equipment });
 ```
 
 `RigActor` animates nested Pixi `Container` bones and swaps body/equipment sprites. `FrameActor` wraps `PIXI.AnimatedSprite` for mobs. `WorldScene` depends only on the shared commands and a Pixi display object, so movement and combat do not branch on renderer type.
 
 ## 4. Humanoid skeleton
 
-Both body types use this hierarchy:
+The player rig uses this hierarchy:
 
 ```text
 root
@@ -75,7 +75,7 @@ root
 
 Every bone is a `PIXI.Container`. Bone transforms are local to their parent. The rig origin is the point between the feet, matching the current `anchor.set(0.5, 1)` behavior.
 
-The male and female rig JSON files define different bind-pose positions, rotations, display heights, and art scale. Animation clips contain additive offsets from the bind pose. One `run` clip therefore works for both bodies without forcing identical proportions.
+One rig JSON file defines the bind-pose positions, rotations, display height, and art scale. Animation clips contain additive offsets from that bind pose. Every body and equipment texture uses these same pivots, so one `run` clip animates every appearance.
 
 Horizontal direction is applied only by flipping `root.scale.x`. Individual bones and equipment pieces are never separately mirrored.
 
@@ -95,7 +95,7 @@ The renderer uses a fixed back-to-front layer order:
 10. Front-hand weapon
 11. Effects
 
-Each bone owns separate base and equipment sprite containers. This allows a chestplate to cover the base torso while sleeves cover the arm bones and continue moving with them.
+Each bone owns separate base and equipment sprite containers. This allows a chestplate to replace the visible base torso while sleeves replace or cover the arm pieces and continue moving with them. Equipment may use `overlay` mode or `replace` mode per bone. `replace` hides that bone's base art, allowing armor to define a slimmer, broader, feminine, masculine, mechanical, or otherwise distinctive silhouette without changing the skeleton.
 
 ## 6. Player appearance and equipment
 
@@ -117,13 +117,12 @@ Their visual mappings are:
 | `weapon` | `weaponMount` |
 | `book` | `offhandMount` |
 
-Fitted equipment supplies male and female art variants. Equipment that does not depend on body proportions may provide a `unisex` variant used by both bodies. The runtime lookup order is the selected body type followed by `unisex`. Missing art hides only the affected equipment piece and logs a warning; it never prevents gameplay.
+Each equipment item supplies one set of art built for the shared rig. Armor defines visible body traits through its shapes, coverage, and per-bone `overlay` or `replace` mode. Missing art hides only the affected equipment piece and logs a warning; it never prevents gameplay.
 
 The player appearance record extends the existing player data:
 
 ```json
 {
-  "bodyType": "male",
   "skin": "base_medium",
   "equipment": {
     "helmet": null,
@@ -144,8 +143,7 @@ Equipment definitions keep their current gameplay fields and add an optional vis
 Runtime-authored data lives under:
 
 ```text
-data/rigs/humanoid-male.json
-data/rigs/humanoid-female.json
+data/rigs/humanoid.json
 data/animations/humanoid/idle.json
 data/animations/humanoid/run.json
 data/animations/humanoid/attack.json
@@ -180,16 +178,9 @@ Equipment JSON points from a bone name to a static transparent image and local p
   "id": "iron_plate",
   "slot": "chestplate",
   "visual": {
-    "male": {
-      "torso": { "image": "assets/equipment/iron_plate/male/torso.png", "x": 0, "y": 0 },
-      "frontUpperArm": { "image": "assets/equipment/iron_plate/male/front-upper-arm.png", "x": 0, "y": 0 },
-      "rearUpperArm": { "image": "assets/equipment/iron_plate/male/rear-upper-arm.png", "x": 0, "y": 0 }
-    },
-    "female": {
-      "torso": { "image": "assets/equipment/iron_plate/female/torso.png", "x": 0, "y": 0 },
-      "frontUpperArm": { "image": "assets/equipment/iron_plate/female/front-upper-arm.png", "x": 0, "y": 0 },
-      "rearUpperArm": { "image": "assets/equipment/iron_plate/female/rear-upper-arm.png", "x": 0, "y": 0 }
-    }
+    "torso": { "image": "assets/equipment/iron_plate/torso.png", "mode": "replace", "x": 0, "y": 0 },
+    "frontUpperArm": { "image": "assets/equipment/iron_plate/front-upper-arm.png", "mode": "overlay", "x": 0, "y": 0 },
+    "rearUpperArm": { "image": "assets/equipment/iron_plate/rear-upper-arm.png", "mode": "overlay", "x": 0, "y": 0 }
   }
 }
 ```
@@ -237,20 +228,20 @@ src/sprites/
 - `frame-actor.js`: wraps `PIXI.AnimatedSprite` behind the same interface.
 - `load-rig.js`: validates and loads rig, animation, and attachment data.
 - `load-frame-manifest.js`: loads mob frames and playback metadata.
-- `appearance.js`: validates body type and equipment slot ids and supplies safe defaults.
+- `appearance.js`: validates skin and equipment slot ids and supplies safe defaults.
 
 `WorldScene` receives a display object and actor controller instead of treating the visual itself as a plain `PIXI.Sprite`. Position, scale, alpha, and facing remain controlled at the actor root.
 
 ## 11. Structure-first preview
 
-Before any final assets are generated, add `dev/rig-preview.html`. It displays male and female placeholder rigs side by side using colored geometric body parts. Controls switch among `idle`, `run`, and `attack`, flip direction, and toggle one placeholder item in every equipment slot.
+Before any final assets are generated, add `dev/rig-preview.html`. It displays the neutral placeholder rig using colored geometric body parts. Controls switch among `idle`, `run`, and `attack`, flip direction, and toggle one placeholder item in every equipment slot. Two complete placeholder outfits—one broad and heavy, one lighter with feminine visual traits—prove that distinct silhouettes work on the same pivots.
 
 The preview must make these issues visible before art production:
 
 - Incorrect joint pivots
 - Equipment appearing in the wrong layer
 - Armor separating from limbs during the run
-- Male/female proportion conflicts
+- Base body showing through equipment that should replace it
 - Weapons rotating around the wrong hand point
 - Foot sliding or movement below the ground anchor
 - Silhouette readability at the real 70–90 pixel gameplay size
@@ -261,7 +252,7 @@ Final Astra generation begins only after the placeholder rigs and animations are
 
 Astra generates static body and equipment pieces in the neutral bind pose, not complete animation frames. Every generation uses a rendered rig template showing bone boundaries, joint centers, canvas scale, and the Cardslayer style reference.
 
-For fitted armor, Astra produces a composed male and female design first. Each accepted design is then separated into the exact bone pieces required by its slot. Weapons, books, many helmets, and many capes may use one unisex output.
+For fitted armor, Astra produces one composed design on the neutral rig template. Each accepted design is then separated into the exact bone pieces required by its slot. The armor artwork—not a different skeleton—defines visible body traits and silhouette.
 
 Every exported piece is transparent, contains no floor shadow or scenery, and includes enough overlap around joints to prevent gaps during rotation. A deterministic validation step checks referenced bone names, required files, transparent bounds, and pivots before an item is accepted.
 
@@ -273,9 +264,8 @@ The system uses raster textures and GPU transforms. It does not redraw vector pa
 
 ## 14. Error handling
 
-- Unknown body type falls back to `male` and logs a warning.
 - Missing base-body art renders a colored debug shape for that bone in development and an empty part in production.
-- Missing equipment art hides only that part and logs item id, body type, and bone.
+- Missing equipment art hides only that part and logs item id and bone.
 - Unknown animation name falls back to `idle`.
 - Missing mob animation falls back to its first idle frame.
 - Invalid parent names, hierarchy cycles, duplicate bones, and non-finite transforms reject the rig during loading with a clear error.
@@ -287,16 +277,16 @@ Vitest covers:
 
 - Additive animation interpolation at the beginning, midpoint, and end of a clip.
 - Loop wrapping and `playOnce` completion.
-- Male and female bind poses producing the same bone names.
+- Rig data producing the complete canonical bone hierarchy.
 - Rig validation rejecting cycles, missing parents, and invalid transforms.
-- Equipment variant lookup: body-specific first, then `unisex`, then hidden.
-- Appearance sanitization for unknown body types, slots, and item ids.
+- Equipment `overlay` and `replace` behavior for each targeted bone.
+- Appearance sanitization for unknown skins, slots, and item ids.
 - Animation priority and return from `attack` to `run` or `idle`.
 - Frame mob fallback behavior.
 
 Browser verification covers:
 
-- Both placeholder bodies at desktop and phone viewport sizes.
+- The placeholder rig and both silhouette-testing outfits at desktop and phone viewport sizes.
 - Running in both directions without foot-anchor drift.
 - Every placeholder equipment slot through a complete run cycle.
 - Combat attack timing with the existing lunge, damage number, shake, and fade.
@@ -309,7 +299,7 @@ The structure is ready for asset production when the placeholder preview shows s
 
 1. Add pure rig-data validation and additive animation interpolation.
 2. Build `RigActor` with colored placeholder body parts.
-3. Author male and female bind-pose data.
+3. Author the neutral humanoid bind-pose data.
 4. Author placeholder `idle`, `run`, and `attack` clips.
 5. Build the rig preview and validate all attachment layers.
 6. Add appearance and placeholder equipment manifests for every slot.
