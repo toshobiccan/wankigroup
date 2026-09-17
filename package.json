@@ -3,12 +3,18 @@
   "version": "0.1.0",
   "private": true,
   "description": "Battle monsters by answering your flashcards. Works with decks exported from Anki.",
+  "type": "module",
   "scripts": {
-    "start": "node server.js",
-    "test": "vitest run"
+    "start": "node --disable-warning=ExperimentalWarning server.js",
+    "start:offline": "node server.js --offline",
+    "test": "vitest run",
+    "bot": "node --disable-warning=ExperimentalWarning tools/bot.mjs"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22.13"
+  },
+  "dependencies": {
+    "ws": "^8.21.3"
   },
   "devDependencies": {
     "vitest": "^5.0.1"
