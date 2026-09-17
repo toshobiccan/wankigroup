@@ -12,6 +12,7 @@ export class PlayerService extends EventEmitter {
     this.saveDelayMs = saveDelayMs;
     this.timers = timers;
     this.cache = new Map(); // accountId -> player
+    this.roles = new Map(); // accountId -> role, cached from the account at load() time
     this.pendingSaves = new Map(); // accountId -> timer
   }
 
@@ -24,7 +25,12 @@ export class PlayerService extends EventEmitter {
       this.cache.set(account.id, player);
       if (!saved) this.store.savePlayer(account.id, player);
     }
+    this.roles.set(account.id, account.role ?? "guest");
     return player;
+  }
+
+  getRole(accountId) {
+    return this.roles.get(accountId) ?? "guest";
   }
 
   get(accountId) {

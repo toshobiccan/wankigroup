@@ -18,23 +18,27 @@ const zone = {
   ],
 };
 
-function setup() {
+function setup({ withRoles = false } = {}) {
   const store = new Map();
+  const roles = new Map();
   const changed = [];
   const events = [];
+  const players = { get: (id) => store.get(id), changed: (id) => changed.push(id) };
+  if (withRoles) players.getRole = (id) => roles.get(id) ?? "guest";
   const room = new Room({
     id: "plains1-0001",
     zone,
-    players: { get: (id) => store.get(id), changed: (id) => changed.push(id) },
+    players,
     emit: (type, payload, target) => events.push({ type, payload, target }),
     random: () => 0.99, // never crit
     today: () => "2026-09-17",
   });
-  const join = (id) => {
+  const join = (id, role) => {
     store.set(id, createDefaultPlayer({ name: id }));
+    if (role) roles.set(id, role);
     return room.addPlayer(id);
   };
-  return { room, store, changed, events, join };
+  return { room, store, roles, changed, events, join };
 }
 
 describe("Room", () => {
@@ -123,5 +127,28 @@ describe("Room", () => {
     const before = ctx.events.length;
     vi.advanceTimersByTime(RESPAWN_DELAY_MS * 2);
     expect(ctx.events.length).toBe(before);
+  });
+});
+
+describe("Room roles", () => {
+  it("defaults a member's role to guest when players.getRole is not implemented", () => {
+    const ctx = setup(); // no getRole on the stub at all
+    const { snapshot } = ctx.join("p1");
+    expect(snapshot.you.role).toBe("guest");
+  });
+
+  it("uses players.getRole when available", () => {
+    const ctx = setup({ withRoles: true });
+    const { snapshot } = ctx.join("p1", "mod");
+    expect(snapshot.you.role).toBe("mod");
+  });
+
+  it("includes role in the playerJoined broadcast others receive", () => {
+    const ctx = setup({ withRoles: true });
+    ctx.join("p1", "admin");
+    ctx.events.length = 0;
+    ctx.join("p2", "guest");
+    const joinedEvent = ctx.events.find((e) => e.type === "playerJoined");
+    expect(joinedEvent.payload.player.role).toBe("guest");
   });
 });

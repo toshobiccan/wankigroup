@@ -54,7 +54,7 @@ export class LocalSession extends Emitter {
     const room = new Room({
       id: `${zoneId}-local`,
       zone,
-      players: { get: () => this._player, changed: () => this._changed() },
+      players: { get: () => this._player, changed: () => this._changed(), getRole: () => "guest" },
       // Events addressed to "everyone but you" have no audience offline.
       emit: (type, payload, target) => {
         if (target?.except === LOCAL_ID) return;

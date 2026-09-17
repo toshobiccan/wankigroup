@@ -17,6 +17,7 @@
 import { DEFAULT_ROOM_CAPACITY, ENGAGE_RANGE_FRAC, RESPAWN_DELAY_MS } from "./constants.js";
 import { GRADES, applyDefeat, applyKill, resolveGrade } from "./encounter.js";
 import { todayKey } from "./player.js";
+import { DEFAULT_ROLE } from "./roles.js";
 
 // Same fallbacks WorldScene uses for a "blank" page with no authored ground band.
 const DEFAULT_GROUND_TOP_FRAC = 0.72;
@@ -69,8 +70,9 @@ export class Room {
   addPlayer(playerId, position = null) {
     if (!this.members.has(playerId) && this.isFull) return { ok: false, error: "room_full" };
     const player = this.players.get(playerId);
+    const role = this.players.getRole?.(playerId) ?? DEFAULT_ROLE;
     const pos = position ? this._clampPosition(position) : { ...this.spawn };
-    const member = { id: playerId, name: player.name, level: player.level, x: pos.x, y: pos.y, tx: pos.x, ty: pos.y, fightMobId: null };
+    const member = { id: playerId, name: player.name, level: player.level, role, x: pos.x, y: pos.y, tx: pos.x, ty: pos.y, fightMobId: null };
     this.members.set(playerId, member);
     this.emit("playerJoined", { player: this._memberView(member) }, { except: playerId });
     return { ok: true, snapshot: this.snapshot(playerId) };
@@ -224,7 +226,7 @@ export class Room {
   }
 
   _memberView(member) {
-    return { id: member.id, name: member.name, level: member.level, x: member.x, y: member.y, tx: member.tx, ty: member.ty };
+    return { id: member.id, name: member.name, level: member.level, role: member.role, x: member.x, y: member.y, tx: member.tx, ty: member.ty };
   }
 
   _mobView(mob) {
