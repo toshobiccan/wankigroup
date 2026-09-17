@@ -35,6 +35,9 @@ export class WorldServer {
     players.on("changed", this._onPlayerChanged);
 
     this.messageLimiter = new RateLimiter({ capacity: 40, refillPerSecond: 20 });
+    // Tighter than the general flood guard above -- this specifically caps how
+    // often one account can actually broadcast a chat message to a room.
+    this.chatLimiter = new RateLimiter({ capacity: 5, refillPerSecond: 0.5 });
     this.wss = new WebSocketServer({ noServer: true, maxPayload: MAX_MESSAGE_BYTES });
 
     this._onUpgrade = (req, socket, head) => {
@@ -101,6 +104,7 @@ export class WorldServer {
       clearTimeout(helloTimer);
       this.messageLimiter.buckets.delete(conn.id);
       if (!conn.accountId || this.connections.get(conn.accountId) !== conn) return;
+      this.chatLimiter.buckets.delete(conn.accountId);
       this.connections.delete(conn.accountId);
       this.rooms.leave(conn.accountId);
       this.players.release(conn.accountId);
@@ -144,6 +148,10 @@ export class WorldServer {
         return this._reply(conn, message.rid, this._roomCall(room, () => room.grade(id, message.grade), (r) => ({ result: r.result })));
       case "flee":
         return this._reply(conn, message.rid, this._roomCall(room, () => room.flee(id), () => ({})));
+      case "chat": {
+        if (!this.chatLimiter.take(id)) return this._reply(conn, message.rid, { ok: false, error: "rate_limited" });
+        return this._reply(conn, message.rid, this._roomCall(room, () => room.chat(id, message.text), () => ({})));
+      }
       case "ping":
         return this._send(conn.ws, { type: "pong" });
       default:

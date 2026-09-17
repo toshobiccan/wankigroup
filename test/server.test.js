@@ -206,6 +206,39 @@ describe("server (online)", () => {
     cb.close();
   });
 
+  it("chat reaches everyone in the room, including the sender, with role attached", async () => {
+    const a = await guest("Alice");
+    const b = await guest("Bob");
+    ctx.store.setRole(a.account.id, "mod");
+    const clientA = await connect(ctx.port, a.token);
+    const clientB = await connect(ctx.port, b.token);
+    await clientA.request("join", { zoneId: "plains1" });
+    await clientB.request("join", { zoneId: "plains1" });
+
+    const result = await clientA.request("chat", { text: "hello room" });
+    expect(result).toMatchObject({ ok: true });
+
+    const seenByA = await clientA.waitFor((m) => m.type === "chat");
+    const seenByB = await clientB.waitFor((m) => m.type === "chat");
+    expect(seenByA).toMatchObject({ id: a.account.id, name: "Alice", role: "mod", text: "hello room" });
+    expect(seenByB).toMatchObject({ id: a.account.id, name: "Alice", role: "mod", text: "hello room" });
+
+    clientA.close();
+    clientB.close();
+  });
+
+  it("rate-limits chat", async () => {
+    const a = await guest("Spammer");
+    const clientA = await connect(ctx.port, a.token);
+    await clientA.request("join", { zoneId: "plains1" });
+
+    const results = [];
+    for (let i = 0; i < 10; i++) results.push(await clientA.request("chat", { text: `msg ${i}` }));
+    expect(results.some((r) => r.ok === false && r.error === "rate_limited")).toBe(true);
+
+    clientA.close();
+  });
+
   it("opens a new instance when one is full and refuses unreachable zones", async () => {
     const clients = [];
     for (let i = 0; i < 6; i++) {
