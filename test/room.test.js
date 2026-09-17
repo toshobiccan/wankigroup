@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { Room } from "../src/game/room.js";
 import { createDefaultPlayer } from "../src/game/player.js";
-import { RESPAWN_DELAY_MS } from "../src/game/constants.js";
+import { CHAT_MAX_LENGTH, RESPAWN_DELAY_MS } from "../src/game/constants.js";
 
 const zone = {
   id: "plains1",
@@ -18,7 +18,7 @@ const zone = {
   ],
 };
 
-function setup({ withRoles = false } = {}) {
+function setup({ withRoles = false, now = () => Date.now() } = {}) {
   const store = new Map();
   const roles = new Map();
   const changed = [];
@@ -32,6 +32,7 @@ function setup({ withRoles = false } = {}) {
     emit: (type, payload, target) => events.push({ type, payload, target }),
     random: () => 0.99, // never crit
     today: () => "2026-09-17",
+    now,
   });
   const join = (id, role) => {
     store.set(id, createDefaultPlayer({ name: id }));
@@ -155,7 +156,7 @@ describe("Room roles", () => {
 
 describe("Room chat", () => {
   it("broadcasts to everyone in the room, including the sender", () => {
-    const ctx = setup({ withRoles: true });
+    const ctx = setup({ withRoles: true, now: () => 1758067200000 });
     ctx.join("p1", "scholar");
     ctx.join("p2", "guest");
     ctx.events.length = 0;
@@ -167,7 +168,17 @@ describe("Room chat", () => {
     expect(chatEvents).toHaveLength(1);
     expect(chatEvents[0].target).toBeNull();
     expect(chatEvents[0].payload).toMatchObject({ id: "p1", name: "p1", role: "scholar", text: "hello world" });
-    expect(typeof chatEvents[0].payload.ts).toBe("number");
+    expect(chatEvents[0].payload.ts).toBe(1758067200000);
+  });
+
+  it("rejects a message over CHAT_MAX_LENGTH passed directly (bypassing protocol.js)", () => {
+    const ctx = setup();
+    ctx.join("p1");
+    ctx.events.length = 0;
+
+    const tooLong = "a".repeat(CHAT_MAX_LENGTH + 1);
+    expect(ctx.room.chat("p1", tooLong)).toEqual({ ok: false, error: "too_long" });
+    expect(ctx.events.filter((e) => e.type === "chat")).toHaveLength(0);
   });
 
   it("trims whitespace and rejects an all-whitespace message", () => {

@@ -27,7 +27,7 @@ const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 const isFiniteNumber = (value) => typeof value === "number" && Number.isFinite(value);
 
 export class Room {
-  constructor({ id, zone, players, emit, timers = globalThis, random = Math.random, today = todayKey }) {
+  constructor({ id, zone, players, emit, timers = globalThis, random = Math.random, today = todayKey, now = () => Date.now() }) {
     this.id = id;
     this.zone = zone;
     this.zoneId = zone.id;
@@ -37,6 +37,7 @@ export class Room {
     this.timers = timers;
     this.random = random;
     this.today = today;
+    this.now = now;
 
     this.groundTop = zone.groundTopFrac ?? DEFAULT_GROUND_TOP_FRAC;
     this.groundBottom = zone.groundBottomFrac ?? DEFAULT_GROUND_BOTTOM_FRAC;
@@ -122,14 +123,17 @@ export class Room {
   // Room-scoped: broadcast to everyone currently in this instance, including
   // the sender, so the client has one code path for rendering any chat
   // message rather than a separate "it's my own" optimistic-echo case.
-  // Length is already bounded by parseClientMessage's CHAT_MAX_LENGTH before
-  // this is ever called -- this only has to catch "trims down to nothing".
+  // Re-validates length here (not just trusting parseClientMessage) because
+  // local/offline mode calls Room methods directly, bypassing the protocol
+  // layer entirely -- same reasoning as why `grade`/`move` are validated in
+  // both places.
   chat(playerId, text) {
     const member = this.members.get(playerId);
     if (!member) return { ok: false, error: "not_in_room" };
     const trimmed = typeof text === "string" ? text.trim() : "";
     if (!trimmed) return { ok: false, error: "empty_message" };
-    this.emit("chat", { id: member.id, name: member.name, role: member.role, text: trimmed, ts: Date.now() }, null);
+    if (trimmed.length > CHAT_MAX_LENGTH) return { ok: false, error: "too_long" };
+    this.emit("chat", { id: member.id, name: member.name, role: member.role, text: trimmed, ts: this.now() }, null);
     return { ok: true };
   }
 
