@@ -10,15 +10,32 @@
   <main>
     <p class="eyebrow">Development tool</p>
     <h1>Neutral hero rig</h1>
-    <p class="intro">Check the fast run and every future equipment mount before generating final art.</p>
+    <p class="intro">Review the asymmetric AQW-style bind pose before we create final front and rear asset pairs.</p>
     <section class="panel" aria-label="Rig controls">
       <div class="controls" id="clip-controls">
-        <button data-clip="idle">Idle</button>
-        <button data-clip="run" class="selected">Run</button>
+        <button data-clip="idle" class="selected">Idle</button>
+        <button data-clip="run">Run</button>
         <button data-clip="attack">Attack</button>
         <button id="facing">Face left</button>
       </div>
       <div class="slots" id="slot-controls"></div>
+    </section>
+    <section class="panel calibrator" aria-label="Asset calibration" hidden>
+      <p class="eyebrow">Calibration editor</p>
+      <p class="calibration-help">Choose a part, then drag directly on the stage. The offset is recorded in the template below.</p>
+      <label class="target-picker">Asset
+        <select id="asset-target"></select>
+      </label>
+      <p id="active-target" class="active-target" aria-live="polite"></p>
+      <div class="controls nudge-controls" aria-label="Fine position controls">
+        <button data-nudge="0,-1" aria-label="Nudge up">↑</button>
+        <button data-nudge="-1,0" aria-label="Nudge left">←</button>
+        <button data-nudge="1,0" aria-label="Nudge right">→</button>
+        <button data-nudge="0,1" aria-label="Nudge down">↓</button>
+        <button id="reset-target">Reset selected</button>
+        <button id="export-template">Export template</button>
+      </div>
+      <textarea id="template-output" rows="8" readonly aria-label="Rig placement template" placeholder="Exported placement template appears here"></textarea>
     </section>
     <div id="stage" aria-label="Animated skeleton preview"></div>
   </main>

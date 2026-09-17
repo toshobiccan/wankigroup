@@ -1,5 +1,6 @@
 :root { color-scheme: dark; font-family: Georgia, serif; background: #18132b; color: #fff8e8; }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 body { min-height: 100vh; margin: 0; background: radial-gradient(circle at 50% 0%, #5a438f 0, #211a3d 44%, #110d20 100%); }
 main { width: min(850px, 100%); margin: 0 auto; padding: 28px 18px; }
 .eyebrow { margin: 0; color: #ffd978; font: 700 11px/1 Arial, sans-serif; letter-spacing: .14em; text-transform: uppercase; }
@@ -7,9 +8,17 @@ h1 { margin: 7px 0 4px; font-size: clamp(28px, 7vw, 46px); }
 .intro { max-width: 610px; margin: 0 0 18px; color: #d9cce7; }
 .panel { margin-bottom: 14px; padding: 12px; border: 1px solid #8b72bb; border-radius: 12px; background: #2b2149cc; box-shadow: 0 8px 30px #0b071c66; }
 .controls, .slots { display: flex; flex-wrap: wrap; gap: 8px; }
+.calibrator { display: grid; gap: 9px; }
+.calibration-help { margin: 0; color: #d9cce7; font: 13px/1.4 Arial, sans-serif; }
+.target-picker { display: grid; gap: 4px; max-width: 360px; color: #ffd978; font: 700 12px Arial, sans-serif; }
+.active-target { margin: 0; color: #ffe08a; font: 700 12px Arial, sans-serif; }
+select, textarea { width: 100%; border: 1px solid #ad91df; border-radius: 7px; color: #fff8e8; background: #21183b; font: 12px/1.4 ui-monospace, monospace; }
+select { padding: 8px; }
+textarea { padding: 9px; resize: vertical; }
+.nudge-controls button { min-width: 36px; }
 .slots { margin-top: 9px; padding-top: 10px; border-top: 1px solid #5b4785; }
 button { cursor: pointer; border: 1px solid #ad91df; border-radius: 7px; padding: 7px 10px; color: #fff8e8; background: #49366f; font: 700 12px Arial, sans-serif; }
 button:hover, button.selected { color: #2a1842; border-color: #ffe08a; background: #ffe08a; }
-#stage { height: min(58vh, 470px); overflow: hidden; border: 2px solid #9d7ace; border-radius: 16px; background: linear-gradient(#8fb9d4 0 60%, #9cc36b 60% 70%, #6a863f 70%); box-shadow: inset 0 0 80px #29446c88, 0 16px 42px #09051580; }
+#stage { height: min(58vh, 470px); overflow: hidden; touch-action: none; border: 2px solid #9d7ace; border-radius: 16px; background: linear-gradient(#8fb9d4 0 60%, #9cc36b 60% 70%, #6a863f 70%); box-shadow: inset 0 0 80px #29446c88, 0 16px 42px #09051580; }
 #stage canvas { display: block; }
 @media (max-width: 480px) { main { padding: 18px 12px; } #stage { height: 54vh; } button { flex: 1 1 auto; } }

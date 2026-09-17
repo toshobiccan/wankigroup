@@ -1,0 +1,17 @@
+{
+  "tool": "Built-in image generation",
+  "assets": [
+    {
+      "name": "human",
+      "prompt": "Asset edit for CARDSLAYER. Remove ONLY the white background from the supplied human-base reference. Return the exact same full-body adult human sprite, same pose, hair, face, clothing, colors, very thick dark outline and flat cel shading, on a genuinely transparent background (alpha). Do not redraw or redesign the character. No white fringe, no shadow, no text. Preserve full body and original framing."
+    },
+    {
+      "name": "goblin",
+      "prompt": "Asset edit for CARDSLAYER. Remove ONLY the white background from this supplied goblin-mace-medic reference. Return the exact same full-body goblin with mace, stethoscope, flashcard tag, gold earrings, all original colors, proportions and bold outline, on a genuinely transparent background (alpha). Do not redesign. No white fringe, no added shadow, no text. Preserve full body and original framing."
+    },
+    {
+      "name": "import-scene",
+      "prompt": "Generate a single production-ready CARDSLAYER menu background illustration, landscape 4:3, for the existing 400x296 game import banner. Reference 1 establishes the exact adult human identity, reference 2 the exact goblin medic identity and both establish the art style. Reference 3 is the existing world palette. Scene: a medieval scholar's stone study with a large arched window looking over green plains and a distant angular castle; simple dark-brown desk at bottom, a few large closed books left, single simple brass lantern right. At lower left the exact brown-haired adult human from reference 1, wearing a simple dark-brown sleeveless leather vest and holding a blank cream flashcard. At lower right the same goblin medic from reference 2 studies an open book, his stethoscope and mace visible; friendly rivalry, not fighting. Keep the top 40% free of characters and visually quiet dark stone so existing HTML title and subtitle can overlay. Characters dominate lower 60%, readable at small size. Early-to-mid-2000s browser Flash fantasy RPG. Very thick near-black contours, angular geometry, moderately large heads but adult proportions, flat base color + ONE darker shadow tone. Dark brown, olive green, muted sky blue, parchment, dull brass. Low-to-medium detail. No gradients, no texture, no realistic or soft lighting, no glossy painting, no chibi, no anime, no modern mobile splash art. No text, no UI, no logo, no border. One cohesive finished scene."
+    }
+  ]
+}

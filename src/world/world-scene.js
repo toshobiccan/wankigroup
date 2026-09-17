@@ -1,10 +1,11 @@
 import * as PIXI from "../../vendor/pixi.min.mjs";
 import { clampToZone, stepTowardTarget, computeCameraX, computeCenteredCameraX } from "./world-movement.js";
+import { loadRigArt } from "../sprites/load-rig-art.js";
 import { RigActor } from "../sprites/rig-actor.js";
 
 const MOVE_SPEED = 220; // world-pixels/second
 const DEAD_ZONE_FRACTION = 0.4;
-const PLAYER_HEIGHT = 90; // world-pixels tall, roughly matches the ground band's scale
+const PLAYER_HEIGHT = 118; // keeps the cutout equipment readable on a phone-sized world view
 const MOB_HEIGHT = 70; // a bit shorter than the player -- these are the weak, early mobs
 const APPROACH_DISTANCE = 60; // how close (world-pixels) the player walks before a fight actually starts
 const RESPAWN_DELAY_MS = 6000; // how long a defeated mob stays gone before it's back at full HP
@@ -29,12 +30,14 @@ const PLAYER_CLIP_URLS = {
   run: new URL("../../data/animations/humanoid/run.json", import.meta.url).href,
   attack: new URL("../../data/animations/humanoid/attack.json", import.meta.url).href,
 };
+const PLAYER_ART_URL = new URL("../../data/rigs/humanoid-art-starter-v1.json", import.meta.url).href;
 
 export class WorldScene {
-  constructor({ mountElement, onMobSelected, onCombatStart }) {
+  constructor({ mountElement, onMobSelected, onCombatStart, playerAppearance = {} }) {
     this.mountElement = mountElement;
     this.onMobSelected = onMobSelected; // (mobData | null) -- fires on select, re-select of a different mob, and deselect
     this.onCombatStart = onCombatStart; // (mobData) -- fires once, when the player finishes walking up to an engaged mob
+    this.playerAppearance = playerAppearance;
     this.zone = null;
     this.pageId = null; // the current page's own id, e.g. "plains1"
     this.links = { prev: null, next: null }; // neighboring page ids this page connects to, or null
@@ -97,13 +100,14 @@ export class WorldScene {
       this.mountElement.appendChild(this._roomLabel);
 
       try {
-        const [rig, idle, run, attack] = await Promise.all([
+        const [rig, idle, run, attack, rigArt] = await Promise.all([
           fetch(PLAYER_RIG_URL).then((response) => response.json()),
           fetch(PLAYER_CLIP_URLS.idle).then((response) => response.json()),
           fetch(PLAYER_CLIP_URLS.run).then((response) => response.json()),
           fetch(PLAYER_CLIP_URLS.attack).then((response) => response.json()),
+          loadRigArt(PLAYER_ART_URL),
         ]);
-        this.player = new RigActor({ rig, clips: { idle, run, attack } });
+        this.player = new RigActor({ rig, clips: { idle, run, attack }, appearance: { equipment: this.playerAppearance }, art: rigArt.art, textures: rigArt.textures });
         this.player.setDisplayHeight(PLAYER_HEIGHT);
         this._isRigPlayer = true;
       } catch (error) {
@@ -142,6 +146,13 @@ export class WorldScene {
     }
 
     await this._loadPage(zoneJsonUrl, { spawn: true });
+  }
+
+  // The inventory owns item state. This small bridge keeps the world actor in
+  // sync when an equip screen is added, without coupling Pixi to app.js.
+  setPlayerAppearance(equipment) {
+    this.playerAppearance = equipment ?? {};
+    if (this._isRigPlayer) this.player.applyAppearance({ equipment: this.playerAppearance });
   }
 
   // Tears down and rebuilds everything that's specific to one page: the

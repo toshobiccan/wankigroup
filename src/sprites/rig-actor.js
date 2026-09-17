@@ -49,13 +49,36 @@ function makeBodyShape(id) {
   const color = BODY_COLORS[id] ?? 0xffffff;
   if (id === "head") graphic.circle(0, -8, 10).fill(color).stroke({ color: 0x402e54, width: 1.5 });
   else if (id === "hips") graphic.roundRect(-11, -5, 22, 10, 3).fill(color);
-  else if (id === "cape") graphic.poly([-10, 0, 10, 0, 5, 35, -7, 30]).fill(color);
-  else if (id.endsWith("Foot")) graphic.roundRect(-6, 0, 14, 6, 3).fill(color);
+  else if (id === "cape") return null;
+  else if (id.endsWith("Foot")) {
+    const isRear = id.startsWith("rear");
+    graphic.roundRect(isRear ? -5 : -6, 0, isRear ? 12 : 15, isRear ? 5 : 6, 3).fill(color);
+  }
   else if (SEGMENT_LENGTHS[id]) {
-    const width = id.includes("Arm") ? 7 : id.includes("Shin") ? 9 : 11;
-    graphic.roundRect(-width / 2, 0, width, SEGMENT_LENGTHS[id], width / 2).fill(color);
+    const isRear = id.startsWith("rear");
+    const width = (id.includes("Arm") ? 7 : id.includes("Shin") ? 9 : 11) * (isRear ? 0.88 : 1);
+    const length = SEGMENT_LENGTHS[id] * (isRear ? 0.92 : 1);
+    graphic.roundRect(-width / 2, 0, width, length, width / 2).fill(color);
   }
   return graphic;
+}
+
+function makeSprite(config, textures) {
+  if (!config?.src) return null;
+  const texture = textures?.get(config.src);
+  if (!texture) return null;
+  const sprite = new PIXI.Sprite(texture);
+  sprite.anchor.set(...(config.anchor ?? [0.5, 0.5]));
+  sprite.position.set(config.x ?? 0, config.y ?? 0);
+  sprite.scale.set(config.scale ?? 1);
+  sprite.rotation = config.rotation ?? 0;
+  return sprite;
+}
+
+function artKey(target) {
+  return target.kind === "body"
+    ? `body:${target.boneId}`
+    : `equipment:${target.slotId}:${target.itemId}:${target.boneId}`;
 }
 
 function makeEquipmentShape(slotId) {
@@ -72,13 +95,16 @@ function makeEquipmentShape(slotId) {
 }
 
 export class RigActor extends PIXI.Container {
-  constructor({ rig, clips = {}, appearance } = {}) {
+  constructor({ rig, clips = {}, appearance, art = null, textures = null } = {}) {
     super();
     this.rig = validateRig(rig);
     this.clips = validateClips(this.rig, clips);
+    this.art = art;
+    this.textures = textures;
     this.bones = new Map();
     this.bodyVisuals = new Map();
     this.equipmentVisuals = new Map();
+    this.artVisuals = new Map();
     this.elapsedMs = 0;
     this.currentClip = "idle";
     this.isPlayingOnce = false;
@@ -103,10 +129,11 @@ export class RigActor extends PIXI.Container {
       container.rotation = bone.rotation ?? 0;
       this.bones.set(bone.id, { container, layers, bindPose: bone });
       (bone.parent ? this.bones.get(bone.parent).container : this.visual).addChild(container);
-      const body = makeBodyShape(bone.id);
+      const body = makeSprite(this.art?.body?.[bone.id], this.textures) ?? makeBodyShape(bone.id);
       if (body) {
         layers.base.addChild(body);
         this.bodyVisuals.set(bone.id, body);
+        if (this.art?.body?.[bone.id]) this.artVisuals.set(artKey({ kind: "body", boneId: bone.id }), body);
       }
     }
 
@@ -153,23 +180,38 @@ export class RigActor extends PIXI.Container {
     this.faceLeft(this._facingLeft);
   }
 
+  syncArtPlacement(target, config) {
+    const visual = this.artVisuals.get(artKey(target));
+    if (!visual) return false;
+    visual.position.set(config.x ?? 0, config.y ?? 0);
+    return true;
+  }
+
   applyAppearance(appearance) {
     this.appearance = normalizeAppearance(appearance, this.rig.slots);
     for (const visuals of this.equipmentVisuals.values()) {
       for (const visual of visuals) visual.destroy();
     }
     this.equipmentVisuals.clear();
-    for (const body of this.bodyVisuals.values()) body.visible = true;
+    this.artVisuals.clear();
+    for (const [boneId, body] of this.bodyVisuals) {
+      body.visible = true;
+      if (this.art?.body?.[boneId]) this.artVisuals.set(artKey({ kind: "body", boneId }), body);
+    }
 
     for (const [slotId, itemId] of Object.entries(this.appearance.equipment)) {
       if (!itemId) continue;
       const slot = this.rig.slots[slotId];
+      const assetId = typeof itemId === "object" ? itemId.id : itemId;
       const visuals = [];
       for (const attachment of slot.attachments) {
         const bone = this.bones.get(attachment.bone);
-        const visual = makeEquipmentShape(slotId);
+        const asset = this.art?.equipment?.[slotId]?.[assetId]?.[attachment.bone]
+          ?? this.art?.equipment?.[slotId]?.preview?.[attachment.bone];
+        const visual = makeSprite(asset, this.textures) ?? makeEquipmentShape(slotId);
         bone.layers[attachment.layer].addChild(visual);
         visuals.push(visual);
+        if (asset) this.artVisuals.set(artKey({ kind: "equipment", slotId, itemId: typeof itemId === "object" ? itemId.id : itemId, boneId: attachment.bone }), visual);
         if (attachment.mode === "replace") {
           const baseBody = this.bodyVisuals.get(attachment.bone);
           if (baseBody) baseBody.visible = false;

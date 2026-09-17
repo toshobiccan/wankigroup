@@ -24,11 +24,18 @@ const defaultPlayer = {
   // bound, materials stack infinitely in theory. No item has been created
   // yet (no drop system exists), so both start empty for every player.
   inventory: { equipables: [], materials: [] },
-  // What's currently worn, one item per slot (or null) -- see src/items.js's
-  // EQUIP_SLOTS. Separate from inventory.equipables (held) the same way a
-  // real RPG splits "in your bag" from "on your body". No equip UI/logic
-  // exists yet -- this is just the slot structure for when it does.
-  equipment: { helmet: null, cape: null, chestplate: null, leggings: null, boots: null, weapon: null, book: null },
+  // The visible starter kit proves every rig mount in the live game. These
+  // item ids remain stable when a later equip screen swaps in real loot.
+  equipment: {
+    helmet: { id: "starter-scout-helmet", name: "Scout Helmet" },
+    cape: { id: "starter-traveler-cape", name: "Traveler Cape" },
+    chestplate: { id: "starter-leather-chest", name: "Leather Tunic" },
+    leggings: { id: "starter-traveler-leggings", name: "Traveler Leggings" },
+    boots: { id: "starter-traveler-boots", name: "Traveler Boots" },
+    weapon: { id: "oak-practice-sword", name: "Oak Practice Sword" },
+    book: { id: "beginner-spellbook", name: "Beginner Spellbook" },
+  },
+  starterKitGranted: true,
   // The Inventory screen's Status tab: one selected class, one active buff
   // (both null until classes/buffs exist -- see src/items.js's createClass/createBuff).
   status: { selectedClass: null, activeBuff: null },
@@ -41,7 +48,17 @@ function loadPlayer() {
   // object as defaultPlayer's, and the first push into inventory.materials would
   // silently mutate the shared default for every other player in this session too.
   try {
-    return { ...structuredClone(defaultPlayer), ...JSON.parse(localStorage.getItem(STORAGE_KEY)) };
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    const defaults = structuredClone(defaultPlayer);
+    return {
+      ...defaults,
+      ...saved,
+      stats: { ...defaults.stats, ...(saved?.stats ?? {}) },
+      inventory: { ...defaults.inventory, ...(saved?.inventory ?? {}) },
+      equipment: saved?.starterKitGranted ? { ...defaults.equipment, ...(saved?.equipment ?? {}) } : defaults.equipment,
+      status: { ...defaults.status, ...(saved?.status ?? {}) },
+      daily: { ...defaults.daily, ...(saved?.daily ?? {}) },
+    };
   } catch {
     return structuredClone(defaultPlayer);
   }
@@ -52,6 +69,9 @@ const player = loadPlayer();
 function savePlayer() {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(player)); } catch {}
 }
+
+// Persist the starter-kit migration before the player can leave or refresh.
+savePlayer();
 
 function today() {
   return new Date().toISOString().slice(0, 10);
@@ -324,6 +344,11 @@ const INVENTORY_TABS = [
 let inventoryView = "character"; // "character" | "stats" -- what the left panel currently shows
 let inventoryTab = "equipables"; // which of the three lists the right panel currently shows
 const expandedStats = new Set(); // stat keys whose grey math line is currently shown
+const CHARACTER_GEAR_SLOTS = [
+  { key: "cape", label: "Cape" },
+  { key: "weapon", label: "Weapon" },
+  { key: "book", label: "Book" },
+];
 
 function renderInventoryLeft() {
   const root = $("#inventoryLeft");
@@ -354,14 +379,18 @@ function renderInventoryLeft() {
     );
     return;
   }
-  // "character" view -- no equip slots yet (armor/helmet/weapon comes once
-  // sprites exist to actually show equipped gear on), just the character
-  // itself, name, level, and the way in to the stats view.
+  const gearSlots = CHARACTER_GEAR_SLOTS.map(({ key, label }) =>
+    el("div", { class: "equipment-slot" },
+      el("span", { class: "equipment-slot-label" }, label),
+      el("span", { class: "equipment-slot-value" }, player.equipment[key]?.name ?? "Empty")
+    )
+  );
   root.replaceChildren(
     el("div", { class: "inventory-character" },
       el("img", { class: "inventory-portrait", src: "assets/world-character.png", alt: "" }),
       el("div", { class: "inventory-name" }, player.name),
       el("div", { class: "inventory-level" }, `Lv ${player.level}`),
+      el("div", { class: "equipment-slots", "aria-label": "Equipped gear" }, ...gearSlots),
       el("button", { class: "btn-small", onclick: () => { inventoryView = "stats"; renderInventoryLeft(); } }, "Stats")
     )
   );
@@ -646,40 +675,10 @@ renderers.world = async () => {
     mountElement: $("#worldRoot"),
     onMobSelected: handleMobSelected,
     onCombatStart: handleCombatStart,
+    playerAppearance: player.equipment,
   });
   await worldScene.loadZone("data/zones/plains1.json");
 };
-
-// ================= SCENE PLAY =================
-const OWL_LINES = ["Hoo! Ready to study?", "Drop a deck here!", "Knowledge is power!", "Hoo-hoo! 📚", "Let's beat some cards!"];
-let owlLine = 0;
-let bubbleTimer;
-
-function owlSay(text) {
-  const bubble = $("#owlBubble");
-  bubble.textContent = text;
-  bubble.classList.add("is-showing");
-  clearTimeout(bubbleTimer);
-  bubbleTimer = setTimeout(() => bubble.classList.remove("is-showing"), 2200);
-}
-
-document.querySelectorAll("[data-poke]").forEach((node) => {
-  node.addEventListener("click", () => {
-    // Restart the poke animation even if it is already running.
-    node.classList.remove("is-poked");
-    void node.offsetWidth;
-    node.classList.add("is-poked");
-    // Hand back to the idle animation once the longest poke animation (0.7s) is done.
-    clearTimeout(node.pokeTimer);
-    node.pokeTimer = setTimeout(() => node.classList.remove("is-poked"), 750);
-    if (node.dataset.poke === "owl") owlSay(OWL_LINES[owlLine++ % OWL_LINES.length]);
-  });
-});
-
-// The owl greets you shortly after the import screen opens.
-setTimeout(() => {
-  if ($('[data-view="import"]').classList.contains("is-active")) owlSay(OWL_LINES[owlLine++]);
-}, 1200);
 
 // ================= BOOT =================
 $("#modal").addEventListener("click", (e) => { if (e.target.id === "modal") closeModal(); });

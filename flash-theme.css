@@ -1,0 +1,137 @@
+/* CARDSLAYER art-reference skin. Layout and game mechanics remain in style.css. */
+:root {
+  --bg-deep: #252b2d; --bg-panel: #eee7d6; --bg-panel-2: #eee7d6;
+  --gold: #b99a58; --gold-light: #e8d5a3; --gold-dark: #75613c;
+  --border-brown: #191d1d; --text: #f2ead8; --text-dim: #bcbba9;
+  --blue: #527483; --blue-light: #809ca4;
+}
+html, body { background: #181c1d; }
+.app { background: #292f30; box-shadow: 0 0 0 2px #101414, 0 10px 35px #0005; }
+.topbar { background: #303637; border-bottom: 3px solid #151a1a; }
+.player-info, .currency-pill { background: #232829; border-color: #121717; border-radius: 3px; box-shadow: inset 0 1px #ffffff12; }
+.avatar { background: #d3c5a4 url('assets/world-character.png') 51% 1% / 320% auto no-repeat; box-shadow: 0 0 0 2px #141818; }
+.avatar > img { opacity: 0; }
+.xpbar { background: #181f20; border-color: #121718; border-radius: 2px; }
+.xpbar-fill { background: #648d8f; box-shadow: inset 0 2px #90aaa5; }
+.coin { background: #c6a75e; box-shadow: inset 0 0 0 2px #8d743c, 0 0 0 1px #181c1a; }
+.gem svg { filter: saturate(.5); }
+.hero { border-bottom: 3px solid #151a1a; box-shadow: none; }
+.hero-art { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.plaque { filter: none; }
+.plaque-frame { display: none; }
+.plaque-text { background: #303a3b; border: 3px solid #121817; outline: 1px solid #af9459; border-radius: 2px; box-shadow: inset 0 0 0 2px #536061, 0 3px #131817; }
+.plaque-top { color: #e6d9b7; text-shadow: 0 1px #111; }
+.plaque-main { background: none; color: #dcc17d; filter: none; animation: none; text-shadow: 2px 2px #141919; }
+.hero-sub { color: #f1e8d2; font-weight: 600; text-shadow: 1px 2px #151b1b; }
+.twinkle { display: none; }
+.panel { background: #eee7d6; color: #303832; border: 2px solid #161c1b; border-radius: 4px; box-shadow: inset 0 1px #fff9e8, 0 3px #151b1b; }
+.dropzone { border-color: #a7a68e; border-radius: 2px; }
+.dropzone.is-over { background: #dbe3ce; border-color: #5c784f; }
+.drop-title { color: #303a35; }
+.drop-or, .drop-hint { color: #62685b; }
+.cloud path { stroke: #617a74; }
+.btn-primary, .btn-small { background: #547b85; border: 2px solid #192423; border-radius: 3px; color: #fff9e8; box-shadow: inset 0 2px #81a1a4, 0 2px #172120; }
+.btn-primary:hover, .btn-small:hover { filter: brightness(1.09); }
+.btn-primary:active, .btn-small:active { transform: translateY(1px); box-shadow: inset 0 1px #314e54; }
+.btn-ghost { background: transparent; color: #536259; border-color: #939b87; box-shadow: none; }
+.feature { color: #48564a; }
+.feature + .feature { border-color: #c5c5ad; }
+.feature svg { filter: saturate(.45); }
+.bottomnav { background: #343b39; border-top: 3px solid #151b19; box-shadow: 0 -2px #727862; }
+.nav-item { color: #b9beab; border-radius: 3px; transition: background .16s, color .16s, transform .16s; }
+.nav-item + .nav-item::before { background: #1b2421; }
+.nav-item.is-active { animation: none; background: #747d50; color: #fff1c8; border: 2px solid #17201b; box-shadow: inset 0 2px #a2a471, 0 2px #17201b; }
+.nav-item:not(.is-active):hover { background: #485247; color: #f1e5bd; }
+.page-head h2 { background: none; color: #e5d3a7; text-shadow: 1px 2px #111a17; font-weight: 700; }
+.page-head p { color: #bfc5b6; }
+.deck-card .deck-icon { background: #708052; color: #fbefd1; border: 2px solid #29362a; border-radius: 3px; box-shadow: inset 2px 0 #9aab72; }
+.deck-card .deck-sub, .empty-state { color: #65705e; }
+.quest-bar { background: #d3d4bd; border-color: #a3ac92; border-radius: 2px; }
+.quest-bar > div { background: #849357; }
+.inventory-character, .inventory-stats { background: #eee7d6; color: #303832; border: 2px solid #171e1a; border-radius: 4px; }
+.inventory-portrait { background: #d1d4ba; border: 2px solid #92977c; border-radius: 3px; }
+.inventory-level { color: #65705e; }
+.stat-row { background: #e2ddc9; border-color: #bcc0a6; border-radius: 3px; }
+.stat-name { color: #364333; }
+.stat-value { color: #6f6634; }
+.stat-plain { color: #486868; }
+.stat-math { color: #5c6456; }
+.inventory-tab-btn { background: #363f3b; border: 2px solid #17201b; color: #ced3bd; border-radius: 3px; }
+.inventory-tab-btn.is-active { background: #758354; border-color: #17201b; color: #fff3d1; box-shadow: inset 0 2px #a0ab76; }
+.inventory-item-pic { background: #c8cbb4; border-color: #87957c; border-radius: 3px; }
+.inventory-item-desc { color: #59684f; }
+.inventory-item-qty { color: #746735; }
+.modal-card h3 { color: #4e624b; }
+.modal-card p { color: #626a59; }
+.modal-card .reward { color: #796534; }
+/* Brighter adventure menus: painted color bands, warm paper, small idle gestures. */
+html, body { background: #172c36; }
+.app { background: #304a52; }
+.topbar { background: #365a68; border-bottom-color: #d3a950; box-shadow: inset 0 2px #7096a0; }
+.player-info, .currency-pill { background: #233e49; border-color: #152d35; box-shadow: inset 0 1px #577985; }
+.avatar { background-color: #eed599; box-shadow: 0 0 0 2px #edc56c, 0 2px 0 3px #183039; }
+.xpbar-fill { background: #74b75d; box-shadow: inset 0 2px #b9df80; transition: width .5s ease-out; }
+.coin { background: #efc34d; box-shadow: inset 0 0 0 2px #bc8433, 0 0 0 1px #192f32; }
+.gem svg { filter: none; }
+.hero { border-bottom-color: #d3a950; }
+.hero-art { filter: brightness(1.13) saturate(1.13); }
+.plaque-text { background: linear-gradient(#426c79 0 48%, #365a68 48%); border-color: #e5bd66; outline-color: #162e36; box-shadow: inset 0 0 0 2px #203e49, 0 3px #172f38; }
+.plaque-text::before, .plaque-text::after { content: ''; position: absolute; top: 44%; width: 6px; height: 6px; background: #f3d789; border: 1px solid #213a3e; transform: rotate(45deg); }
+.plaque-text::before { left: 7px; }
+.plaque-text::after { right: 7px; }
+.plaque-main { color: #ffe29b; text-shadow: 0 2px #755126; }
+.plaque-top { color: #fff5d9; }
+.hero-sub { color: #fff6da; text-shadow: 0 1px 3px #172521, 0 0 5px #172521; }
+.motes i { background: #ffdd81; box-shadow: 0 0 5px #ffd36d88; }
+.panel { background: #fff0cf; border-color: #233d3c; box-shadow: inset 0 2px #fff9e9, inset 0 -3px #e7d4a5, 0 3px #1b3439; }
+.dropzone { border-color: #c5a971; background: #fff7e3; transition: background .2s, border-color .2s; }
+.dropzone:hover, .dropzone.is-over { background: #f1f5dc; border-color: #719a59; }
+.cloud path { stroke: #548da1; }
+.btn-primary, .btn-small { background: linear-gradient(#3676a7 0 48%, #2d6795 48%); border-color: #22435a; box-shadow: inset 0 2px #98c6e3, inset 0 -2px #24547b, 0 3px #233d45; transition: filter .18s, transform .18s, box-shadow .18s; }
+.btn-ghost { background: #f2e4be; color: #526044; border-color: #b5a477; box-shadow: inset 0 1px #fff8e3; }
+.feature { color: #4e634c; }
+.feature svg { filter: saturate(1.2); animation: menu-float 6s ease-in-out infinite; }
+.feature:nth-child(2) svg { animation-delay: -2s; }
+.feature:nth-child(3) svg { animation-delay: -4s; }
+.bottomnav { background: #35575c; border-top-color: #dfb967; box-shadow: 0 -2px #203c43; }
+.nav-item { color: #d7e6d7; }
+.nav-item svg { transition: transform .2s ease-out; }
+.nav-item.is-active { background: linear-gradient(#a7c16c 0 48%, #96af5e 48%); color: #243624; border-color: #243d34; box-shadow: inset 0 2px #d5e69f, inset 0 -2px #708b43, 0 2px #203b37; }
+.nav-item.is-active svg { animation: menu-settle .42s ease-out; }
+.nav-item:not(.is-active):hover { background: #466d70; color: #ffe3a1; }
+.page-head h2 { color: #ffdd91; }
+.page-head p { color: #d3e1d8; }
+.deck-card .deck-icon { background: #7eaa57; border-color: #405939; box-shadow: inset 2px 0 #bcda82; }
+.quest-bar > div { background: #89b55f; transition: width .5s ease-out; }
+.inventory-character, .inventory-stats { background: #fff0cf; }
+.inventory-portrait { background: #dce9bd; border-color: #8ca667; }
+.inventory-tab-btn { background: #3c6067; color: #e4eedc; }
+.inventory-tab-btn.is-active { background: #a7bf70; color: #243624; box-shadow: inset 0 2px #d5e69f; }
+.stat-row { background: #f4e6bf; border-color: #d2c293; }
+.stat-value, .modal-card .reward { color: #8a611d; }
+@keyframes menu-float { 0%, 100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-3px) rotate(2deg); } }
+@keyframes menu-settle { 0% { transform: translateY(0); } 45% { transform: translateY(-4px); } 75% { transform: translateY(1px); } 100% { transform: translateY(0); } }
+@media (hover: hover) {
+  .btn-primary:hover, .btn-small:hover { transform: translateY(-1px); filter: brightness(1.1); }
+  .nav-item:hover svg { transform: translateY(-2px); }
+}
+.btn-primary:active, .btn-small:active { transform: translateY(1px); }
+/* Keep the existing encounter sheet, but make actual studying quiet and familiar. */
+.encounter-sheet { background: #f3f2ec; color: #293530; border-top: 2px solid #343f36; box-shadow: 0 -3px 9px #14201933; }
+.sheet-handle::before { background: #aeb5a6; }
+.sheet-portrait { background: #d2d7bf; border-color: #869676; border-radius: 3px; }
+.sheet-peek-name { color: #344231; }
+.sheet-peek-hp, .sheet-hp-label, .sheet-message { color: #616b5c; }
+.tag { background: #dbe1cb; color: #526542; border-radius: 3px; }
+.sheet-hp-bar { background: #dfe3d7; border-color: #b1bea5; }
+.sheet-hp-bar > div { background: #7f9a6e; }
+.sheet-card-content { background: #fff; color: #242c28; box-shadow: none; border: 1px solid #d7dcd1; border-radius: 3px; line-height: 1.55; }
+.sheet-card-answer { border-top: 1px solid #d9ddd4; font-weight: 400; }
+.encounter-sheet .btn-primary { background: #527b85; box-shadow: none; transform: none; }
+.answer-actions button { background: #fff; box-shadow: none; border: 1px solid #cdd4c5; border-bottom-width: 3px; border-radius: 3px; }
+.answer-actions .a-again { color: #8d4d44; border-bottom-color: #ae6e61; }
+.answer-actions .a-hard { color: #826830; border-bottom-color: #b19b66; }
+.answer-actions .a-good { color: #4b6e44; border-bottom-color: #7e9b6c; }
+.answer-actions .a-easy { color: #3e637a; border-bottom-color: #7292a4; }
+button:focus-visible, [role='button']:focus-visible { outline: 3px solid #c2a357; outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
