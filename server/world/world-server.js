@@ -37,6 +37,7 @@ export class WorldServer {
     this.messageLimiter = new RateLimiter({ capacity: 40, refillPerSecond: 20 });
     // Tighter than the general flood guard above -- this specifically caps how
     // often one account can actually broadcast a chat message to a room.
+    // ~1 msg/2s sustained, 5-message burst -- intentionally conservative for launch.
     this.chatLimiter = new RateLimiter({ capacity: 5, refillPerSecond: 0.5 });
     this.wss = new WebSocketServer({ noServer: true, maxPayload: MAX_MESSAGE_BYTES });
 
@@ -102,9 +103,12 @@ export class WorldServer {
 
     ws.on("close", () => {
       clearTimeout(helloTimer);
-      this.messageLimiter.buckets.delete(conn.id);
+      this.messageLimiter.buckets.delete(conn.id); // required: Symbol key, unreachable after close
       if (!conn.accountId || this.connections.get(conn.accountId) !== conn) return;
-      this.chatLimiter.buckets.delete(conn.accountId);
+      // chatLimiter is intentionally NOT cleared here: the account's chat budget
+      // must survive a reconnect (that's the whole reason it's keyed by accountId
+      // instead of the per-connection conn.id like messageLimiter). RateLimiter's
+      // own _prune() reclaims idle buckets once they've fully refilled anyway.
       this.connections.delete(conn.accountId);
       this.rooms.leave(conn.accountId);
       this.players.release(conn.accountId);

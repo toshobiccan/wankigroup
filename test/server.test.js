@@ -234,7 +234,9 @@ describe("server (online)", () => {
 
     const results = [];
     for (let i = 0; i < 10; i++) results.push(await clientA.request("chat", { text: `msg ${i}` }));
-    expect(results.some((r) => r.ok === false && r.error === "rate_limited")).toBe(true);
+    // capacity 5: the burst is allowed, everything after it is refused.
+    expect(results.slice(0, 5).every((r) => r.ok === true)).toBe(true);
+    expect(results.slice(5).every((r) => r.ok === false && r.error === "rate_limited")).toBe(true);
 
     clientA.close();
   });
