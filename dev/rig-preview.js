@@ -206,6 +206,7 @@ function layout() {
   actor.position.set(app.screen.width / 2, ground.position.y);
 }
 buildActor();
+window.__debug = { app, actor: () => actor };
 app.renderer.on("resize", layout);
 
 function syncAxleOverlay(deltaMs) {
