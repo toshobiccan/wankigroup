@@ -79,6 +79,34 @@ function makeSprite(config, textures) {
   return sprite;
 }
 
+// Bone containers nest parent->child for kinematics (so animation composes
+// correctly), but PIXI only z-sorts direct siblings -- a bone nested under
+// the rear-arm chain can never out-rank one nested under the front-arm
+// chain no matter its zIndex, since they're never siblings. Layers render
+// in a separate flat, globally-sortable container instead; this recomputes
+// each bone's world pose every frame so its render wrapper can be placed
+// there independently of the kinematic nesting.
+function worldPose(bones, boneId) {
+  const entry = bones.get(boneId);
+  const local = entry.container;
+  const parentId = entry.bindPose.parent;
+  if (!parentId) {
+    return { x: local.position.x, y: local.position.y, rotation: local.rotation, scaleX: local.scale.x, scaleY: local.scale.y };
+  }
+  const parent = worldPose(bones, parentId);
+  const cos = Math.cos(parent.rotation);
+  const sin = Math.sin(parent.rotation);
+  const lx = local.position.x * parent.scaleX;
+  const ly = local.position.y * parent.scaleY;
+  return {
+    x: parent.x + lx * cos - ly * sin,
+    y: parent.y + lx * sin + ly * cos,
+    rotation: parent.rotation + local.rotation,
+    scaleX: parent.scaleX * local.scale.x,
+    scaleY: parent.scaleY * local.scale.y,
+  };
+}
+
 function artKey(target) {
   return target.kind === "body"
     ? `body:${target.boneId}`
@@ -118,9 +146,21 @@ export class RigActor extends PIXI.Container {
     this.visual.position.y = -(this.rig.bounds?.groundY ?? 0);
     this.addChild(this.visual);
 
+    this.renderRoot = new PIXI.Container();
+    this.renderRoot.sortableChildren = true;
+    this.visual.addChild(this.renderRoot);
+
     for (const bone of this.rig.bones) {
       const container = new PIXI.Container();
-      const ownZIndex = bone.zIndex ?? 0;
+      container.label = bone.id;
+      container.position.set(bone.x ?? 0, bone.y ?? 0);
+      container.rotation = bone.rotation ?? 0;
+      (bone.parent ? this.bones.get(bone.parent).container : this.visual).addChild(container);
+
+      const wrapper = new PIXI.Container();
+      wrapper.zIndex = bone.zIndex ?? 0;
+      wrapper.label = bone.id;
+      this.renderRoot.addChild(wrapper);
       const layers = {
         rear: new PIXI.Container(),
         base: new PIXI.Container(),
@@ -128,17 +168,9 @@ export class RigActor extends PIXI.Container {
         front: new PIXI.Container(),
         effects: new PIXI.Container(),
       };
-      container.sortableChildren = true;
-      Object.values(layers).forEach((layer) => {
-        layer.zIndex = ownZIndex;
-        container.addChild(layer);
-      });
-      container.zIndex = ownZIndex;
-      container.label = bone.id;
-      container.position.set(bone.x ?? 0, bone.y ?? 0);
-      container.rotation = bone.rotation ?? 0;
-      this.bones.set(bone.id, { container, layers, bindPose: bone });
-      (bone.parent ? this.bones.get(bone.parent).container : this.visual).addChild(container);
+      Object.values(layers).forEach((layer) => wrapper.addChild(layer));
+
+      this.bones.set(bone.id, { container, wrapper, layers, bindPose: bone });
       const body = makeSprite(this.art?.body?.[bone.id], this.textures) ?? makeBodyShape(bone.id);
       if (body) {
         layers.base.addChild(body);
@@ -149,6 +181,16 @@ export class RigActor extends PIXI.Container {
 
     this.applyAppearance(appearance);
     this.play(this.clips.idle ? "idle" : Object.keys(this.clips)[0]);
+    this.syncRenderWrappers();
+  }
+
+  syncRenderWrappers() {
+    for (const [boneId, entry] of this.bones) {
+      const world = worldPose(this.bones, boneId);
+      entry.wrapper.position.set(world.x, world.y);
+      entry.wrapper.rotation = world.rotation;
+      entry.wrapper.scale.set(world.scaleX, world.scaleY);
+    }
   }
 
   play(clipId) {
@@ -177,6 +219,7 @@ export class RigActor extends PIXI.Container {
       entry.container.rotation = pose.rotation;
       entry.container.scale.set(pose.scaleX, pose.scaleY);
     }
+    this.syncRenderWrappers();
     if (next.finished && !clip.loop && this.clips.idle) this.play("idle");
   }
 
@@ -201,8 +244,7 @@ export class RigActor extends PIXI.Container {
   setBoneZIndex(boneId, zIndex) {
     const entry = this.bones.get(boneId);
     if (!entry) return false;
-    entry.container.zIndex = zIndex;
-    for (const layer of Object.values(entry.layers)) layer.zIndex = zIndex;
+    entry.wrapper.zIndex = zIndex;
     entry.bindPose.zIndex = zIndex;
     return true;
   }
