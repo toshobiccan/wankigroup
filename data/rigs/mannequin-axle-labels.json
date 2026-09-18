@@ -4,14 +4,14 @@
   "points": {
     "hips": "Hips",
     "rearThigh": "Rear Hip",
-    "rearShin": "Rear Knee",
+    "rearShin": "Front Knee",
     "rearFoot": "Rear Ankle",
     "cape": "Cape",
     "torso": "Torso",
     "rearUpperArm": "Rear Shoulder",
     "rearForearm": "Rear Elbow",
     "rearHand": "Rear Wrist",
-    "offhandMount": "Rear Item Mount",
+    "offhandMount": "Front Item Mount",
     "head": "Head",
     "hair": "Hair",
     "eyes": "Eyes",
@@ -19,9 +19,9 @@
     "frontUpperArm": "Front Shoulder",
     "frontForearm": "Front Elbow",
     "frontHand": "Front Wrist",
-    "weaponMount": "Front Item Mount",
+    "weaponMount": "Rear Item Mount",
     "frontThigh": "Front Hip",
-    "frontShin": "Front Knee",
+    "frontShin": "Rear Knee",
     "frontFoot": "Front Ankle"
   },
   "lines": {}
