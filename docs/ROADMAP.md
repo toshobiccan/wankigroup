@@ -4,6 +4,14 @@ Living backlog and status log for the project, kept alongside `docs/HANDOFF.md` 
 
 ---
 
+## 2026-09-18 — Cutout rig: head split into hair, eyes, nose bones
+
+The player rig's `head` bone (see `docs/superpowers/specs/2026-09-17-cutout-character-rig-design.md`) was one bone with one flat texture. Added `hair`, `eyes`, and `nose` as real child bones of `head`, each independently positioned — so each can be fitted precisely and, later, animated (blink, hair sway) without touching the bone hierarchy again. No animation clips target them yet; that's explicitly deferred, this pass is structure only. Full rationale and the deferred items (mouth, a swappable hairstyle slot, mob adoption) are in the design doc's new §18 addendum.
+
+Practical effect: `assets/rigs/starter-v1/body-head.png` (staged, not yet installed — see `assets/rigs/starter-v1/generation-status.json`) has hair and eyes baked into one image and now needs to be regenerated as four separate pieces before that starter set can be installed. `docs/art-reference/rig-asset-prompts.md` has the updated split prompts ready for whenever that generation pass happens.
+
+---
+
 ## 2026-09-17 — Multiplayer foundation (decision + build)
 
 **Decision (toshobiccan):** multiplayer is a goal, so everything is built multiplayer-ready from now on, prepared so that starting multiplayer tests is just a deploy. Resolves backlog item 4 and the "Multiplayer" / "Anki deck hosting" open questions below.

@@ -18,9 +18,17 @@ Append this production contract verbatim to every prompt below.
 
 The run rig mirrors equivalent left/right parts. Generate one version of each part below. Save with the exact filenames.
 
-### `body-head.png`
+### `body-head.png`, `body-hair.png`, `body-eyes.png`, `body-nose.png`
 
-> Create `body-head.png`, a neutral adult human adventurer head for the Cardslayer rig. Attachment point: bottom-centre of the neck. The head grows upward from that point. Brown short tousled hair, warm light skin, simple calm face, visible small eyes, no helmet, no earrings, no neckwear. Make the neck short and narrow enough to overlap the torso cleanly. [Append the production contract.]
+The head is four separate pieces, not one — hair, eyes, and nose are each their own rig bone (`hair`, `eyes`, `nose`, all children of `head`) so they can be fitted and, later, animated independently. Generate all four against the same reference so they read as one face when composited; do not merge them back into a single image.
+
+> Create `body-head.png`, a neutral adult human adventurer head for the Cardslayer rig, bald and bare-faced. Attachment point: bottom-centre of the neck. The head grows upward from that point. Warm light skin, smooth hairless scalp, plain closed-eyelid or eye-socket area with no iris or pupil detail, no nose detail beyond the underlying skull shape, no mouth beyond a simple closed line if unavoidable, no helmet, no earrings, no neckwear. Make the neck short and narrow enough to overlap the torso cleanly. [Append the production contract.]
+
+> Create `body-hair.png`, a short tousled brown hairstyle cutout for the Cardslayer rig, to sit on top of and behind `body-head.png` as its own piece. Attachment point: top-centre of the skull, matching the `hair` bone. Hair only — no scalp, ears, face, or neck. Brown, two-tone cel shading, silhouette readable at 90 px tall. [Append the production contract.]
+
+> Create `body-eyes.png`, a pair of simple calm eyes for the Cardslayer rig, to sit on `body-head.png` as their own piece. Attachment point: centre of the visible eye, matching the `eyes` bone. Eyes only — no eyebrows, skin, nose, or face outline beyond the eye shapes themselves. Simple dark iris, minimal detail, readable at 90 px tall. [Append the production contract.]
+
+> Create `body-nose.png`, a simple small nose indication for the Cardslayer rig, to sit on `body-head.png` as its own piece. Attachment point: bridge of the nose, matching the `nose` bone. Nose only — no skin field, eyes, or face outline beyond the nose shape itself. Minimal shading, readable at 90 px tall. [Append the production contract.]
 
 ### `body-torso.png`
 
@@ -103,3 +111,4 @@ For a multi-part slot, repeat the template once per attachment in `data/rigs/hum
 - Same heavy outlines and one-shadow cel shading as `human-base.png`.
 - Wearables leave adjacent joints clear and overlap their base piece.
 - Weapon attaches at the **front hand grip**; book attaches at the **rear/off-hand grip**.
+- Hair, eyes, and nose are each their own file — never re-merge them onto `body-head.png`.

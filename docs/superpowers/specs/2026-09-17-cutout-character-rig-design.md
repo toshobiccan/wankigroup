@@ -64,6 +64,9 @@ root
     │   │       └── rearHand
     │   │           └── offhandMount
     │   ├── head
+    │   │   ├── hair
+    │   │   ├── eyes
+    │   │   └── nose
     │   └── frontUpperArm
     │       └── frontForearm
     │           └── frontHand
@@ -311,3 +314,28 @@ The structure is ready for asset production when the placeholder preview shows s
 ## 17. Reference boundary
 
 AdventureQuest Worlds is a structural reference for layered body parts, shared animations, swappable equipment, and strong side-view silhouettes. Cardslayer does not copy AQW assets, characters, names, animation data, or exact proportions. Its final artwork continues to follow the existing Cardslayer Flash-fantasy reference prompts.
+
+## 18. Addendum (2026-09-18): head split into hair, eyes, and nose bones
+
+Before Astra generation reached the head, the head was still one bone with one flat texture — the asset recipe (`docs/art-reference/rig-asset-prompts.md`) described `body-head.png` as a single piece with hair and eyes baked in, and the staged `assets/rigs/starter-v1/body-head.png` was in fact generated that way. This addendum splits the head into sub-parts before that gets locked in, so hair, eyes, and nose can each be fitted and, later, animated independently — matching §2's own note that additions like this must not require replacing the core bone hierarchy. They do not.
+
+**New bones**, children of `head`, added to both `data/rigs/humanoid.json` and `data/rigs/humanoid-aqw-bind-preview.json`:
+
+```json
+{ "id": "hair", "parent": "head", "x": 0, "y": -16, "rotation": 0 },
+{ "id": "eyes", "parent": "head", "x": 3, "y": -11, "rotation": 0 },
+{ "id": "nose", "parent": "head", "x": 7, "y": -7, "rotation": 0 }
+```
+
+These offsets are placeholder bind-pose values tuned against the placeholder shapes in the dev preview, not final art pivots — expect them to move once real hair/eye/nose cutouts exist, the same way every other bone's offsets will be tuned against real art.
+
+**No animation clips target these bones yet**, by explicit scope decision — the goal right now is correct structure (every part fits), not motion. `sampleClip` already returns the bind pose unchanged for any bone absent from a clip's `tracks`, so `idle`/`run`/`attack` need no changes to stay valid with the new bones. Adding a `hair` sway track or an `eyes` blink track later is additive: a new track in the clip JSON, nothing in `rig-actor.js` or `animation-player.js` changes.
+
+**Draw order**: like every other bone, `hair`/`eyes`/`nose` render as children of `head`, which places them above all five of `head`'s own layers — including its `armor` layer, where a `helmet` attaches. In practice this means hair and eyes render in front of a helmet rather than being covered by it. This is intentional, not a gap to fix: the existing helmet-asset convention (`rig-asset-prompts.md`) already specifies helmets that "frame, not cover, the eyes and hairline," so an enclosing full-face helmet was never the plan. Verified directly in `dev/rig-preview.html` with the helmet toggled on — the eye placeholder reads correctly in front of the helmet band.
+
+**Explicitly deferred, not decided against:**
+- **Mouth** stays baked into the head-base piece for now. Only hair, eyes, and nose were requested; splitting the mouth out later is the same kind of change as this addendum (new child bone, no architecture change) if it turns out to matter.
+- **A swappable hairstyle slot** (hair as its own equipment-like choice, separate from `helmet`) is not built. This addendum is the structural split only — one default hairstyle piece. Because hair is already its own bone, making it swappable later needs an equipment slot and appearance-data changes, not another rig change.
+- **Mobs** do not get this split. Mobs still use `FrameActor` with baked frames (§9), unaffected by this addendum. If a humanoid mob ever adopts `RigActor`, it inherits the same head/hair/eyes/nose structure for free.
+
+**Content follow-up, not done here:** `assets/rigs/starter-v1/body-head.png` (staged, not yet installed — see `assets/rigs/starter-v1/generation-status.json`) still has hair and eyes baked into one image. It needs to be regenerated as a bare head-base piece plus separate `body-hair.png`, `body-eyes.png`, and `body-nose.png` cutouts before the starter-v1 set can be installed. `docs/art-reference/rig-asset-prompts.md` is updated with the split prompts; running them through Astra is a separate content-production task.

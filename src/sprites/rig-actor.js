@@ -7,6 +7,9 @@ const BODY_COLORS = {
   hips: 0x51437a,
   torso: 0x836cc2,
   head: 0xf0b48d,
+  hair: 0x5b3d29,
+  eyes: 0x2b2118,
+  nose: 0xc17f52,
   rearUpperArm: 0xb8866d,
   rearForearm: 0xb8866d,
   rearHand: 0xf0b48d,
@@ -48,6 +51,9 @@ function makeBodyShape(id) {
   const graphic = new PIXI.Graphics();
   const color = BODY_COLORS[id] ?? 0xffffff;
   if (id === "head") graphic.circle(0, -8, 10).fill(color).stroke({ color: 0x402e54, width: 1.5 });
+  else if (id === "hair") graphic.arc(0, 2, 9, Math.PI, 0).fill(color);
+  else if (id === "eyes") graphic.circle(0, 0, 1.6).fill(color);
+  else if (id === "nose") graphic.poly([-0.5, -2, 1.8, 0.5, -0.5, 2]).fill(color);
   else if (id === "hips") graphic.roundRect(-11, -5, 22, 10, 3).fill(color);
   else if (id === "cape") return null;
   else if (id.endsWith("Foot")) {

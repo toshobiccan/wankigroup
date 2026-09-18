@@ -37,7 +37,7 @@ describe("validateRig", () => {
 
   it("accepts the authored neutral humanoid rig", () => {
     const humanoid = JSON.parse(readFileSync(new URL("../data/rigs/humanoid.json", import.meta.url), "utf8"));
-    expect(validateRig(humanoid).bones).toHaveLength(18);
+    expect(validateRig(humanoid).bones).toHaveLength(21);
   });
 });
 
