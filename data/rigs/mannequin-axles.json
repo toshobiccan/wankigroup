@@ -1,0 +1,52 @@
+{
+  "id": "mannequin-axles",
+  "status": "FROZEN -- confirmed correct by hand. Never change these pixel values or re-run detection over them. A future piece (e.g. armor) gets its own new entries; it never edits an existing one.",
+  "note": "Pixel-space joint markers found in the mannequin body-part PNGs (assets/rigs/mannequin/). Each PNG has a small grey ring with a black outline drawn at each anatomical joint; two adjacent pieces that connect share the exact same joint pixel (e.g. rearUpperArm_elbow == rearForearm_elbow). Found by flood-filling the fully-transparent background of each PNG and isolating the small enclosed holes bounded by ink strokes -- see the detector script used to build this file, reproduced in dev/rig-preview.js history. canvasSize is [width, height] and is the same for every piece (1145x1374). Every bone's own anchor in data/rigs/humanoid-art-mannequin.json is anchor = proximalJointPx / canvasSize, so rotation happens purely around this pixel -- that anchor file is ALSO frozen, together with this one and the bind-pose bone positions in humanoid.json / humanoid-aqw-bind-preview.json. Together these three files ARE the mannequin skeleton. Do not move any of them.",
+  "canvasSize": [1145, 1374],
+  "jointNaming": "Each key is <bodyPart>_<jointName>, proximal-to-distal per limb: shoulder (upper arm <-> torso) -> elbow (upper arm <-> forearm) -> wrist (forearm <-> hand). Legs: hip (thigh <-> hips) -> knee (thigh <-> shin) -> ankle (shin <-> foot). weaponMount and offhandMount are the item-holding points distal of each hand; they have no drawn ring of their own (no art), they're pure bone offsets (8 units straight out from the hand bone, see humanoid-aqw-bind-preview.json) and are listed here only for reference completeness.",
+  "joints": {
+    "hips_frontHip": [504, 604],
+    "hips_rearHip": [663, 613],
+    "torso_frontShoulder": [445, 284],
+    "torso_rearShoulder": [682, 317],
+    "torso_neck": [583, 270],
+    "rearUpperArm_shoulder": [682, 317],
+    "rearUpperArm_elbow": [728, 513],
+    "rearForearm_elbow": [728, 513],
+    "rearForearm_wrist": [809, 687],
+    "rearHand_wrist": [809, 687],
+    "frontUpperArm_shoulder": [445, 284],
+    "frontUpperArm_elbow": [334, 468],
+    "frontForearm_elbow": [334, 468],
+    "frontForearm_wrist": [324, 674],
+    "frontHand_wrist": [324, 674],
+    "rearThigh_hip": [663, 613],
+    "rearThigh_knee": [729, 889],
+    "rearShin_knee": [729, 889],
+    "rearShin_ankle": [711, 1185],
+    "rearFoot_ankle": [711, 1185],
+    "frontThigh_hip": [504, 604],
+    "frontThigh_knee": [460, 880],
+    "frontShin_knee": [460, 880],
+    "frontShin_ankle": [359, 1184],
+    "frontFoot_ankle": [359, 1184]
+  },
+  "boneProximalJoint": {
+    "rearUpperArm": "rearUpperArm_shoulder",
+    "rearForearm": "rearForearm_elbow",
+    "rearHand": "rearHand_wrist",
+    "frontUpperArm": "frontUpperArm_shoulder",
+    "frontForearm": "frontForearm_elbow",
+    "frontHand": "frontHand_wrist",
+    "rearThigh": "rearThigh_hip",
+    "rearShin": "rearShin_knee",
+    "rearFoot": "rearFoot_ankle",
+    "frontThigh": "frontThigh_hip",
+    "frontShin": "frontShin_knee",
+    "frontFoot": "frontFoot_ankle"
+  },
+  "distalMountPoints": {
+    "rearHand": { "bone": "offhandMount", "used_by_slot": "book", "note": "8 units straight out from rearHand, no art of its own" },
+    "frontHand": { "bone": "weaponMount", "used_by_slot": "weapon", "note": "8 units straight out from frontHand, no art of its own" }
+  }
+}

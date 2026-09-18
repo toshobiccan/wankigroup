@@ -4,13 +4,14 @@ import { adjustArtTarget, exportArtTemplate, localPointDelta } from "../src/spri
 import { RigActor } from "../src/sprites/rig-actor.js";
 
 const stage = document.getElementById("stage");
-const [rig, idle, run, attack, rigArt, referenceTexture] = await Promise.all([
+const [rig, idle, run, attack, rigArt, referenceTexture, axles] = await Promise.all([
   fetch("../data/rigs/humanoid-aqw-bind-preview.json").then((response) => response.json()),
   fetch("../data/animations/humanoid/idle.json").then((response) => response.json()),
   fetch("../data/animations/humanoid/run.json").then((response) => response.json()),
   fetch("../data/animations/humanoid/attack.json").then((response) => response.json()),
   loadRigArt("../data/rigs/humanoid-art-mannequin.json"),
   PIXI.Assets.load("../assets/rigs/mannequin/mannequin-reference.png"),
+  fetch("../data/rigs/mannequin-axles.json").then((response) => response.json()),
 ]);
 
 // Same anchor/scale convention as every mannequin body-art entry (see
@@ -33,6 +34,67 @@ const previewEquipment = Object.fromEntries(Object.keys(rig.slots).map((slotId) 
 
 const referenceVisible = document.getElementById("reference-visible");
 const referenceOpacity = document.getElementById("reference-opacity");
+const axlesVisible = document.getElementById("axles-visible");
+
+// Joint-axle overlay -- CONFIRMED CORRECT, do not change the math or the
+// underlying data (data/rigs/mannequin-axles.json, data/rigs/humanoid-art-
+// mannequin.json, data/rigs/humanoid*.json are all frozen). This is now the
+// standard visual reference for where every joint actually sits.
+//
+// Each dot is the ACTUAL rendered position of that limb's joint marker (the
+// small grey ring drawn in the mannequin art), not the bone's own kinematic
+// origin -- those two only coincide when a piece's x/y offset is zero, and
+// the frozen calibration has nonzero offsets. We forward-transform the
+// joint's known texture-pixel position (mannequin-axles.json) through the
+// same anchor/scale/x/y/rotation math RigActor uses for the sprite itself,
+// landing the dot exactly where that ring renders on screen. hips/torso/
+// head have no recorded joint marker (their offset is zero, so their bone
+// origin already is correct) and fall back to the bone's own wrapper
+// position.
+//
+// Bone-to-bone lines are a diagnostic overlay, not a literal parent-child
+// skeleton drawing: which axle each line points to was set explicitly,
+// confirmed correct joint by joint. Face decorations (hair/eyes/nose, and
+// mouth/ears once they exist) are rigidly glued to the head and never
+// rotate on their own -- they have no real "axle" of their own to connect,
+// so they're excluded from the line drawing rather than drawing a
+// meaningless segment.
+const NO_AXLE_LINE = new Set(["hair", "eyes", "nose"]);
+// CONFIRMED layout -- do not "fix" this back to bone.parent. The knee draws
+// from the opposite hip and the ankle from the opposite knee (both legs);
+// the item-mount point distal of each hand draws from the OTHER hand. The
+// shoulder-elbow-hand chain itself is same-side (default, no entry needed).
+const LINE_FROM_OVERRIDE = {
+  rearFoot: "frontShin",
+  frontFoot: "rearShin",
+  rearShin: "frontThigh",
+  frontShin: "rearThigh",
+  offhandMount: "frontHand",
+  weaponMount: "rearHand",
+};
+let axleOverlay;
+let axleDots;
+let boneLines;
+
+function axleWorldPosition(boneId) {
+  const jointId = axles.boneProximalJoint[boneId];
+  const entry = actor.bones.get(boneId);
+  if (!jointId) return entry.wrapper.position;
+  const [px, py] = axles.joints[jointId];
+  const [texW, texH] = axles.canvasSize;
+  const config = calibratedArt.body[boneId];
+  const [ax, ay] = config.anchor;
+  const scale = config.scale ?? 1;
+  const rotation = config.rotation ?? 0;
+  const unscaled = { x: px - ax * texW, y: py - ay * texH };
+  const scaled = { x: unscaled.x * scale, y: unscaled.y * scale };
+  const cos = Math.cos(rotation), sin = Math.sin(rotation);
+  const local = {
+    x: scaled.x * cos - scaled.y * sin + (config.x ?? 0),
+    y: scaled.x * sin + scaled.y * cos + (config.y ?? 0),
+  };
+  return axleOverlay.toLocal(new PIXI.Point(local.x, local.y), entry.wrapper);
+}
 
 function buildActor() {
   actor?.destroy({ children: true });
@@ -48,6 +110,18 @@ function buildActor() {
   actor.visual.addChildAt(reference, 0);
   actor.reference = reference;
 
+  axleOverlay = new PIXI.Container();
+  axleOverlay.visible = axlesVisible.checked;
+  boneLines = new PIXI.Graphics();
+  axleOverlay.addChild(boneLines);
+  axleDots = new Map();
+  for (const bone of rig.bones) {
+    const dot = new PIXI.Graphics().circle(0, 0, 1.5).fill({ color: 0xff2222 }).stroke({ color: 0xffffff, width: 0.4 });
+    axleOverlay.addChild(dot);
+    axleDots.set(bone.id, dot);
+  }
+  actor.visual.addChild(axleOverlay);
+
   app.stage.addChild(actor);
   layout();
 }
@@ -59,8 +133,25 @@ function layout() {
 }
 buildActor();
 app.renderer.on("resize", layout);
+
+function syncAxleOverlay() {
+  boneLines.clear();
+  const positions = new Map(rig.bones.map((bone) => [bone.id, axleWorldPosition(bone.id)]));
+  for (const bone of rig.bones) {
+    axleDots.get(bone.id).position.copyFrom(positions.get(bone.id));
+    if (bone.parent && !NO_AXLE_LINE.has(bone.id)) {
+      const from = positions.get(LINE_FROM_OVERRIDE[bone.id] ?? bone.parent);
+      const to = positions.get(bone.id);
+      boneLines.moveTo(from.x, from.y).lineTo(to.x, to.y);
+    }
+  }
+  boneLines.stroke({ color: 0xff2222, width: 0.6, alpha: 0.85 });
+}
+axlesVisible.addEventListener("change", () => { axleOverlay.visible = axlesVisible.checked; });
+
 app.ticker.add((ticker) => {
   if (!dragPoint) actor.update(ticker.deltaMS);
+  syncAxleOverlay();
 });
 
 for (const button of document.querySelectorAll("[data-clip]")) {
