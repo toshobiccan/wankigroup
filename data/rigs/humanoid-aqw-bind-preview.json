@@ -2,10 +2,10 @@
   "id": "humanoid-aqw-bind-preview",
   "bounds": { "height": 112, "groundY": 63 },
   "bones": [
-    { "id": "hips", "parent": null, "x": 0, "y": 0, "zIndex": 50 },
+    { "id": "hips", "parent": null, "x": 0, "y": 0, "zIndex": 83 },
     { "id": "rearThigh", "parent": "hips", "x": -6.4, "y": 0, "rotation": 0.233, "zIndex": 40 },
     { "id": "rearShin", "parent": "rearThigh", "x": 0, "y": 25.7, "rotation": -0.300, "zIndex": 40 },
-    { "id": "rearFoot", "parent": "rearShin", "x": 0, "y": 25.5, "rotation": 0.067, "zIndex": 40 },
+    { "id": "rearFoot", "parent": "rearShin", "x": 0, "y": 25.5, "rotation": 0.067, "zIndex": 86 },
     { "id": "cape", "parent": "hips", "x": 1, "y": -24, "rotation": 0, "zIndex": 10 },
     { "id": "torso", "parent": "hips", "x": 0.9, "y": -25.3, "rotation": 0.033, "zIndex": 50 },
     { "id": "rearUpperArm", "parent": "torso", "x": -10.1, "y": 1.9, "rotation": 0.172, "zIndex": 30 },
@@ -16,12 +16,12 @@
     { "id": "hair", "parent": "head", "x": 0, "y": -16, "rotation": 0, "zIndex": 70 },
     { "id": "eyes", "parent": "head", "x": 3, "y": -11, "rotation": 0, "zIndex": 70 },
     { "id": "nose", "parent": "head", "x": 7, "y": -7, "rotation": 0, "zIndex": 70 },
-    { "id": "frontUpperArm", "parent": "torso", "x": 10.1, "y": -1.9, "rotation": -0.597, "zIndex": 90 },
+    { "id": "frontUpperArm", "parent": "torso", "x": 10.1, "y": -1.9, "rotation": -0.597, "zIndex": 51 },
     { "id": "frontForearm", "parent": "frontUpperArm", "x": 0, "y": 18.3, "rotation": 0.482, "zIndex": 90 },
-    { "id": "frontHand", "parent": "frontForearm", "x": 0, "y": 17.6, "rotation": 0.082, "zIndex": 90 },
+    { "id": "frontHand", "parent": "frontForearm", "x": 0, "y": 17.6, "rotation": 0.082, "zIndex": 136 },
     { "id": "weaponMount", "parent": "frontHand", "x": 0, "y": 8, "rotation": 0, "zIndex": 100 },
     { "id": "frontThigh", "parent": "hips", "x": 6.4, "y": 0, "rotation": -0.154, "zIndex": 80 },
-    { "id": "frontShin", "parent": "frontThigh", "x": 0, "y": 24.9, "rotation": -0.176, "zIndex": 80 },
+    { "id": "frontShin", "parent": "frontThigh", "x": 0, "y": 24.9, "rotation": -0.176, "zIndex": 1 },
     { "id": "frontFoot", "parent": "frontShin", "x": 0, "y": 26.7, "rotation": 0.330, "zIndex": 80 }
   ],
   "slots": {

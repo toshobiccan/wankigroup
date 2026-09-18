@@ -4,10 +4,10 @@
   "loop": false,
   "tracks": {
     "hips": [{ "time": 0, "x": 0 }, { "time": 0.28, "x": -3 }, { "time": 0.65, "x": 7 }, { "time": 1, "x": 0 }],
-    "torso": [{ "time": 0, "rotation": 0 }, { "time": 0.28, "rotation": -0.22 }, { "time": 0.65, "rotation": 0.3 }, { "time": 1, "rotation": 0 }],
-    "frontUpperArm": [{ "time": 0, "rotation": 0 }, { "time": 0.28, "rotation": -0.8 }, { "time": 0.65, "rotation": 0.92 }, { "time": 1, "rotation": 0 }],
-    "frontForearm": [{ "time": 0, "rotation": 0 }, { "time": 0.28, "rotation": -0.25 }, { "time": 0.65, "rotation": 0.4 }, { "time": 1, "rotation": 0 }],
-    "rearUpperArm": [{ "time": 0, "rotation": 0 }, { "time": 0.28, "rotation": 0.28 }, { "time": 0.65, "rotation": -0.34 }, { "time": 1, "rotation": 0 }],
+    "torso": [{ "time": 0, "rotation": 0 }, { "time": 0.28, "rotation": -0.15 }, { "time": 0.65, "rotation": 0.18 }, { "time": 1, "rotation": 0 }],
+    "frontUpperArm": [{ "time": 0, "rotation": 0 }, { "time": 0.28, "rotation": -0.35 }, { "time": 0.65, "rotation": 0.45 }, { "time": 1, "rotation": 0 }],
+    "frontForearm": [{ "time": 0, "rotation": 0 }, { "time": 0.28, "rotation": -0.12 }, { "time": 0.65, "rotation": 0.18 }, { "time": 1, "rotation": 0 }],
+    "rearUpperArm": [{ "time": 0, "rotation": 0 }, { "time": 0.28, "rotation": 0.15 }, { "time": 0.65, "rotation": -0.2 }, { "time": 1, "rotation": 0 }],
     "cape": [{ "time": 0, "rotation": 0 }, { "time": 0.65, "rotation": -0.4 }, { "time": 1, "rotation": 0 }]
   }
 }

@@ -23,16 +23,16 @@
       "src": "assets/rigs/mannequin/body-rear-upper-arm.png",
       "anchor": [0.6026, 0.2329],
       "scale": 0.084848,
-      "x": 19.04017562731906,
-      "y": -2.8456279041367196,
+      "x": 18.19326355524464,
+      "y": -3.127587282702155,
       "rotation": -0.1745
     },
     "rearForearm": {
       "src": "assets/rigs/mannequin/body-rear-forearm.png",
       "anchor": [0.6376, 0.3726],
       "scale": 0.084848,
-      "x": 24.71551996922574,
-      "y": -8.029468778813126,
+      "x": 23.732508848424047,
+      "y": -8.590836441944305,
       "rotation": -0.4187999999999999
     },
     "rearHand": {
@@ -47,16 +47,16 @@
       "src": "assets/rigs/mannequin/body-front-upper-arm.png",
       "anchor": [0.393, 0.206],
       "scale": 0.084848,
-      "x": -21.08326093255279,
-      "y": -11.709159727838568,
+      "x": -20.69626855024064,
+      "y": -11.498271513477263,
       "rotation": 0.4187999999999999
     },
     "frontForearm": {
       "src": "assets/rigs/mannequin/body-front-forearm.png",
       "anchor": [0.2926, 0.3384],
       "scale": 0.084848,
-      "x": -41.88304680407197,
-      "y": -0.08606408186074077,
+      "x": -41.704021944336574,
+      "y": 0.19832694427999087,
       "rotation": 0
     },
     "frontHand": {
@@ -71,24 +71,24 @@
       "src": "assets/rigs/mannequin/body-rear-thigh.png",
       "anchor": [0.5721, 0.4367],
       "scale": 0.084848,
-      "x": 13.045667829151284,
-      "y": -2.4209859069014072,
+      "x": 12.374857309650409,
+      "y": -3.316625406265377,
       "rotation": -0.20939999999999998
     },
     "rearShin": {
       "src": "assets/rigs/mannequin/body-rear-shin.png",
       "anchor": [0.6332, 0.6514],
       "scale": 0.084848,
-      "x": 1.7828854765828623,
-      "y": 1.3005817932711352,
+      "x": 2.059036815985209,
+      "y": 0.48040320528106406,
       "rotation": 0.3489999999999999
     },
     "rearFoot": {
       "src": "assets/rigs/mannequin/body-rear-foot.png",
       "anchor": [0.6157, 0.8697],
       "scale": 0.084848,
-      "x": 21.64365748355263,
-      "y": 1.2158974095394512,
+      "x": 20.7880499588816,
+      "y": 1.556578947368422,
       "rotation": 0
     },
     "frontThigh": {
@@ -103,8 +103,8 @@
       "src": "assets/rigs/mannequin/body-front-shin.png",
       "anchor": [0.4017, 0.6477],
       "scale": 0.084848,
-      "x": 1.588614587178057,
-      "y": 2.6194353004935067,
+      "x": 1.234653876902101,
+      "y": 1.9845908388524265,
       "rotation": 0.0698
     },
     "frontFoot": {
