@@ -34,6 +34,14 @@
         <input type="checkbox" id="axles-visible" checked />
         Show joint axles (red dots)
       </label>
+      <div class="axle-inspector" id="axle-inspector" hidden>
+        <p id="axle-inspector-label" class="active-target" aria-live="polite"></p>
+        <div class="controls nudge-controls" aria-label="Rename axle">
+          <input type="text" id="axle-rename-input" aria-label="Axle name" />
+          <button id="axle-rename-save">Rename</button>
+        </div>
+      </div>
+      <p class="calibration-help">Click a red dot or line on the stage to inspect or rename it.</p>
       <label class="target-picker">Asset
         <select id="asset-target"></select>
       </label>
@@ -58,6 +66,7 @@
       <div class="controls nudge-controls" aria-label="Export controls">
         <button id="export-template">Export placement template</button>
         <button id="export-layers">Export layer order</button>
+        <button id="export-axle-names">Export axle names</button>
       </div>
       <textarea id="template-output" rows="8" readonly aria-label="Rig placement template" placeholder="Exported placement template appears here"></textarea>
     </section>

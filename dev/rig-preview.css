@@ -14,7 +14,9 @@ h1 { margin: 7px 0 4px; font-size: clamp(28px, 7vw, 46px); }
 .reference-opacity input[type="range"] { flex: 1 1 auto; max-width: 220px; }
 .target-picker { display: grid; gap: 4px; max-width: 360px; color: #ffd978; font: 700 12px Arial, sans-serif; }
 .active-target { margin: 0; color: #ffe08a; font: 700 12px Arial, sans-serif; }
-select, textarea { width: 100%; border: 1px solid #ad91df; border-radius: 7px; color: #fff8e8; background: #21183b; font: 12px/1.4 ui-monospace, monospace; }
+.axle-inspector { display: grid; gap: 6px; padding: 8px; border: 1px solid #6a5397; border-radius: 8px; background: #241b42; }
+select, textarea, input[type="text"] { width: 100%; border: 1px solid #ad91df; border-radius: 7px; color: #fff8e8; background: #21183b; font: 12px/1.4 ui-monospace, monospace; }
+input[type="text"] { padding: 8px; flex: 1 1 160px; }
 select { padding: 8px; }
 textarea { padding: 9px; resize: vertical; }
 .nudge-controls button { min-width: 36px; }

@@ -4,7 +4,7 @@ import { adjustArtTarget, exportArtTemplate, localPointDelta } from "../src/spri
 import { RigActor } from "../src/sprites/rig-actor.js";
 
 const stage = document.getElementById("stage");
-const [rig, idle, run, attack, rigArt, referenceTexture, axles] = await Promise.all([
+const [rig, idle, run, attack, rigArt, referenceTexture, axles, axleLabels] = await Promise.all([
   fetch("../data/rigs/humanoid-aqw-bind-preview.json").then((response) => response.json()),
   fetch("../data/animations/humanoid/idle.json").then((response) => response.json()),
   fetch("../data/animations/humanoid/run.json").then((response) => response.json()),
@@ -12,6 +12,7 @@ const [rig, idle, run, attack, rigArt, referenceTexture, axles] = await Promise.
   loadRigArt("../data/rigs/humanoid-art-mannequin.json"),
   PIXI.Assets.load("../assets/rigs/mannequin/mannequin-reference.png"),
   fetch("../data/rigs/mannequin-axles.json").then((response) => response.json()),
+  fetch("../data/rigs/mannequin-axle-labels.json").then((response) => response.json()),
 ]);
 
 // Same anchor/scale convention as every mannequin body-art entry (see
@@ -96,6 +97,50 @@ function axleWorldPosition(boneId) {
   return axleOverlay.toLocal(new PIXI.Point(local.x, local.y), entry.wrapper);
 }
 
+// Display names for every axle point and line -- purely cosmetic labels,
+// stored separately from the frozen position data (mannequin-axle-labels.json)
+// so renaming them is always safe. A line's name defaults to "<from> -> <to>"
+// from its two point names unless a custom override is set for it.
+function pointName(boneId) {
+  return axleLabels.points[boneId] ?? boneId;
+}
+function lineFromId(boneId) {
+  return LINE_FROM_OVERRIDE[boneId] ?? rig.bones.find((bone) => bone.id === boneId).parent;
+}
+function lineName(boneId) {
+  return axleLabels.lines[boneId] ?? `${pointName(lineFromId(boneId))} → ${pointName(boneId)}`;
+}
+
+function distanceToSegment(p, a, b) {
+  const dx = b.x - a.x, dy = b.y - a.y;
+  const lengthSq = dx * dx + dy * dy;
+  const t = lengthSq === 0 ? 0 : Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / lengthSq));
+  return Math.hypot(p.x - (a.x + t * dx), p.y - (a.y + t * dy));
+}
+
+// Hit-test in the same global/stage space as pointer events (see
+// eventToGlobalPoint below) by converting each axle's overlay-local
+// position out to that space with the overlay's own current transform.
+function hitTestAxle(globalPoint) {
+  const dotThreshold = 8;
+  for (const bone of rig.bones) {
+    const dot = axleOverlay.toGlobal(axleDots.get(bone.id).position);
+    if (Math.hypot(dot.x - globalPoint.x, dot.y - globalPoint.y) <= dotThreshold) {
+      return { kind: "point", boneId: bone.id };
+    }
+  }
+  const lineThreshold = 5;
+  for (const bone of rig.bones) {
+    if (!bone.parent || NO_AXLE_LINE.has(bone.id)) continue;
+    const from = axleOverlay.toGlobal(axleDots.get(lineFromId(bone.id)).position);
+    const to = axleOverlay.toGlobal(axleDots.get(bone.id).position);
+    if (distanceToSegment(globalPoint, from, to) <= lineThreshold) {
+      return { kind: "line", boneId: bone.id };
+    }
+  }
+  return null;
+}
+
 function buildActor() {
   actor?.destroy({ children: true });
   actor = new RigActor({ rig, clips: { idle, run, attack }, art: calibratedArt, textures: rigArt.textures });
@@ -148,6 +193,34 @@ function syncAxleOverlay() {
   boneLines.stroke({ color: 0xff2222, width: 0.6, alpha: 0.85 });
 }
 axlesVisible.addEventListener("change", () => { axleOverlay.visible = axlesVisible.checked; });
+
+const axleInspector = document.getElementById("axle-inspector");
+const axleInspectorLabel = document.getElementById("axle-inspector-label");
+const axleRenameInput = document.getElementById("axle-rename-input");
+let selectedAxle = null;
+
+function nameOfAxle(hit) {
+  return hit.kind === "point" ? pointName(hit.boneId) : lineName(hit.boneId);
+}
+function showAxleInfo(hit) {
+  selectedAxle = hit;
+  axleInspector.hidden = false;
+  axleInspectorLabel.textContent = `${hit.kind === "point" ? "Point" : "Line"}: ${nameOfAxle(hit)}`;
+  axleRenameInput.value = nameOfAxle(hit);
+}
+document.getElementById("axle-rename-save").addEventListener("click", () => {
+  if (!selectedAxle) return;
+  const value = axleRenameInput.value.trim();
+  if (!value) return;
+  if (selectedAxle.kind === "point") axleLabels.points[selectedAxle.boneId] = value;
+  else axleLabels.lines[selectedAxle.boneId] = value;
+  showAxleInfo(selectedAxle);
+});
+document.getElementById("export-axle-names").addEventListener("click", () => {
+  templateOutput.value = JSON.stringify(axleLabels, null, 2);
+  templateOutput.focus();
+  templateOutput.select();
+});
 
 app.ticker.add((ticker) => {
   if (!dragPoint) actor.update(ticker.deltaMS);
@@ -343,7 +416,15 @@ function pointerToBoneLocal(event) {
   return actor.bones.get(selectedTarget().boneId).container.toLocal(eventToGlobalPoint(event));
 }
 stage.addEventListener("pointerdown", (event) => {
-  const hit = hitTestBody(eventToGlobalPoint(event));
+  const globalPoint = eventToGlobalPoint(event);
+  if (axlesVisible.checked) {
+    const axleHit = hitTestAxle(globalPoint);
+    if (axleHit) {
+      showAxleInfo(axleHit);
+      return;
+    }
+  }
+  const hit = hitTestBody(globalPoint);
   if (hit) {
     targetPicker.value = String(targets.indexOf(hit));
     showSelectedTarget();
