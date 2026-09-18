@@ -1,4 +1,5 @@
 import * as PIXI from "../vendor/pixi.min.mjs";
+import { lineName as sharedLineName, pointName as sharedPointName } from "../src/sprites/axle-labels.js";
 import { loadRigArt } from "../src/sprites/load-rig-art.js";
 import { adjustArtTarget, exportArtTemplate, localPointDelta } from "../src/sprites/rig-calibration.js";
 import { RigActor } from "../src/sprites/rig-actor.js";
@@ -102,18 +103,20 @@ function axleWorldPosition(boneId) {
   return axleOverlay.toLocal(new PIXI.Point(local.x, local.y), entry.wrapper);
 }
 
-// Display names for every axle point and line -- purely cosmetic labels,
-// stored separately from the frozen position data (mannequin-axle-labels.json)
-// so renaming them is always safe. A line's name defaults to "<from> -> <to>"
-// from its two point names unless a custom override is set for it.
+// Display names for every axle point and line come from the shared
+// src/sprites/axle-labels.js module -- the SAME functions any future
+// animation-authoring code must use, so what's on screen here can never
+// drift from what the rest of the codebase calls a given bone. Renaming
+// is always safe: this reads from mannequin-axle-labels.json, never the
+// frozen position data.
 function pointName(boneId) {
-  return axleLabels.points[boneId] ?? boneId;
+  return sharedPointName(axleLabels, boneId);
 }
 function lineFromId(boneId) {
   return LINE_FROM_OVERRIDE[boneId] ?? rig.bones.find((bone) => bone.id === boneId).parent;
 }
 function lineName(boneId) {
-  return axleLabels.lines[boneId] ?? `${pointName(lineFromId(boneId))} → ${pointName(boneId)}`;
+  return sharedLineName(axleLabels, boneId, lineFromId(boneId));
 }
 
 function distanceToSegment(p, a, b) {
