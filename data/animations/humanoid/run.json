@@ -5,12 +5,12 @@
   "tracks": {
     "hips": [{ "time": 0, "y": 0 }, { "time": 0.25, "y": -3 }, { "time": 0.5, "y": 0 }, { "time": 0.75, "y": -3 }, { "time": 1, "y": 0 }],
     "torso": [{ "time": 0, "rotation": -0.1 }, { "time": 0.5, "rotation": 0.1 }, { "time": 1, "rotation": -0.1 }],
-    "rearThigh": [{ "time": 0, "rotation": 0.26 }, { "time": 0.5, "rotation": -0.26 }, { "time": 1, "rotation": 0.26 }],
-    "frontThigh": [{ "time": 0, "rotation": -0.26 }, { "time": 0.5, "rotation": 0.26 }, { "time": 1, "rotation": -0.26 }],
-    "rearShin": [{ "time": 0, "rotation": -0.3 }, { "time": 0.5, "rotation": 0.65 }, { "time": 1, "rotation": -0.3 }],
-    "frontShin": [{ "time": 0, "rotation": 0.65 }, { "time": 0.5, "rotation": -0.3 }, { "time": 1, "rotation": 0.65 }],
-    "rearUpperArm": [{ "time": 0, "rotation": -0.17 }, { "time": 0.5, "rotation": 0.17 }, { "time": 1, "rotation": -0.17 }],
-    "frontUpperArm": [{ "time": 0, "rotation": 0.17 }, { "time": 0.5, "rotation": -0.17 }, { "time": 1, "rotation": 0.17 }],
+    "rearThigh": [{ "time": 0, "rotation": 0.3 }, { "time": 0.25, "rotation": 0.22 }, { "time": 0.5, "rotation": -0.3 }, { "time": 0.75, "rotation": -0.22 }, { "time": 1, "rotation": 0.3 }],
+    "frontThigh": [{ "time": 0, "rotation": -0.3 }, { "time": 0.25, "rotation": -0.22 }, { "time": 0.5, "rotation": 0.3 }, { "time": 0.75, "rotation": 0.22 }, { "time": 1, "rotation": -0.3 }],
+    "rearShin": [{ "time": 0, "rotation": -0.3 }, { "time": 0.25, "rotation": 0.15 }, { "time": 0.5, "rotation": 0.65 }, { "time": 0.75, "rotation": 0.15 }, { "time": 1, "rotation": -0.3 }],
+    "frontShin": [{ "time": 0, "rotation": 0.65 }, { "time": 0.25, "rotation": 0.15 }, { "time": 0.5, "rotation": -0.3 }, { "time": 0.75, "rotation": 0.15 }, { "time": 1, "rotation": 0.65 }],
+    "rearUpperArm": [{ "time": 0, "rotation": -0.18 }, { "time": 0.25, "rotation": -0.13 }, { "time": 0.5, "rotation": 0.18 }, { "time": 0.75, "rotation": 0.13 }, { "time": 1, "rotation": -0.18 }],
+    "frontUpperArm": [{ "time": 0, "rotation": 0.18 }, { "time": 0.25, "rotation": 0.13 }, { "time": 0.5, "rotation": -0.18 }, { "time": 0.75, "rotation": -0.13 }, { "time": 1, "rotation": 0.18 }],
     "cape": [{ "time": 0, "rotation": 0.32 }, { "time": 0.5, "rotation": -0.1 }, { "time": 1, "rotation": 0.32 }]
   }
 }
