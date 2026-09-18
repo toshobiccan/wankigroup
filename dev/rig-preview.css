@@ -10,6 +10,8 @@ h1 { margin: 7px 0 4px; font-size: clamp(28px, 7vw, 46px); }
 .controls, .slots { display: flex; flex-wrap: wrap; gap: 8px; }
 .calibrator { display: grid; gap: 9px; }
 .calibration-help { margin: 0; color: #d9cce7; font: 13px/1.4 Arial, sans-serif; }
+.reference-toggle, .reference-opacity { display: flex; align-items: center; gap: 8px; color: #ffd978; font: 700 12px Arial, sans-serif; }
+.reference-opacity input[type="range"] { flex: 1 1 auto; max-width: 220px; }
 .target-picker { display: grid; gap: 4px; max-width: 360px; color: #ffd978; font: 700 12px Arial, sans-serif; }
 .active-target { margin: 0; color: #ffe08a; font: 700 12px Arial, sans-serif; }
 select, textarea { width: 100%; border: 1px solid #ad91df; border-radius: 7px; color: #fff8e8; background: #21183b; font: 12px/1.4 ui-monospace, monospace; }

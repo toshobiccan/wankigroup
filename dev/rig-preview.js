@@ -4,13 +4,20 @@ import { adjustArtTarget, exportArtTemplate, localPointDelta } from "../src/spri
 import { RigActor } from "../src/sprites/rig-actor.js";
 
 const stage = document.getElementById("stage");
-const [rig, idle, run, attack, rigArt] = await Promise.all([
+const [rig, idle, run, attack, rigArt, referenceTexture] = await Promise.all([
   fetch("../data/rigs/humanoid-aqw-bind-preview.json").then((response) => response.json()),
   fetch("../data/animations/humanoid/idle.json").then((response) => response.json()),
   fetch("../data/animations/humanoid/run.json").then((response) => response.json()),
   fetch("../data/animations/humanoid/attack.json").then((response) => response.json()),
   loadRigArt("../data/rigs/humanoid-art-mannequin.json"),
+  PIXI.Assets.load("../assets/rigs/mannequin/mannequin-reference.png"),
 ]);
+
+// Same anchor/scale convention as every mannequin body-art entry (see
+// data/rigs/humanoid-art-mannequin.json): the full reference image shares
+// the rig's own coordinate system, anchored at the hips joint pivot.
+const REFERENCE_ANCHOR = [0.5066, 0.4367];
+const REFERENCE_SCALE = 0.084848;
 
 const app = new PIXI.Application();
 await app.init({ resizeTo: stage, backgroundAlpha: 0, autoDensity: true, resolution: window.devicePixelRatio || 1 });
@@ -24,11 +31,23 @@ let dragPointerId = null;
 // Keep the bind pose readable. Individual gear mounts remain available through the toggles.
 const previewEquipment = Object.fromEntries(Object.keys(rig.slots).map((slotId) => [slotId, null]));
 
+const referenceVisible = document.getElementById("reference-visible");
+const referenceOpacity = document.getElementById("reference-opacity");
+
 function buildActor() {
   actor?.destroy({ children: true });
   actor = new RigActor({ rig, clips: { idle, run, attack }, art: calibratedArt, textures: rigArt.textures });
   actor.setDisplayHeight(190);
   actor.applyAppearance({ equipment: previewEquipment });
+
+  const reference = new PIXI.Sprite(referenceTexture);
+  reference.anchor.set(...REFERENCE_ANCHOR);
+  reference.scale.set(REFERENCE_SCALE);
+  reference.visible = referenceVisible.checked;
+  reference.alpha = Number(referenceOpacity.value) / 100;
+  actor.visual.addChildAt(reference, 0);
+  actor.reference = reference;
+
   app.stage.addChild(actor);
   layout();
 }
@@ -50,6 +69,13 @@ for (const button of document.querySelectorAll("[data-clip]")) {
     document.querySelectorAll("[data-clip]").forEach((entry) => entry.classList.toggle("selected", entry === button));
   });
 }
+
+referenceVisible.addEventListener("change", () => {
+  actor.reference.visible = referenceVisible.checked;
+});
+referenceOpacity.addEventListener("input", () => {
+  actor.reference.alpha = Number(referenceOpacity.value) / 100;
+});
 
 let facingLeft = false;
 document.getElementById("facing").addEventListener("click", (event) => {

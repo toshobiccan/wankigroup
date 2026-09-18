@@ -20,9 +20,16 @@
       </div>
       <div class="slots" id="slot-controls"></div>
     </section>
-    <section class="panel calibrator" aria-label="Asset calibration" hidden>
+    <section class="panel calibrator" aria-label="Asset calibration">
       <p class="eyebrow">Calibration editor</p>
-      <p class="calibration-help">Choose a part, then drag directly on the stage. The offset is recorded in the template below.</p>
+      <p class="calibration-help">Choose a part, then drag directly on the stage (bind pose / Idle only). The offset is recorded in the template below.</p>
+      <label class="reference-toggle">
+        <input type="checkbox" id="reference-visible" checked />
+        Show mannequin reference behind the rig
+      </label>
+      <label class="reference-opacity">Reference opacity
+        <input type="range" id="reference-opacity" min="0" max="100" value="45" />
+      </label>
       <label class="target-picker">Asset
         <select id="asset-target"></select>
       </label>
