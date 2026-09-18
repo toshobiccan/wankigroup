@@ -9,7 +9,10 @@
     "torso": {
       "src": "assets/rigs/mannequin/body-torso.png",
       "anchor": [0.4978, 0.2194],
-      "scale": 0.084848
+      "scale": 0.084848,
+      "x": -1.6267015235563065,
+      "y": 0.5592385736640892,
+      "rotation": 0
     },
     "head": {
       "src": "assets/rigs/mannequin/body-head.png",
@@ -19,62 +22,98 @@
     "rearUpperArm": {
       "src": "assets/rigs/mannequin/body-rear-upper-arm.png",
       "anchor": [0.6026, 0.2329],
-      "scale": 0.084848
+      "scale": 0.084848,
+      "x": 19.04017562731906,
+      "y": -2.8456279041367196,
+      "rotation": -0.1745
     },
     "rearForearm": {
       "src": "assets/rigs/mannequin/body-rear-forearm.png",
       "anchor": [0.6376, 0.3726],
-      "scale": 0.084848
+      "scale": 0.084848,
+      "x": 24.71551996922574,
+      "y": -8.029468778813126,
+      "rotation": -0.4187999999999999
     },
     "rearHand": {
       "src": "assets/rigs/mannequin/body-rear-hand.png",
       "anchor": [0.7013, 0.4934],
-      "scale": 0.084848
+      "scale": 0.084848,
+      "x": 38.045123676794674,
+      "y": 2.3198744519020806,
+      "rotation": 0
     },
     "frontUpperArm": {
       "src": "assets/rigs/mannequin/body-front-upper-arm.png",
       "anchor": [0.393, 0.206],
-      "scale": 0.084848
+      "scale": 0.084848,
+      "x": -21.08326093255279,
+      "y": -11.709159727838568,
+      "rotation": 0.4187999999999999
     },
     "frontForearm": {
       "src": "assets/rigs/mannequin/body-front-forearm.png",
       "anchor": [0.2926, 0.3384],
-      "scale": 0.084848
+      "scale": 0.084848,
+      "x": -41.88304680407197,
+      "y": -0.08606408186074077,
+      "rotation": 0
     },
     "frontHand": {
       "src": "assets/rigs/mannequin/body-front-hand.png",
       "anchor": [0.2777, 0.4891],
-      "scale": 0.084848
+      "scale": 0.084848,
+      "x": -44.29171756349942,
+      "y": 1.437708188927047,
+      "rotation": 0
     },
     "rearThigh": {
       "src": "assets/rigs/mannequin/body-rear-thigh.png",
       "anchor": [0.5721, 0.4367],
-      "scale": 0.084848
+      "scale": 0.084848,
+      "x": 13.045667829151284,
+      "y": -2.4209859069014072,
+      "rotation": -0.20939999999999998
     },
     "rearShin": {
       "src": "assets/rigs/mannequin/body-rear-shin.png",
       "anchor": [0.6332, 0.6514],
-      "scale": 0.084848
+      "scale": 0.084848,
+      "x": 1.7828854765828623,
+      "y": 1.3005817932711352,
+      "rotation": 0.3489999999999999
     },
     "rearFoot": {
       "src": "assets/rigs/mannequin/body-rear-foot.png",
       "anchor": [0.6157, 0.8697],
-      "scale": 0.084848
+      "scale": 0.084848,
+      "x": 21.64365748355263,
+      "y": 1.2158974095394512,
+      "rotation": 0
     },
     "frontThigh": {
       "src": "assets/rigs/mannequin/body-front-thigh.png",
       "anchor": [0.441, 0.4367],
-      "scale": 0.084848
+      "scale": 0.084848,
+      "x": -14.054878758424906,
+      "y": -2.4156206212483937,
+      "rotation": 0.0698
     },
     "frontShin": {
       "src": "assets/rigs/mannequin/body-front-shin.png",
       "anchor": [0.4017, 0.6477],
-      "scale": 0.084848
+      "scale": 0.084848,
+      "x": 1.588614587178057,
+      "y": 2.6194353004935067,
+      "rotation": 0.0698
     },
     "frontFoot": {
       "src": "assets/rigs/mannequin/body-front-foot.png",
       "anchor": [0.3127, 0.8646],
-      "scale": 0.084848
+      "scale": 0.084848,
+      "x": -37.869726562500006,
+      "y": 0.7272717927631618,
+      "rotation": 0
     }
   },
   "equipment": {}

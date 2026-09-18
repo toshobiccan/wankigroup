@@ -114,6 +114,50 @@ for (const [index, target] of targets.entries()) {
   targetPicker.appendChild(option);
 }
 
+// Alpha maps for click-to-select: every body piece is a full 1145x1374
+// canvas with mostly-transparent padding, so a bounding-box hit test would
+// match nearly every piece at once. Sample the actual pixel alpha instead.
+const bodyAlphaData = new Map();
+await Promise.all(Object.entries(calibratedArt.body).map(async ([boneId, config]) => {
+  const img = new Image();
+  img.src = `../${config.src}`;
+  await new Promise((resolve, reject) => { img.onload = resolve; img.onerror = reject; });
+  const canvas = document.createElement("canvas");
+  canvas.width = img.naturalWidth;
+  canvas.height = img.naturalHeight;
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(img, 0, 0);
+  bodyAlphaData.set(boneId, { width: canvas.width, height: canvas.height, data: ctx.getImageData(0, 0, canvas.width, canvas.height).data });
+}));
+
+function alphaAt(boneId, texX, texY) {
+  const sheet = bodyAlphaData.get(boneId);
+  if (!sheet || texX < 0 || texY < 0 || texX >= sheet.width || texY >= sheet.height) return 0;
+  const index = (Math.floor(texY) * sheet.width + Math.floor(texX)) * 4 + 3;
+  return sheet.data[index];
+}
+
+function hitTestBody(globalPoint) {
+  const bodyTargets = targets.filter((t) => t.kind === "body" && bodyAlphaData.has(t.boneId));
+  bodyTargets.sort((a, b) => (actor.bones.get(b.boneId).bindPose.zIndex ?? 0) - (actor.bones.get(a.boneId).bindPose.zIndex ?? 0));
+  for (const target of bodyTargets) {
+    const config = calibratedArt.body[target.boneId];
+    const local = actor.bones.get(target.boneId).container.toLocal(globalPoint);
+    const afterPosition = { x: local.x - (config.x ?? 0), y: local.y - (config.y ?? 0) };
+    const rotation = config.rotation ?? 0;
+    const cos = Math.cos(-rotation), sin = Math.sin(-rotation);
+    const unrotated = { x: afterPosition.x * cos - afterPosition.y * sin, y: afterPosition.x * sin + afterPosition.y * cos };
+    const scale = config.scale ?? 1;
+    const unscaled = { x: unrotated.x / scale, y: unrotated.y / scale };
+    const [anchorX, anchorY] = config.anchor ?? [0.5, 0.5];
+    const sheet = bodyAlphaData.get(target.boneId);
+    const texX = unscaled.x + anchorX * sheet.width;
+    const texY = unscaled.y + anchorY * sheet.height;
+    if (alphaAt(target.boneId, texX, texY) > 10) return target;
+  }
+  return null;
+}
+
 function selectedTarget() {
   return targets[Number(targetPicker.value) || 0];
 }
@@ -197,15 +241,22 @@ function targetConfig(art, target) {
     : art.equipment[target.slotId][target.itemId][target.boneId];
 }
 
-function pointerToBoneLocal(event) {
+function eventToGlobalPoint(event) {
   const rect = app.canvas.getBoundingClientRect();
-  const global = new PIXI.Point(
+  return new PIXI.Point(
     (event.clientX - rect.left) * app.screen.width / rect.width,
     (event.clientY - rect.top) * app.screen.height / rect.height,
   );
-  return actor.bones.get(selectedTarget().boneId).container.toLocal(global);
+}
+function pointerToBoneLocal(event) {
+  return actor.bones.get(selectedTarget().boneId).container.toLocal(eventToGlobalPoint(event));
 }
 stage.addEventListener("pointerdown", (event) => {
+  const hit = hitTestBody(eventToGlobalPoint(event));
+  if (hit) {
+    targetPicker.value = String(targets.indexOf(hit));
+    showSelectedTarget();
+  }
   dragPoint = pointerToBoneLocal(event);
   dragPointerId = event.pointerId;
   stage.setPointerCapture(event.pointerId);
