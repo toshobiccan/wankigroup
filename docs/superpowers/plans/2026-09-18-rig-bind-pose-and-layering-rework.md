@@ -8,25 +8,18 @@
 1. Every bone in `data/rigs/humanoid.json` has `rotation: 0` — no stance, arms/legs hang straight down.
 2. `RigActor` parents each bone's *render* container under its *kinematic* parent's container. Because a parent's own body sprite is added before any child container, a child (e.g. `rearUpperArm` under `torso`) can never render behind its parent's own sprite. The rear-limb dark recolor is a workaround for this, not a real fix. There's also a smaller instance of the same bug: `cape` and the rear leg render in the wrong relative order versus the spec's §5 (`cape` should be layer 1, rear-leg layer 4 — the code currently renders rear-leg behind cape, the opposite).
 
-**Architecture change:** Decouple the *transform* hierarchy (nested containers, needed so rotations/positions compose correctly parent→child) from the *render* hierarchy (a flat, explicit draw order, independent of transform nesting depth). This is how real 2D skeletal rigs (Spine, DragonBones) do it. Bones keep their nested transform containers for kinematics; each bone's *visual* content is instead added to one flat top-level container in an explicit order, with its local transform synced from the bone's computed world transform every tick.
+**Architecture change:** Decouple *how a bone renders relative to its own parent's body* from *add order*, using PixiJS's built-in per-parent sibling sort (`sortableChildren` + `zIndex`) instead of a hand-rolled global draw list. This needed less invasive surgery than first sketched below, once the actual shape of the problem was confirmed: every cross-bone occlusion the spec requires (rear arm behind torso, rear leg behind hips, cape behind rear leg, offhand item behind the rear hand) is a conflict between *immediate siblings under a shared parent* — never a conflict that needs reordering across unrelated branches of the tree. PixiJS already sorts a container's direct children by `zIndex` when `sortableChildren` is set, which solves exactly this without touching the transform hierarchy or computing world matrices by hand.
 
----
+**Status: implemented and verified** (2026-09-18). ~~The flat `drawRoot` + world-transform-copy approach originally planned below was not used~~ — superseded by the simpler fix actually shipped:
 
-## 1. Explicit draw order, decoupled from the transform tree
+1. Added an optional `"zIndex"` field to every bone in both `data/rigs/humanoid.json` and `data/rigs/humanoid-aqw-bind-preview.json`, one numeric tier per spec §5 layer: `cape=10, offhandMount=20, rear-arm chain=30, rear-leg chain=40, hips/torso=50, head+hair+eyes+nose=70, front-leg chain=80, front-arm chain=90, weaponMount=100`.
+2. `load-rig.js`'s `validateRig` rejects a non-numeric `zIndex`.
+3. In `RigActor`, each bone's container gets `sortableChildren = true` and `zIndex = bone.zIndex ?? 0`; each bone's own 5 layer sub-containers (rear/base/armor/front/effects) get that *same* `zIndex`, so a bone's own body sprite and its child bones sort together correctly — a child with a lower `zIndex` than its parent (e.g. `rearUpperArm`=30 under `torso`=50) now renders behind the parent's own body, while a higher one (e.g. `frontUpperArm`=90) still renders in front, and same-tier successive limb segments (forearm over upper arm, etc.) keep rendering in front of each other via PixiJS's stable sort preserving original add order.
+4. This is unchanged: the transform hierarchy (nested containers for position/rotation propagation) is untouched. Only sibling *render* order within each existing parent changed.
 
-**Files:**
-- Modify `src/sprites/rig-actor.js`
-- Modify `data/rigs/humanoid.json`, `data/rigs/humanoid-aqw-bind-preview.json` (add a `drawOrder` array)
-- Create `test/rig-draw-order.test.js`
-
-1. Add a top-level `"drawOrder"` array to both rig JSON files, listing every bone id in the exact sequence from spec §5 (cape, offhandMount, rearUpperArm, rearForearm, rearHand, rearThigh, rearShin, rearFoot, hips, torso, head, hair, eyes, nose, frontThigh, frontShin, frontFoot, frontUpperArm, frontForearm, frontHand, weaponMount). This is the single source of truth for front-to-back order — no more relying on array position or hierarchy traversal order.
-2. Write a failing test asserting `validateRig` rejects a `drawOrder` that omits a bone or lists an unknown bone id, and that a valid rig's resolved draw order matches the authored array.
-3. In `RigActor`, keep the existing nested `PIXI.Container` tree for **transform only** (position/rotation/scale propagation) — this part is unchanged and still drives correct kinematics.
-4. Add one flat `this.drawRoot` container, added once to `this.visual`. For each bone, instead of adding its 5 layer-containers as children of the parent bone's container, add them to `this.drawRoot`, in `drawOrder` sequence.
-5. Every tick (in `update()`, and once at construction), after computing each bone's local transform, copy each bone's **world** transform (`container.worldTransform` or an equivalent accumulated matrix) onto its corresponding entry in `drawRoot` so it renders at the correct screen position despite no longer being a literal child of its parent bone's container. PixiJS containers expose `getGlobalPosition()`/`worldTransform`; use whichever gives an exact position+rotation+scale copy without floating drift.
-6. Run the new test, then the full suite (`npx vitest run`) — confirm all existing tests still pass unchanged (this must not alter any existing pure-function behavior, only how `RigActor` composites bones for rendering).
-7. Load `dev/rig-preview.html`, toggle every equipment slot, and confirm: cape now renders behind the rear leg; the rear arm and rear leg are visibly behind the torso/hips base shape (not just darker) whenever they'd geometrically overlap.
-8. Commit.
+Verified two ways:
+- Unit tests (`test/load-rig.test.js`): `validateRig` accepts/rejects `zIndex` correctly; full suite (122 tests) still green.
+- Direct scene-graph inspection in `dev/rig-preview.html` (not screenshots, which proved unreliable for this): after `app.render()`, `torso.container.children` is ordered `[rearUpperArm(30), own 5 layers(50), head(70), frontUpperArm(90)]`; `hips.container.children` is `[cape(10), rearThigh(40), own 5 layers(50), torso(50), frontThigh(80)]`; `rearHand.container.children` is `[offhandMount(20), own 5 layers(30)]`. All three match spec §5 exactly. Also confirmed no console errors through every clip (`idle`/`run`/`attack`) and every equipment toggle on the real preview page.
 
 ## 2. Reference pose image
 

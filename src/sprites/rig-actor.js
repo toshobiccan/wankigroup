@@ -122,6 +122,7 @@ export class RigActor extends PIXI.Container {
 
     for (const bone of this.rig.bones) {
       const container = new PIXI.Container();
+      const ownZIndex = bone.zIndex ?? 0;
       const layers = {
         rear: new PIXI.Container(),
         base: new PIXI.Container(),
@@ -129,7 +130,12 @@ export class RigActor extends PIXI.Container {
         front: new PIXI.Container(),
         effects: new PIXI.Container(),
       };
-      Object.values(layers).forEach((layer) => container.addChild(layer));
+      container.sortableChildren = true;
+      Object.values(layers).forEach((layer) => {
+        layer.zIndex = ownZIndex;
+        container.addChild(layer);
+      });
+      container.zIndex = ownZIndex;
       container.label = bone.id;
       container.position.set(bone.x ?? 0, bone.y ?? 0);
       container.rotation = bone.rotation ?? 0;

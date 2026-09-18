@@ -28,6 +28,15 @@ describe("validateRig", () => {
     expect(() => validateRig({ bones: [{ id: "a", parent: "b" }, { id: "b", parent: "a" }] })).toThrow(/cycle/i);
   });
 
+  it("rejects a non-numeric zIndex", () => {
+    expect(() => validateRig({ bones: [{ id: "hips", zIndex: "front" }] })).toThrow(/zIndex/i);
+  });
+
+  it("accepts a bone with no zIndex and a bone with a numeric zIndex", () => {
+    const rig = validateRig({ bones: [{ id: "hips" }, { id: "torso", parent: "hips", zIndex: 50 }] });
+    expect(rig.bones.find((bone) => bone.id === "torso").zIndex).toBe(50);
+  });
+
   it("rejects an equipment attachment that targets an unknown bone", () => {
     expect(() => validateRig({
       bones: [{ id: "hips" }],

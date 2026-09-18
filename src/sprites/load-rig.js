@@ -7,6 +7,9 @@ export function validateRig(rig) {
   for (const bone of rig.bones) {
     if (!bone?.id) throw new Error("Every bone needs an id");
     if (byId.has(bone.id)) throw new Error(`Duplicate bone id: ${bone.id}`);
+    if (bone.zIndex !== undefined && !Number.isFinite(bone.zIndex)) {
+      throw new Error(`Bone '${bone.id}' has a non-numeric zIndex`);
+    }
     byId.set(bone.id, { ...bone, parent: bone.parent ?? null });
   }
 
