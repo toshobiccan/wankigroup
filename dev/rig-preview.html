@@ -39,8 +39,21 @@
         <button data-nudge="-1,0" aria-label="Nudge left">←</button>
         <button data-nudge="1,0" aria-label="Nudge right">→</button>
         <button data-nudge="0,1" aria-label="Nudge down">↓</button>
+      </div>
+      <div class="controls nudge-controls" aria-label="Rotation controls">
+        <button data-rotate="-0.0349" aria-label="Rotate 2 degrees counterclockwise">↺2°</button>
+        <button data-rotate="0.0349" aria-label="Rotate 2 degrees clockwise">↻2°</button>
+        <button data-rotate="-0.7854" aria-label="Rotate 45 degrees counterclockwise">↺45°</button>
+        <button data-rotate="0.7854" aria-label="Rotate 45 degrees clockwise">↻45°</button>
+      </div>
+      <div class="controls nudge-controls" aria-label="Layer order controls">
+        <button id="layer-up">Layer up</button>
+        <button id="layer-down">Layer down</button>
         <button id="reset-target">Reset selected</button>
-        <button id="export-template">Export template</button>
+      </div>
+      <div class="controls nudge-controls" aria-label="Export controls">
+        <button id="export-template">Export placement template</button>
+        <button id="export-layers">Export layer order</button>
       </div>
       <textarea id="template-output" rows="8" readonly aria-label="Rig placement template" placeholder="Exported placement template appears here"></textarea>
     </section>

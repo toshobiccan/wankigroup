@@ -101,6 +101,7 @@ const targetPicker = document.getElementById("asset-target");
 const templateOutput = document.getElementById("template-output");
 const activeTarget = document.getElementById("active-target");
 const originalArt = structuredClone(rigArt.art);
+const originalZIndex = Object.fromEntries(rig.bones.map((bone) => [bone.id, bone.zIndex ?? 0]));
 const targets = [
   ...Object.keys(calibratedArt.body).map((boneId) => ({ kind: "body", boneId, label: `Body · ${boneId}` })),
   ...Object.entries(calibratedArt.equipment).flatMap(([slotId, items]) => Object.entries(items).flatMap(([itemId, attachments]) =>
@@ -118,7 +119,11 @@ function selectedTarget() {
 }
 
 function showSelectedTarget() {
-  activeTarget.textContent = `Moving: ${selectedTarget().label}`;
+  const target = selectedTarget();
+  const zIndex = target.kind === "body" ? actor.bones.get(target.boneId).bindPose.zIndex ?? 0 : null;
+  activeTarget.textContent = zIndex == null
+    ? `Moving: ${target.label}`
+    : `Moving: ${target.label} (layer ${zIndex})`;
 }
 targetPicker.addEventListener("change", showSelectedTarget);
 showSelectedTarget();
@@ -136,6 +141,23 @@ for (const button of document.querySelectorAll("[data-nudge]")) {
   });
 }
 
+for (const button of document.querySelectorAll("[data-rotate]")) {
+  button.addEventListener("click", () => {
+    moveSelected({ rotation: Number(button.dataset.rotate) });
+  });
+}
+
+document.getElementById("layer-up").addEventListener("click", () => bumpLayer(1));
+document.getElementById("layer-down").addEventListener("click", () => bumpLayer(-1));
+
+function bumpLayer(delta) {
+  const target = selectedTarget();
+  if (target.kind !== "body") return;
+  const bindPose = actor.bones.get(target.boneId).bindPose;
+  actor.setBoneZIndex(target.boneId, (bindPose.zIndex ?? 0) + delta);
+  showSelectedTarget();
+}
+
 document.getElementById("reset-target").addEventListener("click", () => {
   const target = selectedTarget();
   const initial = target.kind === "body"
@@ -146,14 +168,25 @@ document.getElementById("reset-target").addEventListener("click", () => {
     : calibratedArt.equipment[target.slotId][target.itemId][target.boneId];
   current.x = initial.x;
   current.y = initial.y;
+  current.rotation = initial.rotation;
   if (current.x == null) delete current.x;
   if (current.y == null) delete current.y;
+  if (current.rotation == null) delete current.rotation;
   actor.art = calibratedArt;
   actor.syncArtPlacement(target, current);
+  if (target.kind === "body") actor.setBoneZIndex(target.boneId, originalZIndex[target.boneId]);
+  showSelectedTarget();
 });
 
 document.getElementById("export-template").addEventListener("click", () => {
   templateOutput.value = exportArtTemplate(calibratedArt);
+  templateOutput.focus();
+  templateOutput.select();
+});
+
+document.getElementById("export-layers").addEventListener("click", () => {
+  const layers = Object.fromEntries([...actor.bones].map(([boneId, entry]) => [boneId, entry.bindPose.zIndex ?? 0]));
+  templateOutput.value = JSON.stringify(layers, null, 2);
   templateOutput.focus();
   templateOutput.select();
 });

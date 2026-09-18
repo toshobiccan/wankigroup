@@ -9,6 +9,7 @@ export function adjustArtTarget(art, target, delta) {
   if (!config) throw new Error("Unknown art target");
   config.x = (config.x ?? 0) + (delta.x ?? 0);
   config.y = (config.y ?? 0) + (delta.y ?? 0);
+  config.rotation = (config.rotation ?? 0) + (delta.rotation ?? 0);
   return next;
 }
 

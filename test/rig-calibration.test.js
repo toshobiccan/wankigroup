@@ -14,6 +14,13 @@ describe("adjustArtTarget", () => {
     expect(art.body.head).toMatchObject({ x: 2, y: -3 });
   });
 
+  it("accumulates a rotation delta alongside position", () => {
+    const adjusted = adjustArtTarget(art, { kind: "body", boneId: "head" }, { rotation: 0.1 });
+
+    expect(adjusted.body.head).toMatchObject({ x: 2, y: -3, rotation: 0.1 });
+    expect(art.body.head.rotation).toBeUndefined();
+  });
+
   it("creates offsets for an equipment attachment that has none", () => {
     const adjusted = adjustArtTarget(art, { kind: "equipment", slotId: "helmet", itemId: "preview", boneId: "head" }, { x: -5, y: 8 });
 

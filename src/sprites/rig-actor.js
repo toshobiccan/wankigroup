@@ -51,9 +51,7 @@ function makeBodyShape(id) {
   const graphic = new PIXI.Graphics();
   const color = BODY_COLORS[id] ?? 0xffffff;
   if (id === "head") graphic.circle(0, -8, 10).fill(color).stroke({ color: 0x402e54, width: 1.5 });
-  else if (id === "hair") graphic.arc(0, 2, 9, Math.PI, 0).fill(color);
-  else if (id === "eyes") graphic.circle(0, 0, 1.6).fill(color);
-  else if (id === "nose") graphic.poly([-0.5, -2, 1.8, 0.5, -0.5, 2]).fill(color);
+  else if (id === "hair" || id === "eyes" || id === "nose") return null; // no mannequin art yet -- suppressed rather than showing the old geometric placeholder
   else if (id === "hips") graphic.roundRect(-11, -5, 22, 10, 3).fill(color);
   else if (id === "cape") return null;
   else if (id.endsWith("Foot")) {
@@ -196,6 +194,16 @@ export class RigActor extends PIXI.Container {
     const visual = this.artVisuals.get(artKey(target));
     if (!visual) return false;
     visual.position.set(config.x ?? 0, config.y ?? 0);
+    visual.rotation = config.rotation ?? 0;
+    return true;
+  }
+
+  setBoneZIndex(boneId, zIndex) {
+    const entry = this.bones.get(boneId);
+    if (!entry) return false;
+    entry.container.zIndex = zIndex;
+    for (const layer of Object.values(entry.layers)) layer.zIndex = zIndex;
+    entry.bindPose.zIndex = zIndex;
     return true;
   }
 
