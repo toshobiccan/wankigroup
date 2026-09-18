@@ -37,7 +37,34 @@ export class LocalSession extends Emitter {
       saved = JSON.parse(this.storage.getItem(PLAYER_KEY));
     } catch {}
     this._player = normalizePlayer(saved);
+    // Development-created items are available for trying on in the local game.
+    if (typeof location !== "undefined" && ["localhost", "127.0.0.1", "[::1]"].includes(location.hostname)) {
+      try {
+        const response = await fetch("/dev-api/armor/items");
+        if (response.ok) {
+          const { items } = await response.json();
+          for (const item of items) {
+            if (!item || item.kind !== "equipable") continue;
+            const index = this._player.inventory.equipables.findIndex(entry => entry.id === item.id);
+            if (index < 0) this._player.inventory.equipables.push(item);
+            else this._player.inventory.equipables[index] = item;
+            if (this._player.equipment[item.slot]?.id === item.id) this._player.equipment[item.slot] = item;
+          }
+          this._changed();
+        }
+      } catch { /* Local development catalog is optional. */ }
+    }
     return this;
+  }
+
+  equipItem(id) {
+    const item = this._player.inventory.equipables.find(entry => entry.id === id);
+    if (!item || !["helmet", "armor", "cape", "weapon", "book"].includes(item.slot)) throw new Error("Item cannot be equipped.");
+    const previous = this._player.equipment[item.slot];
+    if (previous && !this._player.inventory.equipables.some(entry => entry.id === previous.id)) {
+      this._player.inventory.equipables.push({ ...previous, kind: "equipable", slot: item.slot });
+    }
+    this._player.equipment[item.slot] = item; this._changed();
   }
 
   async importedDeck(cardCount) {

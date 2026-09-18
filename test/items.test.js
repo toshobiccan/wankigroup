@@ -26,12 +26,12 @@ describe("createEquipable", () => {
   });
 
   it("throws on an unknown stat bonus key", () => {
-    expect(() => createEquipable({ id: "x", name: "X", slot: "boots", stats: { speed: 5 } })).toThrow(/invalid stat bonus key/);
+    expect(() => createEquipable({ id: "x", name: "X", slot: "armor", stats: { speed: 5 } })).toThrow(/invalid stat bonus key/);
   });
 
   it("requires an id and a name", () => {
-    expect(() => createEquipable({ name: "X", slot: "boots" })).toThrow(/id and name are required/);
-    expect(() => createEquipable({ id: "x", slot: "boots" })).toThrow(/id and name are required/);
+    expect(() => createEquipable({ name: "X", slot: "armor" })).toThrow(/id and name are required/);
+    expect(() => createEquipable({ id: "x", slot: "armor" })).toThrow(/id and name are required/);
   });
 });
 

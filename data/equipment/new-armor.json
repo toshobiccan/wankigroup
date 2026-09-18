@@ -1,0 +1,178 @@
+{
+  "id": "new-armor",
+  "schemaVersion": 1,
+  "rigId": "humanoid",
+  "item": {
+    "id": "new-armor",
+    "name": "New Armor",
+    "kind": "equipable",
+    "slot": "armor",
+    "description": "New Armor — a complete adventurer's outfit.",
+    "picture": "assets/equipment/new-armor/ab7685fa-0800-427d-9440-b8628a814780/torso.png",
+    "stats": {}
+  },
+  "equipment": {
+    "armor": {
+      "new-armor": {
+        "torso": {
+          "src": "assets/equipment/new-armor/ab7685fa-0800-427d-9440-b8628a814780/torso.png",
+          "pivot": [
+            170.24458139223282,
+            91.03327335504618
+          ],
+          "scale": 0.13820687235792833,
+          "mode": "replace"
+        },
+        "hips": {
+          "src": "assets/equipment/new-armor/ab7685fa-0800-427d-9440-b8628a814780/hips.png",
+          "pivot": [
+            163.18736328125,
+            162.6658553698576
+          ],
+          "scale": 0.08642487796524806,
+          "mode": "replace"
+        },
+        "rearUpperArm": {
+          "src": "assets/equipment/new-armor/ab7685fa-0800-427d-9440-b8628a814780/rearUpperArm.png",
+          "pivot": [
+            138.7890625,
+            77.150390625
+          ],
+          "distalPivot": [
+            176.34375,
+            237.166015625
+          ],
+          "scale": 0.10392865071770337,
+          "mode": "replace"
+        },
+        "rearForearm": {
+          "src": "assets/equipment/new-armor/ab7685fa-0800-427d-9440-b8628a814780/rearForearm.png",
+          "pivot": [
+            125.46586134453783,
+            81.47254136029412
+          ],
+          "distalPivot": [
+            204.6538373161765,
+            251.58004529936977
+          ],
+          "scale": 0.08678953989759088,
+          "mode": "replace"
+        },
+        "rearHand": {
+          "src": "assets/equipment/new-armor/ab7685fa-0800-427d-9440-b8628a814780/rearHand.png",
+          "pivot": [
+            148.44015066964283,
+            85.15745192307693
+          ],
+          "scale": 0.06636847168639302,
+          "mode": "replace"
+        },
+        "frontUpperArm": {
+          "src": "assets/equipment/new-armor/ab7685fa-0800-427d-9440-b8628a814780/frontUpperArm.png",
+          "pivot": [
+            191.90245616007195,
+            85.60812443794964
+          ],
+          "distalPivot": [
+            98.99953630845324,
+            239.60936094874103
+          ],
+          "scale": 0.10137601719130362,
+          "mode": "replace"
+        },
+        "frontForearm": {
+          "src": "assets/equipment/new-armor/ab7685fa-0800-427d-9440-b8628a814780/frontForearm.png",
+          "pivot": [
+            160.15916895604397,
+            72.79921445741758
+          ],
+          "distalPivot": [
+            151.63624656593407,
+            248.3714156936813
+          ],
+          "scale": 0.09955270752958953,
+          "mode": "replace"
+        },
+        "frontHand": {
+          "src": "assets/equipment/new-armor/ab7685fa-0800-427d-9440-b8628a814780/frontHand.png",
+          "pivot": [
+            125.40146659805389,
+            78.03034945733532
+          ],
+          "scale": 0.06089854270125074,
+          "mode": "replace"
+        },
+        "rearThigh": {
+          "src": "assets/equipment/new-armor/ab7685fa-0800-427d-9440-b8628a814780/rearThigh.png",
+          "pivot": [
+            150.5945560515873,
+            74.26705109126983
+          ],
+          "distalPivot": [
+            191.22048611111111,
+            244.15730406746033
+          ],
+          "scale": 0.1378422104255855,
+          "mode": "replace"
+        },
+        "rearShin": {
+          "src": "assets/equipment/new-armor/ab7685fa-0800-427d-9440-b8628a814780/rearShin.png",
+          "pivot": [
+            184.9062448055186,
+            65.78367062832447
+          ],
+          "distalPivot": [
+            122.40556952293883,
+            253.90451504321808
+          ],
+          "scale": 0.13711288656089987,
+          "mode": "replace"
+        },
+        "rearFoot": {
+          "src": "assets/equipment/new-armor/ab7685fa-0800-427d-9440-b8628a814780/rearFoot.png",
+          "pivot": [
+            91.28049879807693,
+            119.06971153846153
+          ],
+          "scale": 0.09007149728867625,
+          "mode": "replace"
+        },
+        "frontThigh": {
+          "src": "assets/equipment/new-armor/ab7685fa-0800-427d-9440-b8628a814780/frontThigh.png",
+          "pivot": [
+            165.41345994015958,
+            70.73421916555851
+          ],
+          "distalPivot": [
+            138.18544298537236,
+            241.528143700133
+          ],
+          "scale": 0.13711288656089987,
+          "mode": "replace"
+        },
+        "frontShin": {
+          "src": "assets/equipment/new-armor/ab7685fa-0800-427d-9440-b8628a814780/frontShin.png",
+          "pivot": [
+            176.08681560797004,
+            61.96790382322889
+          ],
+          "distalPivot": [
+            164.67492442949595,
+            249.63011431369208
+          ],
+          "scale": 0.1338309291698145,
+          "mode": "replace"
+        },
+        "frontFoot": {
+          "src": "assets/equipment/new-armor/ab7685fa-0800-427d-9440-b8628a814780/frontFoot.png",
+          "pivot": [
+            129.11171659185084,
+            71.26414666781767
+          ],
+          "scale": 0.06600380975405021,
+          "mode": "replace"
+        }
+      }
+    }
+  }
+}

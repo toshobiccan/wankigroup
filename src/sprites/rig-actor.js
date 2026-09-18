@@ -1,5 +1,5 @@
 import * as PIXI from "../../vendor/pixi.min.mjs";
-import { advanceClip, sampleClip } from "./animation-player.js";
+import { advanceClip, blendPose, sampleClip } from "./animation-player.js";
 import { normalizeAppearance } from "./appearance.js";
 import { validateClips, validateRig } from "./load-rig.js";
 
@@ -73,6 +73,13 @@ function placeSprite(sprite, config, segment = null) {
     ? [config.pivot[0] / texture.orig.width, config.pivot[1] / texture.orig.height]
     : (config.anchor ?? [0.5, 0.5]);
   sprite.anchor.set(...anchor);
+  // Separate regions of existing artwork without redrawing or moving its pivot.
+  if (config.clipPolygon) {
+    let mask = sprite.getChildByLabel("art-region-mask");
+    if (!mask) { mask = new PIXI.Graphics(); mask.label = "art-region-mask"; sprite.addChild(mask); }
+    mask.clear().poly(config.clipPolygon.flatMap(([x, y]) => [x - anchor[0] * texture.orig.width, y - anchor[1] * texture.orig.height])).fill(0xffffff);
+    sprite.mask = mask;
+  }
   sprite.position.set(config.x ?? 0, config.y ?? 0);
   if (config.pivot && config.distalPivot && segment) {
     const imageX = config.distalPivot[0] - config.pivot[0];
@@ -211,19 +218,32 @@ export class RigActor extends PIXI.Container {
     }
   }
 
-  play(clipId) {
+  play(clipId, { transitionMs = 0 } = {}) {
     if (!this.clips[clipId]) throw new Error(`Unknown actor clip: ${clipId}`);
-    if (this.currentClip !== clipId) this.elapsedMs = 0;
+    if (this.currentClip !== clipId) {
+      this.transition = Number.isFinite(transitionMs) && transitionMs > 0 ? {
+        elapsedMs: 0,
+        durationMs: transitionMs,
+        from: new Map([...this.bones].map(([id, { container }]) => [id, {
+          x: container.position.x, y: container.position.y, rotation: container.rotation,
+          scaleX: container.scale.x, scaleY: container.scale.y,
+        }])),
+      } : null;
+      this.elapsedMs = 0;
+    }
     this.currentClip = clipId;
     this.isPlayingOnce = false;
+    this.returnTransitionMs = 0;
   }
 
-  playOnce(clipId) {
+  playOnce(clipId, { transitionMs = 0, returnTransitionMs = 0 } = {}) {
     const clip = this.clips[clipId];
     if (!clip) throw new Error(`Unknown actor clip: ${clipId}`);
-    this.currentClip = clipId;
+    if (this.currentClip === clipId) this.transition = null;
+    this.play(clipId, { transitionMs });
     this.elapsedMs = 0;
     this.isPlayingOnce = true;
+    this.returnTransitionMs = returnTransitionMs;
   }
 
   update(deltaMs) {
@@ -231,14 +251,18 @@ export class RigActor extends PIXI.Container {
     if (!clip) return;
     const next = advanceClip(clip, this.elapsedMs + deltaMs);
     this.elapsedMs = next.elapsedMs;
+    if (this.transition) this.transition.elapsedMs += deltaMs;
     for (const [boneId, entry] of this.bones) {
-      const pose = sampleClip(clip, boneId, this.elapsedMs, entry.bindPose);
+      let pose = sampleClip(clip, boneId, this.elapsedMs, entry.bindPose);
+      if (this.transition) pose = blendPose(this.transition.from.get(boneId), pose,
+        this.transition.elapsedMs / this.transition.durationMs);
       entry.container.position.set(pose.x, pose.y);
       entry.container.rotation = pose.rotation;
       entry.container.scale.set(pose.scaleX, pose.scaleY);
     }
+    if (this.transition?.elapsedMs >= this.transition?.durationMs) this.transition = null;
     this.syncRenderWrappers();
-    if (next.finished && !clip.loop && this.clips.idle) this.play("idle");
+    if (next.finished && !clip.loop && this.clips.idle) this.play("idle", { transitionMs: this.returnTransitionMs });
   }
 
   faceLeft(isFacingLeft) {
@@ -254,7 +278,7 @@ export class RigActor extends PIXI.Container {
   syncArtPlacement(target, config) {
     const visual = this.artVisuals.get(artKey(target));
     if (!visual) return false;
-    const segmentChild = target.kind === "body" && config.distalPivot
+    const segmentChild = config.distalPivot
       ? this.rig.bones.find((candidate) => candidate.parent === target.boneId && this.art?.body?.[candidate.id])
       : null;
     placeSprite(visual, config, segmentChild);
@@ -290,11 +314,14 @@ export class RigActor extends PIXI.Container {
         const bone = this.bones.get(attachment.bone);
         const asset = this.art?.equipment?.[slotId]?.[assetId]?.[attachment.bone]
           ?? this.art?.equipment?.[slotId]?.preview?.[attachment.bone];
-        const visual = makeSprite(asset, this.textures) ?? makeEquipmentShape(slotId);
+        if (slotId === "armor" && !asset) continue;
+        const segment = asset?.distalPivot ? this.rig.bones.find((candidate) => candidate.parent === attachment.bone
+          && this.art?.body?.[candidate.id]) : null;
+        const visual = makeSprite(asset, this.textures, segment) ?? makeEquipmentShape(slotId);
         bone.layers[attachment.layer].addChild(visual);
         visuals.push(visual);
         if (asset) this.artVisuals.set(artKey({ kind: "equipment", slotId, itemId: typeof itemId === "object" ? itemId.id : itemId, boneId: attachment.bone }), visual);
-        if (attachment.mode === "replace") {
+        if ((asset?.mode ?? attachment.mode) === "replace") {
           const baseBody = this.bodyVisuals.get(attachment.bone);
           if (baseBody) baseBody.visible = false;
         }

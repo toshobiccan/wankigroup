@@ -1,40 +1,425 @@
 {
   "id": "humanoid-art-starter-v1",
+  "catalog": "/data/equipment/catalog.json",
   "body": {
-    "hips": { "src": "assets/rigs/starter-v1/starter-traveler-leggings/hips.png", "anchor": [0.5, 0.22], "scale": 0.035 },
-    "torso": { "src": "assets/rigs/starter-v1/body-torso.png", "anchor": [0.5, 0.31], "scale": 0.040 },
-    "head": { "src": "assets/rigs/starter-v1/body-head.png", "anchor": [0.5, 0.77], "scale": 0.030 },
-    "rearUpperArm": { "src": "assets/rigs/starter-v1/body-upper-arm.png", "anchor": [0.48, 0.23], "scale": 0.021 },
-    "frontUpperArm": { "src": "assets/rigs/starter-v1/body-upper-arm.png", "anchor": [0.48, 0.23], "scale": 0.021 },
-    "rearForearm": { "src": "assets/rigs/starter-v1/body-forearm.png", "anchor": [0.47, 0.22], "scale": 0.019 },
-    "frontForearm": { "src": "assets/rigs/starter-v1/body-forearm.png", "anchor": [0.47, 0.22], "scale": 0.019 },
-    "rearHand": { "src": "assets/rigs/starter-v1/body-hand.png", "anchor": [0.38, 0.18], "scale": 0.018 },
-    "frontHand": { "src": "assets/rigs/starter-v1/body-hand.png", "anchor": [0.38, 0.18], "scale": 0.018 },
-    "rearThigh": { "src": "assets/rigs/starter-v1/body-thigh.png", "anchor": [0.5, 0.19], "scale": 0.021 },
-    "frontThigh": { "src": "assets/rigs/starter-v1/body-thigh.png", "anchor": [0.5, 0.19], "scale": 0.021 },
-    "rearShin": { "src": "assets/rigs/starter-v1/body-shin.png", "anchor": [0.5, 0.19], "scale": 0.020 },
-    "frontShin": { "src": "assets/rigs/starter-v1/body-shin.png", "anchor": [0.5, 0.19], "scale": 0.020 },
-    "rearFoot": { "src": "assets/rigs/starter-v1/body-foot.png", "anchor": [0.36, 0.26], "scale": 0.019 },
-    "frontFoot": { "src": "assets/rigs/starter-v1/body-foot.png", "anchor": [0.36, 0.26], "scale": 0.019 }
+    "hips": {
+      "src": "assets/rigs/starter-v1/starter-traveler-leggings/hips.png",
+      "anchor": [
+        0.5,
+        0.22
+      ],
+      "scale": 0.035
+    },
+    "torso": {
+      "src": "assets/rigs/starter-v1/body-torso.png",
+      "anchor": [
+        0.5,
+        0.31
+      ],
+      "scale": 0.04
+    },
+    "head": {
+      "src": "assets/rigs/starter-v1/body-head.png",
+      "anchor": [
+        0.5,
+        0.77
+      ],
+      "scale": 0.03,
+      "clipPolygon": [
+        [
+          0,
+          0
+        ],
+        [
+          1254,
+          0
+        ],
+        [
+          1254,
+          910
+        ],
+        [
+          770,
+          910
+        ],
+        [
+          688,
+          900
+        ],
+        [
+          552,
+          818
+        ],
+        [
+          526,
+          740
+        ],
+        [
+          490,
+          740
+        ],
+        [
+          430,
+          912
+        ],
+        [
+          0,
+          912
+        ]
+      ]
+    },
+    "rearUpperArm": {
+      "src": "assets/rigs/starter-v1/body-upper-arm.png",
+      "anchor": [
+        0.48,
+        0.23
+      ],
+      "scale": 0.021
+    },
+    "frontUpperArm": {
+      "src": "assets/rigs/starter-v1/body-upper-arm.png",
+      "anchor": [
+        0.48,
+        0.23
+      ],
+      "scale": 0.021
+    },
+    "rearForearm": {
+      "src": "assets/rigs/starter-v1/body-forearm.png",
+      "anchor": [
+        0.47,
+        0.22
+      ],
+      "scale": 0.019
+    },
+    "frontForearm": {
+      "src": "assets/rigs/starter-v1/body-forearm.png",
+      "anchor": [
+        0.47,
+        0.22
+      ],
+      "scale": 0.019
+    },
+    "rearHand": {
+      "src": "assets/rigs/starter-v1/body-hand.png",
+      "anchor": [
+        0.38,
+        0.18
+      ],
+      "scale": 0.018
+    },
+    "frontHand": {
+      "src": "assets/rigs/starter-v1/body-hand.png",
+      "anchor": [
+        0.38,
+        0.18
+      ],
+      "scale": 0.018
+    },
+    "rearThigh": {
+      "src": "assets/rigs/starter-v1/body-thigh.png",
+      "anchor": [
+        0.5,
+        0.19
+      ],
+      "scale": 0.021
+    },
+    "frontThigh": {
+      "src": "assets/rigs/starter-v1/body-thigh.png",
+      "anchor": [
+        0.5,
+        0.19
+      ],
+      "scale": 0.021
+    },
+    "rearShin": {
+      "src": "assets/rigs/starter-v1/body-shin.png",
+      "anchor": [
+        0.5,
+        0.19
+      ],
+      "scale": 0.02
+    },
+    "frontShin": {
+      "src": "assets/rigs/starter-v1/body-shin.png",
+      "anchor": [
+        0.5,
+        0.19
+      ],
+      "scale": 0.02
+    },
+    "rearFoot": {
+      "src": "assets/rigs/starter-v1/body-foot.png",
+      "anchor": [
+        0.36,
+        0.26
+      ],
+      "scale": 0.019
+    },
+    "frontFoot": {
+      "src": "assets/rigs/starter-v1/body-foot.png",
+      "anchor": [
+        0.36,
+        0.26
+      ],
+      "scale": 0.019
+    },
+    "neck": {
+      "src": "assets/rigs/starter-v1/body-head.png",
+      "anchor": [
+        0.5,
+        0.77
+      ],
+      "scale": 0.03,
+      "clipPolygon": [
+        [
+          0,
+          912
+        ],
+        [
+          430,
+          912
+        ],
+        [
+          490,
+          740
+        ],
+        [
+          526,
+          740
+        ],
+        [
+          552,
+          818
+        ],
+        [
+          688,
+          900
+        ],
+        [
+          770,
+          910
+        ],
+        [
+          1254,
+          910
+        ],
+        [
+          1254,
+          1254
+        ],
+        [
+          0,
+          1254
+        ]
+      ]
+    }
   },
   "equipment": {
-    "helmet": { "preview": { "head": { "src": "assets/rigs/starter-v1/starter-scout-helmet/helmet.png", "anchor": [0.5, 0.53], "scale": 0.027, "y": 4 } } },
-    "cape": { "preview": { "cape": { "src": "assets/rigs/starter-v1/starter-traveler-cape/cape.png", "anchor": [0.5, 0.17], "scale": 0.033 } } },
-    "chestplate": { "preview": {
-      "torso": { "src": "assets/rigs/starter-v1/starter-leather-chest/torso.png", "anchor": [0.5, 0.27], "scale": 0.037 },
-      "rearUpperArm": { "src": "assets/rigs/starter-v1/starter-leather-chest/upper-arm.png", "anchor": [0.5, 0.22], "scale": 0.020 },
-      "frontUpperArm": { "src": "assets/rigs/starter-v1/starter-leather-chest/upper-arm.png", "anchor": [0.5, 0.22], "scale": 0.020 }
-    } },
-    "leggings": { "preview": {
-      "hips": { "src": "assets/rigs/starter-v1/starter-traveler-leggings/hips.png", "anchor": [0.5, 0.22], "scale": 0.035 },
-      "rearThigh": { "src": "assets/rigs/starter-v1/starter-traveler-leggings/thigh-v2.png", "anchor": [0.5, 0.2], "scale": 0.020 },
-      "frontThigh": { "src": "assets/rigs/starter-v1/starter-traveler-leggings/thigh-v2.png", "anchor": [0.5, 0.2], "scale": 0.020 }
-    } },
-    "boots": { "preview": {
-      "rearFoot": { "src": "assets/rigs/starter-v1/starter-traveler-boots/foot.png", "anchor": [0.35, 0.27], "scale": 0.018, "y": -5 },
-      "frontFoot": { "src": "assets/rigs/starter-v1/starter-traveler-boots/foot.png", "anchor": [0.35, 0.27], "scale": 0.018, "y": -5 }
-    } },
-    "weapon": { "preview": { "weaponMount": { "src": "assets/rigs/starter-v1/oak-practice-sword/weapon.png", "anchor": [0.42, 0.65], "scale": 0.028, "rotation": -0.16 } } },
-    "book": { "preview": { "offhandMount": { "src": "assets/rigs/starter-v1/beginner-spellbook/book.png", "anchor": [0.22, 0.73], "scale": 0.026, "rotation": 0.12 } } }
+    "helmet": {
+      "preview": {
+        "head": {
+          "src": "assets/rigs/starter-v1/starter-scout-helmet/helmet.png",
+          "anchor": [
+            0.5,
+            0.53
+          ],
+          "scale": 0.027,
+          "y": 4
+        }
+      }
+    },
+    "cape": {
+      "preview": {
+        "cape": {
+          "src": "assets/rigs/starter-v1/starter-traveler-cape/cape.png",
+          "anchor": [
+            0.5,
+            0.17
+          ],
+          "scale": 0.033
+        }
+      }
+    },
+    "weapon": {
+      "preview": {
+        "weaponMount": {
+          "src": "assets/rigs/starter-v1/oak-practice-sword/weapon.png",
+          "anchor": [
+            0.42,
+            0.65
+          ],
+          "scale": 0.028,
+          "rotation": -0.16
+        }
+      }
+    },
+    "book": {
+      "preview": {
+        "offhandMount": {
+          "src": "assets/rigs/starter-v1/beginner-spellbook/book.png",
+          "anchor": [
+            0.22,
+            0.73
+          ],
+          "scale": 0.026,
+          "rotation": 0.12
+        }
+      }
+    },
+    "armor": {
+      "preview": {
+        "torso": {
+          "src": "assets/rigs/starter-v1/starter-leather-chest/torso.png",
+          "anchor": [
+            0.5,
+            0.27
+          ],
+          "scale": 0.037,
+          "mode": "replace"
+        },
+        "rearUpperArm": {
+          "src": "assets/rigs/starter-v1/starter-leather-chest/upper-arm.png",
+          "anchor": [
+            0.5,
+            0.22
+          ],
+          "scale": 0.02,
+          "mode": "overlay"
+        },
+        "frontUpperArm": {
+          "src": "assets/rigs/starter-v1/starter-leather-chest/upper-arm.png",
+          "anchor": [
+            0.5,
+            0.22
+          ],
+          "scale": 0.02,
+          "mode": "overlay"
+        },
+        "hips": {
+          "src": "assets/rigs/starter-v1/starter-traveler-leggings/hips.png",
+          "anchor": [
+            0.5,
+            0.22
+          ],
+          "scale": 0.035,
+          "mode": "overlay"
+        },
+        "rearThigh": {
+          "src": "assets/rigs/starter-v1/starter-traveler-leggings/thigh-v2.png",
+          "anchor": [
+            0.5,
+            0.2
+          ],
+          "scale": 0.02,
+          "mode": "overlay"
+        },
+        "frontThigh": {
+          "src": "assets/rigs/starter-v1/starter-traveler-leggings/thigh-v2.png",
+          "anchor": [
+            0.5,
+            0.2
+          ],
+          "scale": 0.02,
+          "mode": "overlay"
+        },
+        "rearFoot": {
+          "src": "assets/rigs/starter-v1/starter-traveler-boots/foot.png",
+          "anchor": [
+            0.35,
+            0.27
+          ],
+          "scale": 0.018,
+          "y": -5,
+          "mode": "replace"
+        },
+        "frontFoot": {
+          "src": "assets/rigs/starter-v1/starter-traveler-boots/foot.png",
+          "anchor": [
+            0.35,
+            0.27
+          ],
+          "scale": 0.018,
+          "y": -5,
+          "mode": "replace"
+        }
+      },
+      "starter-traveler-armor": {
+        "torso": {
+          "src": "assets/rigs/starter-v1/starter-leather-chest/torso.png",
+          "anchor": [
+            0.5,
+            0.27
+          ],
+          "scale": 0.037,
+          "mode": "replace"
+        },
+        "rearUpperArm": {
+          "src": "assets/rigs/starter-v1/starter-leather-chest/upper-arm.png",
+          "anchor": [
+            0.5,
+            0.22
+          ],
+          "scale": 0.02,
+          "mode": "overlay"
+        },
+        "frontUpperArm": {
+          "src": "assets/rigs/starter-v1/starter-leather-chest/upper-arm.png",
+          "anchor": [
+            0.5,
+            0.22
+          ],
+          "scale": 0.02,
+          "mode": "overlay"
+        },
+        "hips": {
+          "src": "assets/rigs/starter-v1/starter-traveler-leggings/hips.png",
+          "anchor": [
+            0.5,
+            0.22
+          ],
+          "scale": 0.035,
+          "mode": "overlay"
+        },
+        "rearThigh": {
+          "src": "assets/rigs/starter-v1/starter-traveler-leggings/thigh-v2.png",
+          "anchor": [
+            0.5,
+            0.2
+          ],
+          "scale": 0.02,
+          "mode": "overlay"
+        },
+        "frontThigh": {
+          "src": "assets/rigs/starter-v1/starter-traveler-leggings/thigh-v2.png",
+          "anchor": [
+            0.5,
+            0.2
+          ],
+          "scale": 0.02,
+          "mode": "overlay"
+        },
+        "rearFoot": {
+          "src": "assets/rigs/starter-v1/starter-traveler-boots/foot.png",
+          "anchor": [
+            0.35,
+            0.27
+          ],
+          "scale": 0.018,
+          "y": -5,
+          "mode": "replace"
+        },
+        "frontFoot": {
+          "src": "assets/rigs/starter-v1/starter-traveler-boots/foot.png",
+          "anchor": [
+            0.35,
+            0.27
+          ],
+          "scale": 0.018,
+          "y": -5,
+          "mode": "replace"
+        }
+      }
+    }
   }
 }

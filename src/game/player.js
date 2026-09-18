@@ -7,7 +7,7 @@ import { XP_PER_LEVEL, GEMS_PER_LEVEL } from "./constants.js";
 
 // Bump when the saved shape changes in a way normalizePlayer() can't fill in
 // by itself, and add the migration step there.
-export const PLAYER_SCHEMA_VERSION = 1;
+export const PLAYER_SCHEMA_VERSION = 2;
 
 export function createDefaultPlayer({ name = "Adventurer" } = {}) {
   return {
@@ -34,9 +34,7 @@ export function createDefaultPlayer({ name = "Adventurer" } = {}) {
     equipment: {
       helmet: { id: "starter-scout-helmet", name: "Scout Helmet" },
       cape: { id: "starter-traveler-cape", name: "Traveler Cape" },
-      chestplate: { id: "starter-leather-chest", name: "Leather Tunic" },
-      leggings: { id: "starter-traveler-leggings", name: "Traveler Leggings" },
-      boots: { id: "starter-traveler-boots", name: "Traveler Boots" },
+      armor: { id: "starter-traveler-armor", name: "Traveler Armor", slot: "armor" },
       weapon: { id: "oak-practice-sword", name: "Oak Practice Sword" },
       book: { id: "beginner-spellbook", name: "Beginner Spellbook" },
     },
@@ -67,6 +65,23 @@ export function normalizePlayer(saved, { name } = {}) {
   // merging would keep the old explicit nulls and never show the kit.
   // Anyone already granted the kit keeps whatever they've since equipped.
   player.equipment = source.starterKitGranted ? { ...defaults.equipment, ...(source.equipment ?? {}) } : defaults.equipment;
+  const legacySlots = ["chestplate", "leggings", "boots"];
+  if (source.starterKitGranted && !Object.hasOwn(source.equipment ?? {}, "armor")
+    && legacySlots.some((slot) => Object.hasOwn(source.equipment ?? {}, slot))) {
+    const components = Object.fromEntries(legacySlots.filter((slot) => source.equipment[slot])
+      .map((slot) => [slot, source.equipment[slot]]));
+    const stats = {};
+    for (const item of Object.values(components)) for (const [key, value] of Object.entries(item.stats ?? {})) {
+      stats[key] = (stats[key] ?? 0) + value;
+    }
+    player.equipment.armor = Object.keys(components).length ? {
+      id: "legacy-armor-set", name: "Combined Armor", kind: "equipable", slot: "armor", stats,
+      legacyComponents: components,
+    } : null;
+  }
+  for (const slot of legacySlots) delete player.equipment[slot];
+  player.inventory.equipables = player.inventory.equipables.map((item) => legacySlots.includes(item.slot)
+    ? { ...item, slot: "armor", legacySlot: item.slot } : item);
   player.starterKitGranted = true;
   if (name) player.name = name;
   player.schemaVersion = PLAYER_SCHEMA_VERSION;

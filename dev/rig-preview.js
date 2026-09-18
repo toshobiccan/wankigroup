@@ -5,11 +5,13 @@ import { exportArtTemplate, localPointDelta, translateBone } from "../src/sprite
 import { RigActor } from "../src/sprites/rig-actor.js";
 
 const stage = document.getElementById("stage");
-const [rig, idle, run1, run, rigArt, referenceTexture, axleLabels] = await Promise.all([
+const [rig, idle, run1, run, run3, slash, rigArt, referenceTexture, axleLabels] = await Promise.all([
   fetch("../data/rigs/humanoid-aqw-bind-preview.json").then((response) => response.json()),
   fetch("../data/animations/humanoid/idle.json").then((response) => response.json()),
   fetch("../data/animations/humanoid/run1.json").then((response) => response.json()),
   fetch("../data/animations/humanoid/run.json").then((response) => response.json()),
+  fetch("../data/animations/humanoid/run3.json").then((response) => response.json()),
+  fetch("../data/animations/humanoid/slash.json").then((response) => response.json()),
   loadRigArt("../data/rigs/humanoid-art-mannequin.json"),
   PIXI.Assets.load("../assets/rigs/mannequin/mannequin-reference.png"),
   fetch("../data/rigs/mannequin-axle-labels.json").then((response) => response.json()),
@@ -104,7 +106,7 @@ function hitTestAxle(globalPoint) {
 
 function buildActor() {
   actor?.destroy({ children: true });
-  actor = new RigActor({ rig, clips: { idle, run1, run }, art: calibratedArt, textures: rigArt.textures });
+  actor = new RigActor({ rig, clips: { idle, run1, run, run3, slash }, art: calibratedArt, textures: rigArt.textures });
   actor.setDisplayHeight(190);
   actor.applyAppearance({ equipment: previewEquipment });
 
@@ -257,12 +259,21 @@ document.getElementById("export-axle-names").addEventListener("click", () => {
 app.ticker.add((ticker) => {
   if (!dragPoint) actor.update(ticker.deltaMS);
   else actor.syncRenderWrappers();
+  document.querySelectorAll("[data-clip]").forEach((button) => button.classList.toggle("selected", button.dataset.clip === actor.currentClip));
   syncAxleOverlay(ticker.deltaMS);
 });
 
 for (const button of document.querySelectorAll("[data-clip]")) {
   button.addEventListener("click", () => {
-    actor.playOnce(button.dataset.clip);
+    const target = button.dataset.clip;
+    if (target === "slash") {
+      if (actor.currentClip !== "slash") actor.playOnce("slash", { transitionMs: 100, returnTransitionMs: 160 });
+      return;
+    }
+    const locomotion = ["idle", "run3"];
+    const transitionMs = actor.currentClip === "slash" ? 160 : locomotion.includes(actor.currentClip) && locomotion.includes(target)
+      ? (target === "idle" ? 240 : 180) : 0;
+    actor.play(target, { transitionMs });
     document.querySelectorAll("[data-clip]").forEach((entry) => entry.classList.toggle("selected", entry === button));
   });
 }
@@ -341,6 +352,7 @@ function hitTestBody(globalPoint) {
     const sprite = actor.bodyVisuals.get(target.boneId);
     if (!sprite) continue;
     const local = sprite.toLocal(globalPoint);
+    if (sprite.mask && !sprite.mask.containsPoint(local)) continue;
     const sheet = bodyAlphaData.get(target.boneId);
     const texX = local.x + sprite.anchor.x * sheet.width;
     const texY = local.y + sprite.anchor.y * sheet.height;

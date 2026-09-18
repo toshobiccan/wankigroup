@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { sampleClip } from "../src/sprites/animation-player.js";
 
 const readJson = (path) => JSON.parse(readFileSync(new URL(path, import.meta.url), "utf8"));
 const rig = readJson("../data/rigs/humanoid.json");
@@ -66,6 +67,34 @@ function artJointPosition(boneId, jointId, poses) {
 }
 
 describe("canonical rig joint identities", () => {
+  it.each(["run", "run3"])("keeps limb lengths and the rear item line rigid throughout %s", (clipId) => {
+    const run = readJson(`../data/animations/humanoid/${clipId}.json`);
+    expect(run.interpolation).toBe("smooth");
+    for (const sourceRig of [rig, previewRig]) {
+      for (let time = 0; time <= run.durationMs; time += 1) {
+        const sampled = { bones: sourceRig.bones.map((bone) => ({
+          ...bone, ...sampleClip(run, bone.id, time, bone),
+        })) };
+        const poses = worldPoses(sampled);
+        for (const bone of sourceRig.bones.filter((bone) => bone.parent)) {
+          const pose = poses.get(bone.id);
+          const parent = poses.get(bone.parent);
+          expect(Math.hypot(pose.x - parent.x, pose.y - parent.y))
+            .toBeCloseTo(Math.hypot(bone.x ?? 0, bone.y ?? 0), 6);
+        }
+        const elbow = poses.get("rearForearm");
+        const wrist = poses.get("rearHand");
+        const item = poses.get("offhandMount");
+        const armX = wrist.x - elbow.x;
+        const armY = wrist.y - elbow.y;
+        const handX = item.x - wrist.x;
+        const handY = item.y - wrist.y;
+        expect(armX * handY - armY * handX).toBeCloseTo(0, 5);
+        expect(armX * handX + armY * handY).toBeGreaterThan(0);
+      }
+    }
+  });
+
   it("uses the visible red-skeleton names and topology in both runtime rigs", () => {
     for (const sourceRig of [rig, previewRig]) {
       const bones = byId(sourceRig);

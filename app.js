@@ -306,6 +306,8 @@ let inventoryView = "character"; // "character" | "stats" -- what the left panel
 let inventoryTab = "equipables"; // which of the three lists the right panel currently shows
 const expandedStats = new Set(); // stat keys whose grey math line is currently shown
 const CHARACTER_GEAR_SLOTS = [
+  { key: "helmet", label: "Helmet" },
+  { key: "armor", label: "Armor" },
   { key: "cape", label: "Cape" },
   { key: "weapon", label: "Weapon" },
   { key: "book", label: "Book" },
@@ -380,7 +382,10 @@ function renderItemRow(item, quantity) {
       el("div", { class: "inventory-item-name" }, item.name),
       item.description ? el("div", { class: "inventory-item-desc" }, item.description) : null
     ),
-    quantity != null ? el("div", { class: "inventory-item-qty" }, `×${quantity}`) : null
+    quantity != null ? el("div", { class: "inventory-item-qty" }, `×${quantity}`) : null,
+    item.kind === "equipable" && session?.mode === "local" ? el("button", {
+      onclick: () => session.equipItem(item.id),
+    }, player.equipment[item.slot]?.id === item.id ? "Equipped" : "Equip") : null
   );
 }
 
@@ -697,6 +702,7 @@ function wireSessionEvents() {
   session.on("player", (updated) => {
     player = updated;
     worldScene?.setOwnProfile({ name: updated.name });
+    worldScene?.setPlayerAppearance(updated.equipment);
     renderHeader();
     const view = document.querySelector(".view.is-active")?.dataset.view;
     if (view === "quests") renderers.quests();

@@ -9,7 +9,7 @@ import { fileURLToPath } from "node:url";
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 const PUBLIC_FILES = new Set(["index.html", "app.js", "db.js", "anki-import.js", "style.css", "flash-theme.css"]);
-const PUBLIC_DIRS = ["assets/", "src/", "vendor/", "data/zones/", "data/rigs/", "data/animations/", "dev/"];
+const PUBLIC_DIRS = ["assets/", "src/", "vendor/", "data/zones/", "data/rigs/", "data/animations/", "data/equipment/", "dev/"];
 
 const TYPES = {
   ".html": "text/html; charset=utf-8",

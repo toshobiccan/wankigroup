@@ -3,7 +3,7 @@
 // drops, crafting, and equip logic can all agree on one format from the
 // start. Pure data/validation only -- no PIXI, no DOM, nothing stateful.
 
-export const EQUIP_SLOTS = ["helmet", "cape", "chestplate", "leggings", "boots", "weapon", "book"];
+export const EQUIP_SLOTS = ["helmet", "cape", "armor", "weapon", "book"];
 
 // Same stat names used throughout src/world/combat.js -- an item's stats
 // bonus can only use these keys, so a typo in content data fails loudly

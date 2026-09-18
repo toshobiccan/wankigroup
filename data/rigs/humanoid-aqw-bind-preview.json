@@ -1,36 +1,297 @@
 {
   "id": "humanoid-aqw-bind-preview",
-  "bounds": { "height": 112, "groundY": 63 },
+  "bounds": {
+    "height": 112,
+    "groundY": 63
+  },
   "bones": [
-    { "id": "hips", "parent": null, "x": 0, "y": 0, "rotation": 0, "zIndex": 83 },
-    { "id": "cape", "parent": "hips", "x": 1, "y": -24, "rotation": 0, "zIndex": 10 },
-    { "id": "torso", "parent": "hips", "x": 0.9, "y": -25.3, "rotation": 0.033, "zIndex": 50 },
-    { "id": "rearUpperArm", "parent": "torso", "x": 7.682640394, "y": 1.679155514, "rotation": -0.0025, "zIndex": 30 },
-    { "id": "rearForearm", "parent": "rearUpperArm", "x": 3.903008, "y": 16.630208, "rotation": -0.0353, "zIndex": 30 },
-    { "id": "rearHand", "parent": "rearForearm", "x": 6.872688, "y": 14.763552, "rotation": 0.0048, "zIndex": 30 },
-    { "id": "offhandMount", "parent": "rearHand", "x": 2.958663683, "y": 6.276725703, "rotation": 0, "zIndex": 20 },
-    { "id": "head", "parent": "torso", "x": -1.2, "y": -2.5, "rotation": -0.033, "zIndex": 70 },
-    { "id": "hair", "parent": "head", "x": 0, "y": -16, "rotation": 0, "zIndex": 70 },
-    { "id": "eyes", "parent": "head", "x": 3, "y": -11, "rotation": 0, "zIndex": 70 },
-    { "id": "nose", "parent": "head", "x": 7, "y": -7, "rotation": 0, "zIndex": 70 },
-    { "id": "frontUpperArm", "parent": "torso", "x": -13.882153145, "y": 0.380132831, "rotation": -0.1782, "zIndex": 51 },
-    { "id": "frontForearm", "parent": "frontUpperArm", "x": -9.418128, "y": 15.612032, "rotation": 0.0632, "zIndex": 90 },
-    { "id": "frontHand", "parent": "frontForearm", "x": -0.84848, "y": 17.478688, "rotation": 0.082, "zIndex": 136 },
-    { "id": "weaponMount", "parent": "frontHand", "x": 0.629796689, "y": 5.695320425, "rotation": 0, "zIndex": 100 },
-    { "id": "rearThigh", "parent": "hips", "x": 7.054260179, "y": 0.746756765, "rotation": 0.0236, "zIndex": 40 },
-    { "id": "rearShin", "parent": "rearThigh", "x": 5.599968, "y": 23.418048, "rotation": -0.2838, "zIndex": 1 },
-    { "id": "rearFoot", "parent": "rearShin", "x": -8.569648, "y": 25.793792, "rotation": 0.2602, "zIndex": 86 },
-    { "id": "frontThigh", "parent": "hips", "x": -7.910620382, "y": 0.111624955, "rotation": -0.0842, "zIndex": 80 },
-    { "id": "frontShin", "parent": "frontThigh", "x": -3.733312, "y": 23.418048, "rotation": 0.3662, "zIndex": 40 },
-    { "id": "frontFoot", "parent": "frontShin", "x": -1.527264, "y": 25.115008, "rotation": -0.282, "zIndex": 80 }
+    {
+      "id": "hips",
+      "parent": null,
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "zIndex": 83
+    },
+    {
+      "id": "cape",
+      "parent": "hips",
+      "x": 1,
+      "y": -24,
+      "rotation": 0,
+      "zIndex": 10
+    },
+    {
+      "id": "torso",
+      "parent": "hips",
+      "x": 0.9,
+      "y": -25.3,
+      "rotation": 0.033,
+      "zIndex": 50
+    },
+    {
+      "id": "rearUpperArm",
+      "parent": "torso",
+      "x": 7.682640394,
+      "y": 1.679155514,
+      "rotation": -0.0025,
+      "zIndex": 30
+    },
+    {
+      "id": "rearForearm",
+      "parent": "rearUpperArm",
+      "x": 3.903008,
+      "y": 16.630208,
+      "rotation": -0.0353,
+      "zIndex": 30
+    },
+    {
+      "id": "rearHand",
+      "parent": "rearForearm",
+      "x": 6.872688,
+      "y": 14.763552,
+      "rotation": -0.245694585,
+      "zIndex": 30
+    },
+    {
+      "id": "offhandMount",
+      "parent": "rearHand",
+      "x": 1.310429147,
+      "y": 6.814231563,
+      "rotation": 0.250494585,
+      "zIndex": 20
+    },
+    {
+      "id": "head",
+      "parent": "torso",
+      "x": -1.2,
+      "y": -2.5,
+      "rotation": -0.033,
+      "zIndex": 70
+    },
+    {
+      "id": "neck",
+      "parent": "head",
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "zIndex": 49
+    },
+    {
+      "id": "hair",
+      "parent": "head",
+      "x": 0,
+      "y": -16,
+      "rotation": 0,
+      "zIndex": 70
+    },
+    {
+      "id": "eyes",
+      "parent": "head",
+      "x": 3,
+      "y": -11,
+      "rotation": 0,
+      "zIndex": 70
+    },
+    {
+      "id": "nose",
+      "parent": "head",
+      "x": 7,
+      "y": -7,
+      "rotation": 0,
+      "zIndex": 70
+    },
+    {
+      "id": "frontUpperArm",
+      "parent": "torso",
+      "x": -13.882153145,
+      "y": 0.380132831,
+      "rotation": -0.1782,
+      "zIndex": 51
+    },
+    {
+      "id": "frontForearm",
+      "parent": "frontUpperArm",
+      "x": -9.418128,
+      "y": 15.612032,
+      "rotation": 0.0632,
+      "zIndex": 90
+    },
+    {
+      "id": "frontHand",
+      "parent": "frontForearm",
+      "x": -0.84848,
+      "y": 17.478688,
+      "rotation": 0.082,
+      "zIndex": 136
+    },
+    {
+      "id": "weaponMount",
+      "parent": "frontHand",
+      "x": 0.629796689,
+      "y": 5.695320425,
+      "rotation": 0,
+      "zIndex": 100
+    },
+    {
+      "id": "rearThigh",
+      "parent": "hips",
+      "x": 7.054260179,
+      "y": 0.746756765,
+      "rotation": 0.0236,
+      "zIndex": 40
+    },
+    {
+      "id": "rearShin",
+      "parent": "rearThigh",
+      "x": 5.599968,
+      "y": 23.418048,
+      "rotation": -0.2838,
+      "zIndex": 1
+    },
+    {
+      "id": "rearFoot",
+      "parent": "rearShin",
+      "x": -8.569648,
+      "y": 25.793792,
+      "rotation": 0.2602,
+      "zIndex": 86
+    },
+    {
+      "id": "frontThigh",
+      "parent": "hips",
+      "x": -7.910620382,
+      "y": 0.111624955,
+      "rotation": -0.0842,
+      "zIndex": 80
+    },
+    {
+      "id": "frontShin",
+      "parent": "frontThigh",
+      "x": -3.733312,
+      "y": 23.418048,
+      "rotation": 0.3662,
+      "zIndex": 40
+    },
+    {
+      "id": "frontFoot",
+      "parent": "frontShin",
+      "x": -1.527264,
+      "y": 25.115008,
+      "rotation": -0.282,
+      "zIndex": 80
+    }
   ],
   "slots": {
-    "helmet": { "attachments": [{ "bone": "head", "mode": "overlay", "layer": "armor" }] },
-    "cape": { "attachments": [{ "bone": "cape", "mode": "replace", "layer": "rear" }] },
-    "chestplate": { "attachments": [{ "bone": "torso", "mode": "replace", "layer": "armor" }, { "bone": "rearUpperArm", "mode": "overlay", "layer": "armor" }, { "bone": "frontUpperArm", "mode": "overlay", "layer": "armor" }] },
-    "leggings": { "attachments": [{ "bone": "hips", "mode": "overlay", "layer": "armor" }, { "bone": "rearThigh", "mode": "overlay", "layer": "armor" }, { "bone": "frontThigh", "mode": "overlay", "layer": "armor" }] },
-    "boots": { "attachments": [{ "bone": "rearFoot", "mode": "replace", "layer": "armor" }, { "bone": "frontFoot", "mode": "replace", "layer": "front" }] },
-    "weapon": { "attachments": [{ "bone": "weaponMount", "mode": "overlay", "layer": "front" }] },
-    "book": { "attachments": [{ "bone": "offhandMount", "mode": "overlay", "layer": "rear" }] }
+    "helmet": {
+      "attachments": [
+        {
+          "bone": "head",
+          "mode": "overlay",
+          "layer": "armor"
+        }
+      ]
+    },
+    "cape": {
+      "attachments": [
+        {
+          "bone": "cape",
+          "mode": "replace",
+          "layer": "rear"
+        }
+      ]
+    },
+    "weapon": {
+      "attachments": [
+        {
+          "bone": "weaponMount",
+          "mode": "overlay",
+          "layer": "front"
+        }
+      ]
+    },
+    "book": {
+      "attachments": [
+        {
+          "bone": "offhandMount",
+          "mode": "overlay",
+          "layer": "rear"
+        }
+      ]
+    },
+    "armor": {
+      "attachments": [
+        {
+          "bone": "torso",
+          "mode": "overlay",
+          "layer": "armor"
+        },
+        {
+          "bone": "hips",
+          "mode": "overlay",
+          "layer": "armor"
+        },
+        {
+          "bone": "rearUpperArm",
+          "mode": "overlay",
+          "layer": "armor"
+        },
+        {
+          "bone": "rearForearm",
+          "mode": "overlay",
+          "layer": "armor"
+        },
+        {
+          "bone": "rearHand",
+          "mode": "overlay",
+          "layer": "armor"
+        },
+        {
+          "bone": "frontUpperArm",
+          "mode": "overlay",
+          "layer": "armor"
+        },
+        {
+          "bone": "frontForearm",
+          "mode": "overlay",
+          "layer": "armor"
+        },
+        {
+          "bone": "frontHand",
+          "mode": "overlay",
+          "layer": "armor"
+        },
+        {
+          "bone": "rearThigh",
+          "mode": "overlay",
+          "layer": "armor"
+        },
+        {
+          "bone": "rearShin",
+          "mode": "overlay",
+          "layer": "armor"
+        },
+        {
+          "bone": "rearFoot",
+          "mode": "overlay",
+          "layer": "armor"
+        },
+        {
+          "bone": "frontThigh",
+          "mode": "overlay",
+          "layer": "armor"
+        },
+        {
+          "bone": "frontShin",
+          "mode": "overlay",
+          "layer": "armor"
+        },
+        {
+          "bone": "frontFoot",
+          "mode": "overlay",
+          "layer": "armor"
+        }
+      ]
+    }
   }
 }

@@ -22,6 +22,15 @@ async function start(storage = memoryStorage()) {
 }
 
 describe("LocalSession", () => {
+  it("keeps displaced starter equipment available to equip again", async () => {
+    const session = await start();
+    const previous = session.player.equipment.armor;
+    session.player.inventory.equipables.push({ id: "new-armor", name: "New Armor", kind: "equipable", slot: "armor", stats: {} });
+    session.equipItem("new-armor");
+    expect(session.player.inventory.equipables.some(item => item.id === previous.id)).toBe(true);
+    session.equipItem(previous.id);
+    expect(session.player.equipment.armor.id).toBe(previous.id);
+  });
   it("loads an old save and fills in new fields", async () => {
     const storage = memoryStorage({ "cardslayer-player": JSON.stringify({ name: "Old", coins: 42, activeDeckId: "deck-1" }) });
     const session = await start(storage);

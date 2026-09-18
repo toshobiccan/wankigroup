@@ -2,6 +2,7 @@
   "id": "run",
   "durationMs": 672,
   "loop": true,
+  "interpolation": "smooth",
   "tracks": {
     "hips": [
       { "time": 0, "y": -0.5, "rotation": 0.07 },
