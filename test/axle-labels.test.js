@@ -7,7 +7,7 @@ const labels = JSON.parse(readFileSync(new URL("../data/rigs/mannequin-axle-labe
 
 describe("pointName", () => {
   it("returns the labeled name for a bone", () => {
-    expect(pointName({ points: { rearShin: "Front Knee" } }, "rearShin")).toBe("Front Knee");
+    expect(pointName({ points: { rearShin: "Rear Knee" } }, "rearShin")).toBe("Rear Knee");
   });
 
   it("falls back to the bone id when no label is set", () => {
@@ -22,8 +22,8 @@ describe("lineName", () => {
   });
 
   it("auto-generates '<from> -> <to>' from the two point names otherwise", () => {
-    const withoutOverride = { points: { rearThigh: "Rear Hip", rearShin: "Front Knee" }, lines: {} };
-    expect(lineName(withoutOverride, "rearShin", "rearThigh")).toBe("Rear Hip → Front Knee");
+    const withoutOverride = { points: { rearThigh: "Rear Hip", rearShin: "Rear Knee" }, lines: {} };
+    expect(lineName(withoutOverride, "rearShin", "rearThigh")).toBe("Rear Hip → Rear Knee");
   });
 });
 

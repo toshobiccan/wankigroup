@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { adjustArtTarget, exportArtTemplate, localPointDelta } from "../src/sprites/rig-calibration.js";
+import { adjustArtTarget, exportArtTemplate, localPointDelta, translateBone } from "../src/sprites/rig-calibration.js";
 
 const art = {
   body: { head: { src: "head.png", x: 2, y: -3 } },
@@ -41,5 +41,20 @@ describe("localPointDelta", () => {
 describe("exportArtTemplate", () => {
   it("exports formatted JSON that can be saved as the placement template", () => {
     expect(exportArtTemplate(art)).toBe(JSON.stringify(art, null, 2));
+  });
+});
+
+describe("translateBone", () => {
+  it("returns a translated copy without changing the authored bone", () => {
+    const bone = { id: "rearUpperArm", parent: "torso", x: 7, y: 2, rotation: 0.1 };
+
+    const translated = translateBone(bone, { x: -3, y: 4 });
+
+    expect(translated).toEqual({ id: "rearUpperArm", parent: "torso", x: 4, y: 6, rotation: 0.1 });
+    expect(bone).toMatchObject({ x: 7, y: 2 });
+  });
+
+  it("rejects a non-finite drag delta", () => {
+    expect(() => translateBone({ id: "arm" }, { x: Number.NaN, y: 0 })).toThrow(/finite/i);
   });
 });

@@ -20,3 +20,16 @@ export function exportArtTemplate(art) {
 export function localPointDelta(previous, next) {
   return { x: next.x - previous.x, y: next.y - previous.y };
 }
+
+export function translateBone(bone, delta) {
+  const x = delta?.x ?? 0;
+  const y = delta?.y ?? 0;
+  if (!Number.isFinite(x) || !Number.isFinite(y)) {
+    throw new Error("Bone translation needs finite coordinates");
+  }
+  return {
+    ...bone,
+    x: (bone.x ?? 0) + x,
+    y: (bone.y ?? 0) + y,
+  };
+}

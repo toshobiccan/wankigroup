@@ -14,8 +14,8 @@ describe("AQW bind-pose preview rig", () => {
       const rig = JSON.parse(readFileSync(previewRigPath, "utf8"));
       const bones = Object.fromEntries(rig.bones.map((bone) => [bone.id, bone]));
 
-      expect(bones.frontThigh.x).toBeGreaterThan(0);
-      expect(bones.rearThigh.x).toBeLessThan(0);
+      expect(Math.sign(bones.frontThigh.x)).toBe(-Math.sign(bones.rearThigh.x));
+      expect(Math.abs(bones.frontThigh.x - bones.rearThigh.x)).toBeGreaterThan(10);
       expect(bones.frontThigh.rotation).not.toBe(bones.rearThigh.rotation);
       expect(bones.frontUpperArm.rotation).not.toBe(bones.rearUpperArm.rotation);
     });

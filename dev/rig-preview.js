@@ -1,18 +1,16 @@
 import * as PIXI from "../vendor/pixi.min.mjs";
 import { lineName as sharedLineName, pointName as sharedPointName } from "../src/sprites/axle-labels.js";
 import { loadRigArt } from "../src/sprites/load-rig-art.js";
-import { adjustArtTarget, exportArtTemplate, localPointDelta } from "../src/sprites/rig-calibration.js";
+import { exportArtTemplate, localPointDelta, translateBone } from "../src/sprites/rig-calibration.js";
 import { RigActor } from "../src/sprites/rig-actor.js";
 
 const stage = document.getElementById("stage");
-const [rig, idle, run, attack, rigArt, referenceTexture, axles, axleLabels] = await Promise.all([
+const [rig, idle, run, rigArt, referenceTexture, axleLabels] = await Promise.all([
   fetch("../data/rigs/humanoid-aqw-bind-preview.json").then((response) => response.json()),
   fetch("../data/animations/humanoid/idle.json").then((response) => response.json()),
   fetch("../data/animations/humanoid/run.json").then((response) => response.json()),
-  fetch("../data/animations/humanoid/attack.json").then((response) => response.json()),
   loadRigArt("../data/rigs/humanoid-art-mannequin.json"),
   PIXI.Assets.load("../assets/rigs/mannequin/mannequin-reference.png"),
-  fetch("../data/rigs/mannequin-axles.json").then((response) => response.json()),
   fetch("../data/rigs/mannequin-axle-labels.json").then((response) => response.json()),
 ]);
 
@@ -29,8 +27,6 @@ stage.appendChild(app.canvas);
 const ground = new PIXI.Graphics().rect(-1000, 0, 2000, 5).fill(0x405827);
 let calibratedArt = structuredClone(rigArt.art);
 let actor;
-let dragPoint = null;
-let dragPointerId = null;
 // Keep the bind pose readable. Individual gear mounts remain available through the toggles.
 const previewEquipment = Object.fromEntries(Object.keys(rig.slots).map((slotId) => [slotId, null]));
 
@@ -38,42 +34,11 @@ const referenceVisible = document.getElementById("reference-visible");
 const referenceOpacity = document.getElementById("reference-opacity");
 const axlesVisible = document.getElementById("axles-visible");
 
-// Joint-axle overlay -- CONFIRMED CORRECT, do not change the math or the
-// underlying data (data/rigs/mannequin-axles.json, data/rigs/humanoid-art-
-// mannequin.json, data/rigs/humanoid*.json are all frozen). This is now the
-// standard visual reference for where every joint actually sits.
-//
-// Each dot is the ACTUAL rendered position of that limb's joint marker (the
-// small grey ring drawn in the mannequin art), not the bone's own kinematic
-// origin -- those two only coincide when a piece's x/y offset is zero, and
-// the frozen calibration has nonzero offsets. We forward-transform the
-// joint's known texture-pixel position (mannequin-axles.json) through the
-// same anchor/scale/x/y/rotation math RigActor uses for the sprite itself,
-// landing the dot exactly where that ring renders on screen. hips/torso/
-// head have no recorded joint marker (their offset is zero, so their bone
-// origin already is correct) and fall back to the bone's own wrapper
-// position.
-//
-// Bone-to-bone lines are a diagnostic overlay, not a literal parent-child
-// skeleton drawing: which axle each line points to was set explicitly,
-// confirmed correct joint by joint. Face decorations (hair/eyes/nose, and
-// mouth/ears once they exist) are rigidly glued to the head and never
-// rotate on their own -- they have no real "axle" of their own to connect,
-// so they're excluded from the line drawing rather than drawing a
-// meaningless segment.
+// The red overlay is the authoritative skeleton. PNG cutouts are anchored
+// to these bone origins and follow them; image pixels never define motion.
+// Face decorations are rigidly attached to the head and have no independent
+// axle line.
 const NO_AXLE_LINE = new Set(["hair", "eyes", "nose"]);
-// CONFIRMED layout -- do not "fix" this back to bone.parent. The knee draws
-// from the opposite hip and the ankle from the opposite knee (both legs);
-// the item-mount point distal of each hand draws from the OTHER hand. The
-// shoulder-elbow-hand chain itself is same-side (default, no entry needed).
-const LINE_FROM_OVERRIDE = {
-  rearFoot: "frontShin",
-  frontFoot: "rearShin",
-  rearShin: "frontThigh",
-  frontShin: "rearThigh",
-  offhandMount: "frontHand",
-  weaponMount: "rearHand",
-};
 let axleOverlay;
 let axleDots;
 let boneLines;
@@ -82,25 +47,12 @@ let glowLine;
 let nameLabel;
 let selectedAxle = null;
 let glowElapsedMs = 0;
+let dragPoint = null;
+let dragPointerId = null;
+const originalBonePositions = Object.fromEntries(rig.bones.map((bone) => [bone.id, { x: bone.x ?? 0, y: bone.y ?? 0 }]));
 
 function axleWorldPosition(boneId) {
-  const jointId = axles.boneProximalJoint[boneId];
-  const entry = actor.bones.get(boneId);
-  if (!jointId) return entry.wrapper.position;
-  const [px, py] = axles.joints[jointId];
-  const [texW, texH] = axles.canvasSize;
-  const config = calibratedArt.body[boneId];
-  const [ax, ay] = config.anchor;
-  const scale = config.scale ?? 1;
-  const rotation = config.rotation ?? 0;
-  const unscaled = { x: px - ax * texW, y: py - ay * texH };
-  const scaled = { x: unscaled.x * scale, y: unscaled.y * scale };
-  const cos = Math.cos(rotation), sin = Math.sin(rotation);
-  const local = {
-    x: scaled.x * cos - scaled.y * sin + (config.x ?? 0),
-    y: scaled.x * sin + scaled.y * cos + (config.y ?? 0),
-  };
-  return axleOverlay.toLocal(new PIXI.Point(local.x, local.y), entry.wrapper);
+  return actor.bones.get(boneId).wrapper.position;
 }
 
 // Display names for every axle point and line come from the shared
@@ -113,7 +65,7 @@ function pointName(boneId) {
   return sharedPointName(axleLabels, boneId);
 }
 function lineFromId(boneId) {
-  return LINE_FROM_OVERRIDE[boneId] ?? rig.bones.find((bone) => bone.id === boneId).parent;
+  return rig.bones.find((bone) => bone.id === boneId).parent;
 }
 function lineName(boneId) {
   return sharedLineName(axleLabels, boneId, lineFromId(boneId));
@@ -151,7 +103,7 @@ function hitTestAxle(globalPoint) {
 
 function buildActor() {
   actor?.destroy({ children: true });
-  actor = new RigActor({ rig, clips: { idle, run, attack }, art: calibratedArt, textures: rigArt.textures });
+  actor = new RigActor({ rig, clips: { idle, run }, art: calibratedArt, textures: rigArt.textures });
   actor.setDisplayHeight(190);
   actor.applyAppearance({ equipment: previewEquipment });
 
@@ -215,7 +167,7 @@ function syncAxleOverlay(deltaMs) {
   for (const bone of rig.bones) {
     axleDots.get(bone.id).position.copyFrom(positions.get(bone.id));
     if (bone.parent && !NO_AXLE_LINE.has(bone.id)) {
-      const from = positions.get(LINE_FROM_OVERRIDE[bone.id] ?? bone.parent);
+      const from = positions.get(bone.parent);
       const to = positions.get(bone.id);
       boneLines.moveTo(from.x, from.y).lineTo(to.x, to.y);
     }
@@ -279,6 +231,7 @@ document.getElementById("export-axle-names").addEventListener("click", () => {
 
 app.ticker.add((ticker) => {
   if (!dragPoint) actor.update(ticker.deltaMS);
+  else actor.syncRenderWrappers();
   syncAxleOverlay(ticker.deltaMS);
 });
 
@@ -319,8 +272,6 @@ for (const slotId of Object.keys(rig.slots)) {
 const targetPicker = document.getElementById("asset-target");
 const templateOutput = document.getElementById("template-output");
 const activeTarget = document.getElementById("active-target");
-const originalArt = structuredClone(rigArt.art);
-const originalZIndex = Object.fromEntries(rig.bones.map((bone) => [bone.id, bone.zIndex ?? 0]));
 const targets = [
   ...Object.keys(calibratedArt.body).map((boneId) => ({ kind: "body", boneId, label: `Body · ${boneId}` })),
   ...Object.entries(calibratedArt.equipment).flatMap(([slotId, items]) => Object.entries(items).flatMap(([itemId, attachments]) =>
@@ -332,6 +283,8 @@ for (const [index, target] of targets.entries()) {
   option.textContent = target.label;
   targetPicker.appendChild(option);
 }
+const rearUpperArmIndex = targets.findIndex((target) => target.kind === "body" && target.boneId === "rearUpperArm");
+if (rearUpperArmIndex >= 0) targetPicker.value = String(rearUpperArmIndex);
 
 // Alpha maps for click-to-select: every body piece is a full 1145x1374
 // canvas with mostly-transparent padding, so a bounding-box hit test would
@@ -360,18 +313,12 @@ function hitTestBody(globalPoint) {
   const bodyTargets = targets.filter((t) => t.kind === "body" && bodyAlphaData.has(t.boneId));
   bodyTargets.sort((a, b) => (actor.bones.get(b.boneId).bindPose.zIndex ?? 0) - (actor.bones.get(a.boneId).bindPose.zIndex ?? 0));
   for (const target of bodyTargets) {
-    const config = calibratedArt.body[target.boneId];
-    const local = actor.bones.get(target.boneId).container.toLocal(globalPoint);
-    const afterPosition = { x: local.x - (config.x ?? 0), y: local.y - (config.y ?? 0) };
-    const rotation = config.rotation ?? 0;
-    const cos = Math.cos(-rotation), sin = Math.sin(-rotation);
-    const unrotated = { x: afterPosition.x * cos - afterPosition.y * sin, y: afterPosition.x * sin + afterPosition.y * cos };
-    const scale = config.scale ?? 1;
-    const unscaled = { x: unrotated.x / scale, y: unrotated.y / scale };
-    const [anchorX, anchorY] = config.anchor ?? [0.5, 0.5];
+    const sprite = actor.bodyVisuals.get(target.boneId);
+    if (!sprite) continue;
+    const local = sprite.toLocal(globalPoint);
     const sheet = bodyAlphaData.get(target.boneId);
-    const texX = unscaled.x + anchorX * sheet.width;
-    const texY = unscaled.y + anchorY * sheet.height;
+    const texX = local.x + sprite.anchor.x * sheet.width;
+    const texY = local.y + sprite.anchor.y * sheet.height;
     if (alphaAt(target.boneId, texX, texY) > 10) return target;
   }
   return null;
@@ -383,32 +330,14 @@ function selectedTarget() {
 
 function showSelectedTarget() {
   const target = selectedTarget();
-  const zIndex = target.kind === "body" ? actor.bones.get(target.boneId).bindPose.zIndex ?? 0 : null;
+  const bindPose = target.kind === "body" ? actor.bones.get(target.boneId).bindPose : null;
+  const zIndex = bindPose?.zIndex ?? null;
   activeTarget.textContent = zIndex == null
-    ? `Moving: ${target.label}`
-    : `Moving: ${target.label} (layer ${zIndex})`;
+    ? `Selected: ${target.label}`
+    : `Selected: ${target.label} · joint (${bindPose.x.toFixed(1)}, ${bindPose.y.toFixed(1)}) · layer ${zIndex}`;
 }
 targetPicker.addEventListener("change", showSelectedTarget);
 showSelectedTarget();
-
-function moveSelected(delta) {
-  calibratedArt = adjustArtTarget(calibratedArt, selectedTarget(), delta);
-  actor.art = calibratedArt;
-  actor.syncArtPlacement(selectedTarget(), targetConfig(calibratedArt, selectedTarget()));
-}
-
-for (const button of document.querySelectorAll("[data-nudge]")) {
-  button.addEventListener("click", () => {
-    const [x, y] = button.dataset.nudge.split(",").map(Number);
-    moveSelected({ x, y });
-  });
-}
-
-for (const button of document.querySelectorAll("[data-rotate]")) {
-  button.addEventListener("click", () => {
-    moveSelected({ rotation: Number(button.dataset.rotate) });
-  });
-}
 
 document.getElementById("layer-up").addEventListener("click", () => bumpLayer(1));
 document.getElementById("layer-down").addEventListener("click", () => bumpLayer(-1));
@@ -421,24 +350,32 @@ function bumpLayer(delta) {
   showSelectedTarget();
 }
 
-document.getElementById("reset-target").addEventListener("click", () => {
-  const target = selectedTarget();
-  const initial = target.kind === "body"
-    ? originalArt.body[target.boneId]
-    : originalArt.equipment[target.slotId][target.itemId][target.boneId];
-  const current = target.kind === "body"
-    ? calibratedArt.body[target.boneId]
-    : calibratedArt.equipment[target.slotId][target.itemId][target.boneId];
-  current.x = initial.x;
-  current.y = initial.y;
-  current.rotation = initial.rotation;
-  if (current.x == null) delete current.x;
-  if (current.y == null) delete current.y;
-  if (current.rotation == null) delete current.rotation;
-  actor.art = calibratedArt;
-  actor.syncArtPlacement(target, current);
-  if (target.kind === "body") actor.setBoneZIndex(target.boneId, originalZIndex[target.boneId]);
+function setBonePosition(boneId, position) {
+  const entry = actor.bones.get(boneId);
+  entry.bindPose.x = position.x;
+  entry.bindPose.y = position.y;
+  entry.container.position.set(position.x, position.y);
+  actor.syncRenderWrappers();
   showSelectedTarget();
+}
+
+function translateSelectedBone(delta) {
+  const target = selectedTarget();
+  if (target.kind !== "body") return;
+  const entry = actor.bones.get(target.boneId);
+  setBonePosition(target.boneId, translateBone(entry.bindPose, delta));
+}
+
+document.getElementById("reset-bone-position").addEventListener("click", () => {
+  const target = selectedTarget();
+  if (target.kind !== "body") return;
+  setBonePosition(target.boneId, originalBonePositions[target.boneId]);
+});
+
+document.getElementById("export-skeleton-template").addEventListener("click", () => {
+  templateOutput.value = JSON.stringify(actor.rig, null, 2);
+  templateOutput.focus();
+  templateOutput.select();
 });
 
 document.getElementById("export-template").addEventListener("click", () => {
@@ -454,12 +391,6 @@ document.getElementById("export-layers").addEventListener("click", () => {
   templateOutput.select();
 });
 
-function targetConfig(art, target) {
-  return target.kind === "body"
-    ? art.body[target.boneId]
-    : art.equipment[target.slotId][target.itemId][target.boneId];
-}
-
 function eventToGlobalPoint(event) {
   const rect = app.canvas.getBoundingClientRect();
   return new PIXI.Point(
@@ -467,9 +398,14 @@ function eventToGlobalPoint(event) {
     (event.clientY - rect.top) * app.screen.height / rect.height,
   );
 }
-function pointerToBoneLocal(event) {
-  return actor.bones.get(selectedTarget().boneId).container.toLocal(eventToGlobalPoint(event));
+
+function pointerToBoneParent(event, boneId) {
+  const entry = actor.bones.get(boneId);
+  const parentId = entry.bindPose.parent;
+  const parentContainer = parentId ? actor.bones.get(parentId).container : actor.visual;
+  return parentContainer.toLocal(eventToGlobalPoint(event));
 }
+
 stage.addEventListener("pointerdown", (event) => {
   const globalPoint = eventToGlobalPoint(event);
   if (axlesVisible.checked) {
@@ -483,23 +419,26 @@ stage.addEventListener("pointerdown", (event) => {
   if (hit) {
     targetPicker.value = String(targets.indexOf(hit));
     showSelectedTarget();
+    dragPointerId = event.pointerId;
+    dragPoint = pointerToBoneParent(event, hit.boneId);
+    stage.setPointerCapture(event.pointerId);
   }
-  dragPoint = pointerToBoneLocal(event);
-  dragPointerId = event.pointerId;
-  stage.setPointerCapture(event.pointerId);
 });
+
 stage.addEventListener("pointermove", (event) => {
-  if (!dragPoint || event.pointerId !== dragPointerId) return;
-  const point = pointerToBoneLocal(event);
-  const delta = localPointDelta(dragPoint, point);
-  dragPoint = point;
-  moveSelected(delta);
+  if (dragPoint == null || event.pointerId !== dragPointerId) return;
+  const target = selectedTarget();
+  if (target.kind !== "body") return;
+  const nextPoint = pointerToBoneParent(event, target.boneId);
+  translateSelectedBone(localPointDelta(dragPoint, nextPoint));
+  dragPoint = nextPoint;
 });
-function endDrag(event) {
+
+function finishDrag(event) {
   if (event.pointerId !== dragPointerId) return;
   dragPoint = null;
   dragPointerId = null;
+  if (stage.hasPointerCapture(event.pointerId)) stage.releasePointerCapture(event.pointerId);
 }
-stage.addEventListener("pointerup", endDrag);
-stage.addEventListener("pointercancel", endDrag);
-window.addEventListener("pointerup", endDrag);
+stage.addEventListener("pointerup", finishDrag);
+stage.addEventListener("pointercancel", finishDrag);

@@ -15,14 +15,13 @@
       <div class="controls" id="clip-controls">
         <button data-clip="idle" class="selected">Idle</button>
         <button data-clip="run">Run</button>
-        <button data-clip="attack">Attack</button>
         <button id="facing">Face left</button>
       </div>
       <div class="slots" id="slot-controls"></div>
     </section>
-    <section class="panel calibrator" aria-label="Asset calibration">
-      <p class="eyebrow">Calibration editor</p>
-      <p class="calibration-help">Choose a part, then drag directly on the stage (bind pose / Idle only). The offset is recorded in the template below.</p>
+    <section class="panel calibrator" aria-label="Skeleton inspection">
+      <p class="eyebrow">Skeleton inspector</p>
+      <p class="calibration-help">The red points and lines are the authoritative skeleton. Select and drag a body cutout to move its skeleton joint and connected chain; two-joint limb PNGs remain attached to both endpoints.</p>
       <label class="reference-toggle">
         <input type="checkbox" id="reference-visible" checked />
         Show mannequin reference behind the rig
@@ -46,24 +45,13 @@
         <select id="asset-target"></select>
       </label>
       <p id="active-target" class="active-target" aria-live="polite"></p>
-      <div class="controls nudge-controls" aria-label="Fine position controls">
-        <button data-nudge="0,-1" aria-label="Nudge up">↑</button>
-        <button data-nudge="-1,0" aria-label="Nudge left">←</button>
-        <button data-nudge="1,0" aria-label="Nudge right">→</button>
-        <button data-nudge="0,1" aria-label="Nudge down">↓</button>
-      </div>
-      <div class="controls nudge-controls" aria-label="Rotation controls">
-        <button data-rotate="-0.0349" aria-label="Rotate 2 degrees counterclockwise">↺2°</button>
-        <button data-rotate="0.0349" aria-label="Rotate 2 degrees clockwise">↻2°</button>
-        <button data-rotate="-0.7854" aria-label="Rotate 45 degrees counterclockwise">↺45°</button>
-        <button data-rotate="0.7854" aria-label="Rotate 45 degrees clockwise">↻45°</button>
-      </div>
       <div class="controls nudge-controls" aria-label="Layer order controls">
         <button id="layer-up">Layer up</button>
         <button id="layer-down">Layer down</button>
-        <button id="reset-target">Reset selected</button>
+        <button id="reset-bone-position">Reset selected position</button>
       </div>
       <div class="controls nudge-controls" aria-label="Export controls">
+        <button id="export-skeleton-template">Capture skeleton template</button>
         <button id="export-template">Export placement template</button>
         <button id="export-layers">Export layer order</button>
         <button id="export-axle-names">Export axle names</button>

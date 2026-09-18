@@ -67,15 +67,32 @@ function makeBodyShape(id) {
   return graphic;
 }
 
-function makeSprite(config, textures) {
+function placeSprite(sprite, config, segment = null) {
+  const texture = sprite.texture;
+  const anchor = config.pivot
+    ? [config.pivot[0] / texture.orig.width, config.pivot[1] / texture.orig.height]
+    : (config.anchor ?? [0.5, 0.5]);
+  sprite.anchor.set(...anchor);
+  sprite.position.set(config.x ?? 0, config.y ?? 0);
+  if (config.pivot && config.distalPivot && segment) {
+    const imageX = config.distalPivot[0] - config.pivot[0];
+    const imageY = config.distalPivot[1] - config.pivot[1];
+    const imageLength = Math.hypot(imageX, imageY);
+    const segmentLength = Math.hypot(segment.x, segment.y);
+    sprite.scale.set(segmentLength / imageLength);
+    sprite.rotation = Math.atan2(segment.y, segment.x) - Math.atan2(imageY, imageX);
+  } else {
+    sprite.scale.set(config.scale ?? 1);
+    sprite.rotation = config.rotation ?? 0;
+  }
+}
+
+function makeSprite(config, textures, segment = null) {
   if (!config?.src) return null;
   const texture = textures?.get(config.src);
   if (!texture) return null;
   const sprite = new PIXI.Sprite(texture);
-  sprite.anchor.set(...(config.anchor ?? [0.5, 0.5]));
-  sprite.position.set(config.x ?? 0, config.y ?? 0);
-  sprite.scale.set(config.scale ?? 1);
-  sprite.rotation = config.rotation ?? 0;
+  placeSprite(sprite, config, segment);
   return sprite;
 }
 
@@ -171,7 +188,8 @@ export class RigActor extends PIXI.Container {
       Object.values(layers).forEach((layer) => wrapper.addChild(layer));
 
       this.bones.set(bone.id, { container, wrapper, layers, bindPose: bone });
-      const body = makeSprite(this.art?.body?.[bone.id], this.textures) ?? makeBodyShape(bone.id);
+      const segmentChild = this.rig.bones.find((candidate) => candidate.parent === bone.id && this.art?.body?.[candidate.id]);
+      const body = makeSprite(this.art?.body?.[bone.id], this.textures, segmentChild) ?? makeBodyShape(bone.id);
       if (body) {
         layers.base.addChild(body);
         this.bodyVisuals.set(bone.id, body);
@@ -236,8 +254,10 @@ export class RigActor extends PIXI.Container {
   syncArtPlacement(target, config) {
     const visual = this.artVisuals.get(artKey(target));
     if (!visual) return false;
-    visual.position.set(config.x ?? 0, config.y ?? 0);
-    visual.rotation = config.rotation ?? 0;
+    const segmentChild = target.kind === "body" && config.distalPivot
+      ? this.rig.bones.find((candidate) => candidate.parent === target.boneId && this.art?.body?.[candidate.id])
+      : null;
+    placeSprite(visual, config, segmentChild);
     return true;
   }
 

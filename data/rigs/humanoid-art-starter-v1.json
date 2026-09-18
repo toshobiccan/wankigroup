@@ -3,7 +3,7 @@
   "body": {
     "hips": { "src": "assets/rigs/starter-v1/starter-traveler-leggings/hips.png", "anchor": [0.5, 0.22], "scale": 0.035 },
     "torso": { "src": "assets/rigs/starter-v1/body-torso.png", "anchor": [0.5, 0.31], "scale": 0.040 },
-    "head": { "src": "assets/rigs/starter-v1/body-head.png", "anchor": [0.5, 0.77], "scale": 0.030, "y": 21 },
+    "head": { "src": "assets/rigs/starter-v1/body-head.png", "anchor": [0.5, 0.77], "scale": 0.030 },
     "rearUpperArm": { "src": "assets/rigs/starter-v1/body-upper-arm.png", "anchor": [0.48, 0.23], "scale": 0.021 },
     "frontUpperArm": { "src": "assets/rigs/starter-v1/body-upper-arm.png", "anchor": [0.48, 0.23], "scale": 0.021 },
     "rearForearm": { "src": "assets/rigs/starter-v1/body-forearm.png", "anchor": [0.47, 0.22], "scale": 0.019 },
@@ -14,8 +14,8 @@
     "frontThigh": { "src": "assets/rigs/starter-v1/body-thigh.png", "anchor": [0.5, 0.19], "scale": 0.021 },
     "rearShin": { "src": "assets/rigs/starter-v1/body-shin.png", "anchor": [0.5, 0.19], "scale": 0.020 },
     "frontShin": { "src": "assets/rigs/starter-v1/body-shin.png", "anchor": [0.5, 0.19], "scale": 0.020 },
-    "rearFoot": { "src": "assets/rigs/starter-v1/body-foot.png", "anchor": [0.36, 0.26], "scale": 0.019, "y": -5 },
-    "frontFoot": { "src": "assets/rigs/starter-v1/body-foot.png", "anchor": [0.36, 0.26], "scale": 0.019, "y": -5 }
+    "rearFoot": { "src": "assets/rigs/starter-v1/body-foot.png", "anchor": [0.36, 0.26], "scale": 0.019 },
+    "frontFoot": { "src": "assets/rigs/starter-v1/body-foot.png", "anchor": [0.36, 0.26], "scale": 0.019 }
   },
   "equipment": {
     "helmet": { "preview": { "head": { "src": "assets/rigs/starter-v1/starter-scout-helmet/helmet.png", "anchor": [0.5, 0.53], "scale": 0.027, "y": 4 } } },

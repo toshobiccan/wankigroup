@@ -1,17 +1,17 @@
 {
   "id": "mannequin-axle-labels",
-  "note": "Editable DISPLAY NAMES for the joint-axle diagnostic overlay in dev/rig-preview.html. Purely cosmetic labels for humans to read -- safe to rename freely at any time, unlike the frozen position/pixel data in mannequin-axles.json and humanoid-art-mannequin.json, which this file never touches. 'points' is keyed by bone id (one name per axle dot). 'lines' is keyed by the bone id whose own line it is -- every bone with a parent draws exactly one line in the overlay -- and is optional per entry: leaving a bone out of 'lines' means the tool shows an auto-generated '<from> -> <to>' name instead.",
+  "note": "Display names for the canonical red skeleton. Every point key is the same semantic bone id used by the rig hierarchy and animation tracks. Lines follow rig parentage directly.",
   "points": {
     "hips": "Hips",
     "rearThigh": "Rear Hip",
-    "rearShin": "Front Knee",
+    "rearShin": "Rear Knee",
     "rearFoot": "Rear Ankle",
     "cape": "Cape",
     "torso": "Torso",
     "rearUpperArm": "Rear Shoulder",
     "rearForearm": "Rear Elbow",
     "rearHand": "Rear Wrist",
-    "offhandMount": "Front Item Mount",
+    "offhandMount": "Rear Item Mount",
     "head": "Head",
     "hair": "Hair",
     "eyes": "Eyes",
@@ -19,9 +19,9 @@
     "frontUpperArm": "Front Shoulder",
     "frontForearm": "Front Elbow",
     "frontHand": "Front Wrist",
-    "weaponMount": "Rear Item Mount",
+    "weaponMount": "Front Item Mount",
     "frontThigh": "Front Hip",
-    "frontShin": "Rear Knee",
+    "frontShin": "Front Knee",
     "frontFoot": "Front Ankle"
   },
   "lines": {}

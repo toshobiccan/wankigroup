@@ -34,7 +34,6 @@ const PLAYER_RIG_URL = new URL("../../data/rigs/humanoid.json", import.meta.url)
 const PLAYER_CLIP_URLS = {
   idle: new URL("../../data/animations/humanoid/idle.json", import.meta.url).href,
   run: new URL("../../data/animations/humanoid/run.json", import.meta.url).href,
-  attack: new URL("../../data/animations/humanoid/attack.json", import.meta.url).href,
 };
 const PLAYER_ART_URL = new URL("../../data/rigs/humanoid-art-starter-v1.json", import.meta.url).href;
 
@@ -139,14 +138,13 @@ export class WorldScene {
       this._playerTexture = await PIXI.Assets.load(PLAYER_TEXTURE_URL);
 
       try {
-        const [rig, idle, run, attack, rigArt] = await Promise.all([
+        const [rig, idle, run, rigArt] = await Promise.all([
           fetch(PLAYER_RIG_URL).then((response) => response.json()),
           fetch(PLAYER_CLIP_URLS.idle).then((response) => response.json()),
           fetch(PLAYER_CLIP_URLS.run).then((response) => response.json()),
-          fetch(PLAYER_CLIP_URLS.attack).then((response) => response.json()),
           loadRigArt(PLAYER_ART_URL),
         ]);
-        this.player = new RigActor({ rig, clips: { idle, run, attack }, appearance: { equipment: this.playerAppearance }, art: rigArt.art, textures: rigArt.textures });
+        this.player = new RigActor({ rig, clips: { idle, run }, appearance: { equipment: this.playerAppearance }, art: rigArt.art, textures: rigArt.textures });
         this.player.setDisplayHeight(PLAYER_HEIGHT);
         this._isRigPlayer = true;
       } catch (error) {
@@ -890,8 +888,6 @@ export class WorldScene {
     const lungeDir = Math.sign(defenderContainer.position.x - attackerContainer.position.x) || 1;
     const baseX = attackerContainer.position.x;
 
-    if (isPlayerAttacking && this._isRigPlayer) this.player.playOnce("attack");
-
     await this._animate(150, (t) => { attackerContainer.position.x = baseX + lungeDir * 20 * t; });
     await this._animate(150, (t) => { attackerContainer.position.x = baseX + lungeDir * 20 * (1 - t); });
     attackerContainer.position.x = baseX;
@@ -950,10 +946,10 @@ export class WorldScene {
     const dx = this.position.x - previousX;
     if (dx > 0.01) this._facingLeft = false;
     else if (dx < -0.01) this._facingLeft = true;
+    const moving = this.position.x !== this.target.x || this.position.y !== this.target.y;
 
     if (this._isRigPlayer) {
-      const isMoving = Math.abs(dx) > 0.01;
-      if (!this.player.isPlayingOnce) this.player.play(isMoving ? "run" : "idle");
+      this.player.play(moving ? "run" : "idle");
       this.player.faceLeft(this._facingLeft);
       this.player.update(ticker.deltaMS);
     } else {
@@ -962,7 +958,6 @@ export class WorldScene {
     this.player.position.set(this.position.x, this.position.y);
     this._syncOwnOverlays();
 
-    const moving = this.position.x !== this.target.x || this.position.y !== this.target.y;
     if (this._wasMoving && !moving) this._emitMove(true); // arrived: tell others exactly where we stopped
     this._wasMoving = moving;
 

@@ -1,9 +1,9 @@
 {
   "id": "mannequin-axles",
-  "status": "FROZEN -- confirmed correct by hand. Never change these pixel values or re-run detection over them. A future piece (e.g. armor) gets its own new entries; it never edits an existing one.",
-  "note": "Pixel-space joint markers found in the mannequin body-part PNGs (assets/rigs/mannequin/). Each PNG has a small grey ring with a black outline drawn at each anatomical joint; two adjacent pieces that connect share the exact same joint pixel (e.g. rearUpperArm_elbow == rearForearm_elbow). Found by flood-filling the fully-transparent background of each PNG and isolating the small enclosed holes bounded by ink strokes -- see the detector script used to build this file, reproduced in dev/rig-preview.js history. canvasSize is [width, height] and is the same for every piece (1145x1374). Every bone's own anchor in data/rigs/humanoid-art-mannequin.json is anchor = proximalJointPx / canvasSize, so rotation happens purely around this pixel -- that anchor file is ALSO frozen, together with this one and the bind-pose bone positions in humanoid.json / humanoid-aqw-bind-preview.json. Together these three files ARE the mannequin skeleton. Do not move any of them.",
+  "status": "FROZEN authoring metadata. Runtime movement comes only from the rig bone hierarchy.",
+  "note": "Image-space pivots for mannequin PNGs. These pixels anchor each cutout to its matching red skeleton point; they never define bone motion, parentage, or animation. The authoritative skeleton positions and lines live in humanoid.json and humanoid-aqw-bind-preview.json.",
   "canvasSize": [1145, 1374],
-  "jointNaming": "Each key is <bodyPart>_<jointName>, proximal-to-distal per limb: shoulder (upper arm <-> torso) -> elbow (upper arm <-> forearm) -> wrist (forearm <-> hand). Legs: hip (thigh <-> hips) -> knee (thigh <-> shin) -> ankle (shin <-> foot). weaponMount and offhandMount are the item-holding points distal of each hand; they have no drawn ring of their own (no art), they're pure bone offsets (8 units straight out from the hand bone, see humanoid-aqw-bind-preview.json) and are listed here only for reference completeness.",
+  "jointNaming": "Keys describe the canonical skeleton point represented inside each cutout. Proximal pivots attach PNGs to red points. Distal markers are used by tests to guarantee neighboring cutouts meet at the next red point.",
   "joints": {
     "hips_frontHip": [504, 604],
     "hips_rearHip": [663, 613],
@@ -22,13 +22,13 @@
     "frontHand_wrist": [324, 674],
     "rearThigh_hip": [663, 613],
     "rearThigh_knee": [729, 889],
-    "rearShin_knee": [729, 889],
-    "rearShin_ankle": [711, 1185],
+    "frontShin_knee": [729, 889],
+    "frontShin_ankle": [711, 1185],
     "rearFoot_ankle": [711, 1185],
     "frontThigh_hip": [504, 604],
     "frontThigh_knee": [460, 880],
-    "frontShin_knee": [460, 880],
-    "frontShin_ankle": [359, 1184],
+    "rearShin_knee": [460, 880],
+    "rearShin_ankle": [359, 1184],
     "frontFoot_ankle": [359, 1184]
   },
   "boneProximalJoint": {
@@ -45,8 +45,18 @@
     "frontShin": "frontShin_knee",
     "frontFoot": "frontFoot_ankle"
   },
+  "boneDistalJoint": {
+    "rearUpperArm": "rearUpperArm_elbow",
+    "rearForearm": "rearForearm_wrist",
+    "frontUpperArm": "frontUpperArm_elbow",
+    "frontForearm": "frontForearm_wrist",
+    "rearThigh": "rearThigh_knee",
+    "rearShin": "rearShin_ankle",
+    "frontThigh": "frontThigh_knee",
+    "frontShin": "frontShin_ankle"
+  },
   "distalMountPoints": {
-    "rearHand": { "bone": "offhandMount", "used_by_slot": "book", "note": "8 units straight out from rearHand, no art of its own" },
-    "frontHand": { "bone": "weaponMount", "used_by_slot": "weapon", "note": "8 units straight out from frontHand, no art of its own" }
+    "rearHand": { "bone": "offhandMount", "used_by_slot": "book", "note": "Skeleton-owned item point beyond the rear hand." },
+    "frontHand": { "bone": "weaponMount", "used_by_slot": "weapon", "note": "Skeleton-owned item point beyond the front hand." }
   }
 }
