@@ -77,6 +77,19 @@ describe("canonical rig joint identities", () => {
       expect(labels.points[boneId]).toBe(label);
     }
   });
+
+  it("keeps the rear wrist and item mount on one rigid elbow-to-item line", () => {
+    for (const sourceRig of [rig, previewRig]) {
+      const bones = byId(sourceRig);
+      const forearm = bones.rearHand;
+      const item = bones.offhandMount;
+      const rotation = forearm.rotation ?? 0;
+      const itemX = (item.x ?? 0) * Math.cos(rotation) - (item.y ?? 0) * Math.sin(rotation);
+      const itemY = (item.x ?? 0) * Math.sin(rotation) + (item.y ?? 0) * Math.cos(rotation);
+      const cross = (forearm.x ?? 0) * itemY - (forearm.y ?? 0) * itemX;
+      expect(cross, `${sourceRig.id} rear wrist must not kink`).toBeCloseTo(0, 5);
+    }
+  });
 });
 
 describe("mannequin art follows the skeleton", () => {

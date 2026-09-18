@@ -14,6 +14,26 @@ describe("advanceClip", () => {
 });
 
 describe("sampleClip", () => {
+  it("smooths velocity through keys and the loop seam without overshooting poses", () => {
+    const clip = { durationMs: 1000, loop: true, interpolation: "smooth", tracks: {
+      arm: [{ time: 0, rotation: 0 }, { time: 0.2, rotation: 1 },
+        { time: 0.5, rotation: 2 }, { time: 0.8, rotation: -1 }, { time: 1, rotation: 0 }],
+    } };
+    const value = (t) => sampleClip(clip, "arm", t).rotation;
+    for (const t of [200, 500, 800]) {
+      expect((value(t) - value(t - 0.01)) / 0.01).toBeCloseTo((value(t + 0.01) - value(t)) / 0.01, 5);
+    }
+    expect((value(1000) - value(999.99)) / 0.01).toBeCloseTo((value(0.01) - value(0)) / 0.01, 5);
+    for (let t = 0; t <= 1000; t += 1) {
+      const track = clip.tracks.arm;
+      const index = Math.max(1, track.findIndex(k => k.time >= t / 1000));
+      const lo = Math.min(track[index - 1].rotation, track[index].rotation);
+      const hi = Math.max(track[index - 1].rotation, track[index].rotation);
+      expect(value(t)).toBeGreaterThanOrEqual(lo - 1e-9);
+      expect(value(t)).toBeLessThanOrEqual(hi + 1e-9);
+    }
+  });
+
   it("adds interpolated keyframe values to a bone bind pose", () => {
     const clip = {
       durationMs: 1000,

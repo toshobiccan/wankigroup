@@ -2,18 +2,24 @@ import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const runPath = new URL("../data/animations/humanoid/run.json", import.meta.url);
+const run1Path = new URL("../data/animations/humanoid/run1.json", import.meta.url);
 const hasRun = existsSync(runPath);
+const hasRun1 = existsSync(run1Path);
 
 describe("humanoid run animation", () => {
   it("provides a looping run clip", () => {
     expect(hasRun).toBe(true);
   });
 
+  it("preserves the previous cycle as Run 1", () => {
+    expect(hasRun1).toBe(true);
+  });
+
   if (hasRun) {
     const run = JSON.parse(readFileSync(runPath, "utf8"));
     const limbBones = [
-      "rearUpperArm", "rearForearm", "rearHand",
-      "frontUpperArm", "frontForearm", "frontHand",
+      "rearUpperArm", "rearForearm",
+      "frontUpperArm", "frontForearm",
       "rearThigh", "rearShin", "rearFoot",
       "frontThigh", "frontShin", "frontFoot",
     ];
@@ -22,12 +28,18 @@ describe("humanoid run animation", () => {
       expect(run.id).toBe("run");
       expect(run.loop).toBe(true);
       expect(run.durationMs).toBeGreaterThanOrEqual(600);
-      expect(run.durationMs).toBeLessThanOrEqual(800);
+      expect(run.durationMs).toBeLessThanOrEqual(700);
       const frontOppositeContact = run.tracks.frontThigh.find((keyframe) => keyframe.time === 0.5);
       const rearOppositeContact = run.tracks.rearThigh.find((keyframe) => keyframe.time === 0.5);
       expect(run.tracks.frontThigh[0].rotation).toBeCloseTo(rearOppositeContact.rotation);
       expect(run.tracks.rearThigh[0].rotation).toBeCloseTo(frontOppositeContact.rotation);
       expect(run.tracks.hips.some((keyframe) => keyframe.y < -2)).toBe(true);
+    });
+
+    it("keeps wrists and item mounts rigid during the run", () => {
+      for (const boneId of ["rearHand", "frontHand", "offhandMount", "weaponMount"]) {
+        expect(run.tracks[boneId], `${boneId} must inherit without an animation track`).toBeUndefined();
+      }
     });
 
     it("keeps every limb joint at its authored attachment point", () => {

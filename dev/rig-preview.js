@@ -5,9 +5,10 @@ import { exportArtTemplate, localPointDelta, translateBone } from "../src/sprite
 import { RigActor } from "../src/sprites/rig-actor.js";
 
 const stage = document.getElementById("stage");
-const [rig, idle, run, rigArt, referenceTexture, axleLabels] = await Promise.all([
+const [rig, idle, run1, run, rigArt, referenceTexture, axleLabels] = await Promise.all([
   fetch("../data/rigs/humanoid-aqw-bind-preview.json").then((response) => response.json()),
   fetch("../data/animations/humanoid/idle.json").then((response) => response.json()),
+  fetch("../data/animations/humanoid/run1.json").then((response) => response.json()),
   fetch("../data/animations/humanoid/run.json").then((response) => response.json()),
   loadRigArt("../data/rigs/humanoid-art-mannequin.json"),
   PIXI.Assets.load("../assets/rigs/mannequin/mannequin-reference.png"),
@@ -103,7 +104,7 @@ function hitTestAxle(globalPoint) {
 
 function buildActor() {
   actor?.destroy({ children: true });
-  actor = new RigActor({ rig, clips: { idle, run }, art: calibratedArt, textures: rigArt.textures });
+  actor = new RigActor({ rig, clips: { idle, run1, run }, art: calibratedArt, textures: rigArt.textures });
   actor.setDisplayHeight(190);
   actor.applyAppearance({ equipment: previewEquipment });
 
