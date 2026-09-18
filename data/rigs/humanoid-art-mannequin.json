@@ -1,0 +1,81 @@
+{
+  "id": "humanoid-art-mannequin",
+  "body": {
+    "hips": {
+      "src": "assets/rigs/mannequin/body-hips.png",
+      "anchor": [0.5066, 0.4367],
+      "scale": 0.084848
+    },
+    "torso": {
+      "src": "assets/rigs/mannequin/body-torso.png",
+      "anchor": [0.4978, 0.2194],
+      "scale": 0.084848
+    },
+    "head": {
+      "src": "assets/rigs/mannequin/body-head.png",
+      "anchor": [0.5092, 0.198],
+      "scale": 0.084848
+    },
+    "rearUpperArm": {
+      "src": "assets/rigs/mannequin/body-rear-upper-arm.png",
+      "anchor": [0.6026, 0.2329],
+      "scale": 0.084848
+    },
+    "rearForearm": {
+      "src": "assets/rigs/mannequin/body-rear-forearm.png",
+      "anchor": [0.6376, 0.3726],
+      "scale": 0.084848
+    },
+    "rearHand": {
+      "src": "assets/rigs/mannequin/body-rear-hand.png",
+      "anchor": [0.7013, 0.4934],
+      "scale": 0.084848
+    },
+    "frontUpperArm": {
+      "src": "assets/rigs/mannequin/body-front-upper-arm.png",
+      "anchor": [0.393, 0.206],
+      "scale": 0.084848
+    },
+    "frontForearm": {
+      "src": "assets/rigs/mannequin/body-front-forearm.png",
+      "anchor": [0.2926, 0.3384],
+      "scale": 0.084848
+    },
+    "frontHand": {
+      "src": "assets/rigs/mannequin/body-front-hand.png",
+      "anchor": [0.2777, 0.4891],
+      "scale": 0.084848
+    },
+    "rearThigh": {
+      "src": "assets/rigs/mannequin/body-rear-thigh.png",
+      "anchor": [0.5721, 0.4367],
+      "scale": 0.084848
+    },
+    "rearShin": {
+      "src": "assets/rigs/mannequin/body-rear-shin.png",
+      "anchor": [0.6332, 0.6514],
+      "scale": 0.084848
+    },
+    "rearFoot": {
+      "src": "assets/rigs/mannequin/body-rear-foot.png",
+      "anchor": [0.6157, 0.8697],
+      "scale": 0.084848
+    },
+    "frontThigh": {
+      "src": "assets/rigs/mannequin/body-front-thigh.png",
+      "anchor": [0.441, 0.4367],
+      "scale": 0.084848
+    },
+    "frontShin": {
+      "src": "assets/rigs/mannequin/body-front-shin.png",
+      "anchor": [0.4017, 0.6477],
+      "scale": 0.084848
+    },
+    "frontFoot": {
+      "src": "assets/rigs/mannequin/body-front-foot.png",
+      "anchor": [0.3127, 0.8646],
+      "scale": 0.084848
+    }
+  },
+  "equipment": {}
+}

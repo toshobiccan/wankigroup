@@ -9,7 +9,7 @@ const [rig, idle, run, attack, rigArt] = await Promise.all([
   fetch("../data/animations/humanoid/idle.json").then((response) => response.json()),
   fetch("../data/animations/humanoid/run.json").then((response) => response.json()),
   fetch("../data/animations/humanoid/attack.json").then((response) => response.json()),
-  loadRigArt("../data/rigs/humanoid-art-starter-v1.json"),
+  loadRigArt("../data/rigs/humanoid-art-mannequin.json"),
 ]);
 
 const app = new PIXI.Application();
@@ -26,7 +26,7 @@ const previewEquipment = Object.fromEntries(Object.keys(rig.slots).map((slotId) 
 
 function buildActor() {
   actor?.destroy({ children: true });
-  actor = new RigActor({ rig, clips: { idle, run, attack } });
+  actor = new RigActor({ rig, clips: { idle, run, attack }, art: calibratedArt, textures: rigArt.textures });
   actor.setDisplayHeight(190);
   actor.applyAppearance({ equipment: previewEquipment });
   app.stage.addChild(actor);

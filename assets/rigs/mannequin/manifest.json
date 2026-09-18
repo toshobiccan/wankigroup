@@ -1,0 +1,202 @@
+{
+  "canvas": [
+    1145,
+    1374
+  ],
+  "source": "docs/art-reference/mannequin.png",
+  "overlapPixels": 20,
+  "roundedUnderlapRadii": {
+    "torso": 45,
+    "head": 25,
+    "hips": 35,
+    "rear-thigh": 42,
+    "front-thigh": 45,
+    "rear-shin": 40,
+    "front-shin": 40,
+    "rear-foot": 26,
+    "front-foot": 26,
+    "rear-upper-arm": 35,
+    "front-upper-arm": 60,
+    "rear-forearm": 32,
+    "front-forearm": 34,
+    "rear-hand": 25,
+    "front-hand": 25
+  },
+  "jointMarkers": "preserved",
+  "drawOrder": [
+    "rear-upper-arm",
+    "rear-forearm",
+    "rear-hand",
+    "rear-thigh",
+    "rear-shin",
+    "rear-foot",
+    "hips",
+    "torso",
+    "head",
+    "front-thigh",
+    "front-shin",
+    "front-foot",
+    "front-upper-arm",
+    "front-forearm",
+    "front-hand"
+  ],
+  "parts": [
+    {
+      "name": "torso",
+      "pivot": [
+        580,
+        552
+      ],
+      "parent": "hips",
+      "file": "body-torso.png",
+      "opaquePixels": 82462
+    },
+    {
+      "name": "head",
+      "pivot": [
+        583,
+        272
+      ],
+      "parent": "torso",
+      "file": "body-head.png",
+      "opaquePixels": 36418
+    },
+    {
+      "name": "hips",
+      "pivot": [
+        580,
+        600
+      ],
+      "parent": null,
+      "file": "body-hips.png",
+      "opaquePixels": 28885
+    },
+    {
+      "name": "rear-thigh",
+      "pivot": [
+        655,
+        600
+      ],
+      "parent": "hips",
+      "file": "body-rear-thigh.png",
+      "opaquePixels": 40442
+    },
+    {
+      "name": "front-thigh",
+      "pivot": [
+        505,
+        600
+      ],
+      "parent": "hips",
+      "file": "body-front-thigh.png",
+      "opaquePixels": 41622
+    },
+    {
+      "name": "rear-shin",
+      "pivot": [
+        725,
+        895
+      ],
+      "parent": "rear-thigh",
+      "file": "body-rear-shin.png",
+      "opaquePixels": 34700
+    },
+    {
+      "name": "front-shin",
+      "pivot": [
+        460,
+        890
+      ],
+      "parent": "front-thigh",
+      "file": "body-front-shin.png",
+      "opaquePixels": 38471
+    },
+    {
+      "name": "rear-foot",
+      "pivot": [
+        705,
+        1195
+      ],
+      "parent": "rear-shin",
+      "file": "body-rear-foot.png",
+      "opaquePixels": 21355
+    },
+    {
+      "name": "front-foot",
+      "pivot": [
+        358,
+        1188
+      ],
+      "parent": "front-shin",
+      "file": "body-front-foot.png",
+      "opaquePixels": 19901
+    },
+    {
+      "name": "rear-upper-arm",
+      "pivot": [
+        690,
+        320
+      ],
+      "parent": "torso",
+      "file": "body-rear-upper-arm.png",
+      "opaquePixels": 18747
+    },
+    {
+      "name": "rear-forearm",
+      "pivot": [
+        730,
+        512
+      ],
+      "parent": "rear-upper-arm",
+      "file": "body-rear-forearm.png",
+      "opaquePixels": 19105
+    },
+    {
+      "name": "rear-hand",
+      "pivot": [
+        803,
+        678
+      ],
+      "parent": "rear-forearm",
+      "file": "body-rear-hand.png",
+      "opaquePixels": 12248
+    },
+    {
+      "name": "front-upper-arm",
+      "pivot": [
+        450,
+        283
+      ],
+      "parent": "torso",
+      "file": "body-front-upper-arm.png",
+      "opaquePixels": 29912
+    },
+    {
+      "name": "front-forearm",
+      "pivot": [
+        335,
+        465
+      ],
+      "parent": "front-upper-arm",
+      "file": "body-front-forearm.png",
+      "opaquePixels": 21988
+    },
+    {
+      "name": "front-hand",
+      "pivot": [
+        318,
+        672
+      ],
+      "parent": "front-forearm",
+      "file": "body-front-hand.png",
+      "opaquePixels": 13507
+    }
+  ],
+  "validation": {
+    "sourcePixelsPreserved": true,
+    "missingSourcePixels": 0,
+    "addedUnderlapPixels": 0,
+    "jointBendChecks": 70,
+    "minimumSharedPixels": 2220
+  }
+}
