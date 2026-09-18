@@ -14,6 +14,29 @@ Append this production contract verbatim to every prompt below.
 2. Once accepted, attach the approved neutral body cutouts when making every wearable, weapon, and book.
 3. Keep one approved output as the **rig master reference**. Every future item prompt uses it; do not replace it casually.
 
+## Pose reference — generate this before re-deriving the bind pose
+
+Purpose: one assembled, full-body pose reference for measuring joint positions (see `docs/superpowers/plans/2026-09-18-rig-bind-pose-and-layering-rework.md`, phases 2–3). This is **not** a per-part cutout — it does not use the transparent-background production contract above. It is a single flat reference illustration, built from parts that already exist.
+
+Attach, in this order: `human-base.png` (style/proportions), then every already-generated neutral body piece — `body-head.png`, `body-torso.png`, `body-upper-arm.png`, `body-forearm.png`, `body-hand.png`, `body-thigh.png`, `body-shin.png`, `body-foot.png`.
+
+> Create a single full-body pose reference for the Cardslayer rig, assembling the exact head, torso, arm, and leg shapes shown in the attached body-part references into one standing adventurer. Do not redesign any part's shape, proportions, or style — reuse each attached piece's silhouette exactly, just posed and joined into a complete figure.
+>
+> POSE: a dynamic, weight-ready fantasy-adventurer stance, three-quarter view facing right. Feet planted apart, one foot forward, both knees very slightly bent — not standing perfectly straight. Both arms hang naturally with a slight bend at the elbow; front arm slightly forward as if ready to reach for a weapon, rear arm relaxed at the side. Head tilted very slightly, alert expression. This must NOT be a stiff straight-armed T-pose or A-pose.
+>
+> CRITICAL — flat 2D rig compatibility: every limb segment (upper arm, forearm, hand, thigh, shin, foot) must be drawn as a flat, undistorted 2D silhouette rotated only within the picture plane. No foreshortening, no perspective distortion, no limb angled toward or away from the camera along depth. Every joint bend (shoulder, elbow, wrist, hip, knee, ankle, neck) must be clearly and unambiguously visible at a distinct pivot point, not hidden behind another body part or clothing. This image will be measured pixel by pixel to build a 2D bone rig, so geometric clarity matters more than painterly polish.
+>
+> No armor, no weapon, no held items, no cape, no background scenery. Plain, single flat background color for contrast. Full body head to toe, generous margin, centered.
+>
+> Style: early-2000s browser Flash fantasy RPG. Thick near-black outer contour, dark-brown inner lines, angular simple shapes, flat base colour plus one hard cel shadow, moderate saturation, low-to-medium detail, readable at 90 px tall. No gradients, soft light, painterly texture, realism, anime, chibi, 3D, or modern mobile splash-art styling. Match the attached Cardslayer references exactly in line weight, palette restraint, and proportions.
+
+Acceptance:
+
+- Every joint's pivot point is visually unambiguous — you could point at one pixel and say "that's the elbow."
+- No part's shape or silhouette differs from its attached individual reference.
+- No perspective foreshortening on any limb.
+- The stance is visibly dynamic, not a T-pose or A-pose.
+
 ## Neutral body: generate these first
 
 The run rig mirrors equivalent left/right parts. Generate one version of each part below. Save with the exact filenames.
