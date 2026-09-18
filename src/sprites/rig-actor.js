@@ -36,15 +36,15 @@ const EQUIPMENT_COLORS = {
 };
 
 const SEGMENT_LENGTHS = {
-  torso: 28,
-  rearUpperArm: 16,
-  rearForearm: 14,
-  frontUpperArm: 16,
-  frontForearm: 14,
-  rearThigh: 19,
-  rearShin: 17,
-  frontThigh: 19,
-  frontShin: 17,
+  torso: 25,
+  rearUpperArm: 17,
+  rearForearm: 15,
+  frontUpperArm: 18,
+  frontForearm: 18,
+  rearThigh: 26,
+  rearShin: 26,
+  frontThigh: 25,
+  frontShin: 27,
 };
 
 function makeBodyShape(id) {

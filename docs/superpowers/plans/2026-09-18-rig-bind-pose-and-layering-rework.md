@@ -23,21 +23,29 @@ Verified two ways:
 
 ## 2. Reference pose image
 
-This step is on you, not me — I can't generate the final art-direction call, only help measure it once it exists.
-
-1. Generate one full-body, neutral, nude/unarmored reference in the exact stance you want, 3/4 view, matching the existing Cardslayer style (reuse `human-base.png`'s style as the visual anchor — same outline weight, same proportions). This image is for joint measurement, not for cutting into final assets yet.
-2. Send it to me (or drop it in `docs/art-reference/`) once it exists.
+**Status: done (2026-09-18).** `docs/art-reference/mannequin.png` — a grey mannequin with an explicit circle marker at every joint (neck, shoulders, elbows, wrists, hips, knees, ankles), three-quarter view, flat 2D silhouette with no perspective foreshortening. Better than the plan asked for: the explicit joint markers made pixel measurement unambiguous, no guessing required.
 
 ## 3. Measure the reference and rewrite the bind pose
 
-**Files:**
-- Modify `data/rigs/humanoid.json`, `data/rigs/humanoid-aqw-bind-preview.json`
+**Status: done (2026-09-18).**
 
-1. For each joint (hip, knee, ankle ×2; shoulder, elbow, wrist ×2; neck/head base), read its pixel position off the reference image.
-2. Convert each joint's *global* pixel position into the rig's *local, parent-relative* bind-pose offset — e.g. `rearShin.y` is the knee-to-ankle distance along the rig's y-axis, not the ankle's absolute position. Do this chain by chain (hip→knee→ankle, shoulder→elbow→wrist) so each bone's x/y is relative to its immediate parent, matching the existing schema.
-3. Set the corresponding `rotation` on each bone so the limb direction in the bind pose matches the reference's stance (this is what fixes "arms pointing the wrong way" — a natural stance needs real rotation values, not 0).
-4. Update `bounds.height`/`bounds.groundY` if the reference's proportions change the character's overall height-to-ground-anchor ratio.
-5. Apply the same measured values to `humanoid-aqw-bind-preview.json` too, so both rigs stay in sync (the preview rig can keep its extra per-side rotation delta *on top of* the new base values, for calibration visibility — but it should no longer be the only rig with any rotation at all).
+**Files modified:**
+- `data/rigs/humanoid.json`, `data/rigs/humanoid-aqw-bind-preview.json`
+- `src/sprites/rig-actor.js` (`SEGMENT_LENGTHS`, to match the newly measured proportions — legs in particular are now proportionally much longer, closer to true AQW-style)
+
+Process actually used, and one real bug caught along the way:
+
+1. Detected each joint marker's pixel center from `mannequin.png` (grid-overlay crops, read manually — automatic blob detection failed because the markers are plain black rings on the same grey as the body, not a distinct fill color).
+2. Converted each joint's pixel position into the rig's local, parent-relative bind-pose offset, and each bone's `rotation` from the direction to its own child joint.
+3. **First pass was wrong**: PixiJS composes a child's rotation *relative to its parent's already-rotated frame*, not as an absolute world angle. The initial numbers treated every bone's measured direction as if it were already local, which is only correct when the parent has zero rotation — anything nested under a rotated parent (forearms, hands, shins, feet) came out visibly detached from the mannequin's own outline once rendered. Fixed by computing each bone's *world* rotation first (top-down, accumulating), then deriving `local rotation = own world rotation − parent's world rotation`, and rotating position offsets into the parent's local frame the same way.
+4. `bounds.groundY` changed from `39` to `63` — a direct consequence of the legs now measuring proportionally much longer than the old placeholder assumed (hip-to-feet is ~56% of total height in the reference, not ~35%). Not touching this would have left the character floating above or sinking below the world's ground line.
+5. Applied identical values to both rig files — no separate artificial "preview-only" rotation delta was needed, since the real reference pose is already asymmetric enough for the calibration tool's own purpose (front/rear parts no longer overlap identically).
+
+Verified two ways, not just by eye:
+- **Rigorous, screenshot-independent check**: a Python script re-implements PixiJS's exact parent→child transform composition over the committed JSON, walks the chain for every bone, and compares the resulting world position against the original measured reference-image joint position. Max error across all 15 measured joints: **1.09px on a 1320px-tall reference** (rounding artifact from 1–2 decimal precision in the JSON, nothing structural).
+- **Visual overlay**: the reference image composited at 50% opacity behind a live `RigActor` render in the browser (temporarily copied into the publicly-served `dev/` directory for the test, then removed — `docs/` is deliberately not web-servable, confirmed via the server's static allowlist). The placeholder shapes track the mannequin's silhouette closely at every joint once the rotation-composition bug above was fixed.
+
+Full suite (122 tests) green throughout; every clip and equipment toggle exercised on the real preview page with no console errors.
 
 ## 4. Reference-overlay tool in the preview
 
