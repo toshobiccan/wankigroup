@@ -153,9 +153,33 @@ function buildActor() {
 }
 app.stage.addChild(ground);
 
+// Fixed screen-space compass -- never moves, rotates, or mirrors with the
+// actor. Reference for direction discussion: screen up = N, right = E, down
+// = S, left = W. Independent of which way the character currently faces.
+const compass = new PIXI.Container();
+const compassArm = 26;
+const compassLines = new PIXI.Graphics()
+  .moveTo(-compassArm, 0).lineTo(compassArm, 0)
+  .moveTo(0, -compassArm).lineTo(0, compassArm)
+  .stroke({ color: 0xfff2a8, width: 1.5, alpha: 0.9 });
+compass.addChild(compassLines);
+const compassLabelStyle = { fontSize: 12, fontWeight: "700", fill: 0xfff2a8, stroke: { color: 0x2a1842, width: 3 } };
+function compassLabel(text, x, y, anchor) {
+  const label = new PIXI.Text({ text, style: compassLabelStyle });
+  label.anchor.set(...anchor);
+  label.position.set(x, y);
+  compass.addChild(label);
+}
+compassLabel("N", 0, -compassArm - 4, [0.5, 1]);
+compassLabel("S", 0, compassArm + 4, [0.5, 0]);
+compassLabel("E", compassArm + 4, 0, [0, 0.5]);
+compassLabel("W", -compassArm - 4, 0, [1, 0.5]);
+app.stage.addChild(compass);
+
 function layout() {
   ground.position.set(app.screen.width / 2, app.screen.height * 0.77);
   actor.position.set(app.screen.width / 2, ground.position.y);
+  compass.position.set(compassArm + 14, compassArm + 14);
 }
 buildActor();
 window.__debug = { app, actor: () => actor };
