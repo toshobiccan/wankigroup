@@ -76,6 +76,11 @@ const LINE_FROM_OVERRIDE = {
 let axleOverlay;
 let axleDots;
 let boneLines;
+let glowDot;
+let glowLine;
+let nameLabel;
+let selectedAxle = null;
+let glowElapsedMs = 0;
 
 function axleWorldPosition(boneId) {
   const jointId = axles.boneProximalJoint[boneId];
@@ -165,9 +170,30 @@ function buildActor() {
     axleOverlay.addChild(dot);
     axleDots.set(bone.id, dot);
   }
+  // Selection glow -- soft blurred halo behind whichever point/line is
+  // currently selected, pulsing so "glow" reads as alive, not just highlighted.
+  glowDot = new PIXI.Graphics().circle(0, 0, 3).fill({ color: 0xfff2a8 });
+  glowDot.filters = [new PIXI.BlurFilter({ strength: 4 })];
+  glowDot.visible = false;
+  axleOverlay.addChild(glowDot);
+  glowLine = new PIXI.Graphics();
+  glowLine.filters = [new PIXI.BlurFilter({ strength: 5 })];
+  glowLine.visible = false;
+  axleOverlay.addChild(glowLine);
   actor.visual.addChild(axleOverlay);
 
+  // The name label sits directly on app.stage, as a sibling of the actor
+  // rather than a child of it -- actor.scale.x flips negative when facing
+  // left (see faceLeft), which would mirror the TEXT into unreadable
+  // backwards glyphs if it lived inside actor.visual like the dots/lines do.
+  nameLabel = new PIXI.Text({
+    text: "",
+    style: { fontSize: 13, fontWeight: "700", fill: 0xfff2a8, stroke: { color: 0x2a1842, width: 3 } },
+  });
+  nameLabel.anchor.set(0.5, 1);
+  nameLabel.visible = false;
   app.stage.addChild(actor);
+  app.stage.addChild(nameLabel);
   layout();
 }
 app.stage.addChild(ground);
@@ -179,7 +205,7 @@ function layout() {
 buildActor();
 app.renderer.on("resize", layout);
 
-function syncAxleOverlay() {
+function syncAxleOverlay(deltaMs) {
   boneLines.clear();
   const positions = new Map(rig.bones.map((bone) => [bone.id, axleWorldPosition(bone.id)]));
   for (const bone of rig.bones) {
@@ -191,13 +217,38 @@ function syncAxleOverlay() {
     }
   }
   boneLines.stroke({ color: 0xff2222, width: 0.6, alpha: 0.85 });
+
+  glowDot.visible = false;
+  glowLine.visible = false;
+  nameLabel.visible = false;
+  if (selectedAxle && axlesVisible.checked) {
+    glowElapsedMs += deltaMs ?? 0;
+    const pulse = 1 + 0.25 * Math.sin(glowElapsedMs / 220);
+    if (selectedAxle.kind === "point") {
+      glowDot.visible = true;
+      glowDot.position.copyFrom(positions.get(selectedAxle.boneId));
+      glowDot.scale.set(pulse);
+    } else {
+      glowLine.visible = true;
+      glowLine.clear();
+      const from = positions.get(lineFromId(selectedAxle.boneId));
+      const to = positions.get(selectedAxle.boneId);
+      glowLine.moveTo(from.x, from.y).lineTo(to.x, to.y).stroke({ color: 0xfff2a8, width: 2 + pulse, alpha: 0.9 });
+    }
+    // The label lives on app.stage (see buildActor), not inside the mirrorable
+    // actor, so it must be positioned in stage space via getBounds() rather
+    // than the overlay-local coordinates used for the dots/lines above.
+    const bounds = actor.getBounds();
+    nameLabel.visible = true;
+    nameLabel.text = nameOfAxle(selectedAxle);
+    nameLabel.position.set(bounds.x + bounds.width / 2, bounds.y - 6);
+  }
 }
 axlesVisible.addEventListener("change", () => { axleOverlay.visible = axlesVisible.checked; });
 
 const axleInspector = document.getElementById("axle-inspector");
 const axleInspectorLabel = document.getElementById("axle-inspector-label");
 const axleRenameInput = document.getElementById("axle-rename-input");
-let selectedAxle = null;
 
 function nameOfAxle(hit) {
   return hit.kind === "point" ? pointName(hit.boneId) : lineName(hit.boneId);
@@ -224,7 +275,7 @@ document.getElementById("export-axle-names").addEventListener("click", () => {
 
 app.ticker.add((ticker) => {
   if (!dragPoint) actor.update(ticker.deltaMS);
-  syncAxleOverlay();
+  syncAxleOverlay(ticker.deltaMS);
 });
 
 for (const button of document.querySelectorAll("[data-clip]")) {
