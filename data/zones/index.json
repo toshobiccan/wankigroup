@@ -6,5 +6,17 @@
   {
     "id": "plains2",
     "displayName": "Plains 2"
+  },
+  {
+    "id": "spawn-1",
+    "displayName": "Home and garden 1"
+  },
+  {
+    "id": "spawn-2",
+    "displayName": "Home and garden 2"
+  },
+  {
+    "id": "spawn-3",
+    "displayName": "Home and garden 3"
   }
 ]

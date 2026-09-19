@@ -9,6 +9,7 @@ import { SqliteStore } from "./store/sqlite-store.js";
 import { WorldServer } from "./world/world-server.js";
 import { loadZones } from "./zones.js";
 import { createWorkshopApi } from "./armor-workshop.js";
+import { createRoomWorkshopApi } from "./room-workshop.js";
 
 export function createGameServer(config, { store, zones, log = console } = {}) {
   const httpServer = http.createServer();
@@ -22,11 +23,13 @@ export function createGameServer(config, { store, zones, log = console } = {}) {
   }
   const handleApi = createApi({ config, store, players, world });
   const handleWorkshop = createWorkshopApi({ enabled: !config.online });
+  const handleRoomWorkshop = createRoomWorkshopApi({ enabled: !config.online });
 
   httpServer.on("request", async (req, res) => {
     if (config.logRequests) log.info(`${req.method} ${req.url}`);
     try {
       if (await handleWorkshop(req, res)) return;
+      if (await handleRoomWorkshop(req, res)) return;
       if (await handleApi(req, res)) return;
       serveStatic(req, res);
     } catch (err) {

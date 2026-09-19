@@ -1,0 +1,14 @@
+# Shared art direction
+
+CARDSLAYER SHARED FLASH ART STYLE — revision 2026-09-19:
+ABSOLUTE REFERENCE: human-base-v5-front-grip.png is the approved authority for character, armor, weapon and creature art. Room backgrounds instead follow assets/world-background.png and the dedicated room-art-style.js contract. Match its hand-drawn Flash fantasy shapes, readable cel shading, restrained details and confident dark contours. Older human-base.png and goblin-mace-medic.png are retired as style references. Avoid both oversimplified flat icons and ornate modern concept art.
+LINE WEIGHT: outer contour about 2–3% of a character head's width (8–10 px at 340 px); inner lines roughly half that thickness. Scale consistently across character and armor. Terrain foreground uses comparable visual weight, with thinner distant contours.
+SHADING: each material uses a base plus TWO darker cel-shadow tones, approximately 76% and 52% brightness. Shared upper-left lighting; use angular planes to describe cheekbones, jaw, cloth folds, armor overlaps and rock faces. Keep a restrained material palette, not a single unbroken color block. Rear limbs remain subtly darker.
+DETAIL: medium, intentional detail. A few readable folds, seams, beveled edges and large fasteners are welcome. No tiny rivet grids, noisy textures, hatching, photorealism, 3D gloss, cinematic lighting or decorative clutter. Keep shapes readable at gameplay scale.
+EYES: almond-shaped whites, sharply angled tapered brows, gradient irises from dark upper edge to lighter lower edge, dark pupils and one small catchlight. Smooth gradients are specifically allowed inside irises; skin, armor and terrain use coherent cel-shaded planes.
+COHESION: match human-base-v5-front-grip.png at gameplay scale: apparent contour weight, perspective, lighting and intentional detail. Preserve the registered customizable head and anatomical anchors. Hair may overlap eyes and renders above ears. Adult proportions, not chibi. Front grip shows the knuckles; weapon handles sit behind the fist. Rear limbs use darker matching hues. Do not copy segmentation guide lines into terrain or decorative item seams.
+TERRAIN: apply the same angular hand-drawn language and three-tone shading, with less contrast in distant scenery; retain a clear uncluttered walking area. This is an original Flash fantasy game, not a polished splash illustration.
+
+This revision supersedes older one-shadow / extreme-simplicity instructions. Existing terrain and armor images are not automatically repainted; future generation uses this recipe. Current head reference: assets/character/head-template-approved.png. World rendering uses the approved balanced texture filtering; wardrobe retains full resolution.
+
+The approved original head supersedes the older AQW tracing/proportion study. Preserve its registered features and customization; do not regenerate the face from the older study.

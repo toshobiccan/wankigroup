@@ -1,3 +1,12 @@
+CARDSLAYER SHARED FLASH ART STYLE — revision 2026-09-19:
+ABSOLUTE REFERENCE: human-base-v5-front-grip.png is the approved authority for character, armor, weapon and creature art. Room backgrounds instead follow assets/world-background.png and the dedicated room-art-style.js contract. Match its hand-drawn Flash fantasy shapes, readable cel shading, restrained details and confident dark contours. Older human-base.png and goblin-mace-medic.png are retired as style references. Avoid both oversimplified flat icons and ornate modern concept art.
+LINE WEIGHT: outer contour about 2–3% of a character head's width (8–10 px at 340 px); inner lines roughly half that thickness. Scale consistently across character and armor. Terrain foreground uses comparable visual weight, with thinner distant contours.
+SHADING: each material uses a base plus TWO darker cel-shadow tones, approximately 76% and 52% brightness. Shared upper-left lighting; use angular planes to describe cheekbones, jaw, cloth folds, armor overlaps and rock faces. Keep a restrained material palette, not a single unbroken color block. Rear limbs remain subtly darker.
+DETAIL: medium, intentional detail. A few readable folds, seams, beveled edges and large fasteners are welcome. No tiny rivet grids, noisy textures, hatching, photorealism, 3D gloss, cinematic lighting or decorative clutter. Keep shapes readable at gameplay scale.
+EYES: almond-shaped whites, sharply angled tapered brows, gradient irises from dark upper edge to lighter lower edge, dark pupils and one small catchlight. Smooth gradients are specifically allowed inside irises; skin, armor and terrain use coherent cel-shaded planes.
+COHESION: match human-base-v5-front-grip.png at gameplay scale: apparent contour weight, perspective, lighting and intentional detail. Preserve the registered customizable head and anatomical anchors. Hair may overlap eyes and renders above ears. Adult proportions, not chibi. Front grip shows the knuckles; weapon handles sit behind the fist. Rear limbs use darker matching hues. Do not copy segmentation guide lines into terrain or decorative item seams.
+TERRAIN: apply the same angular hand-drawn language and three-tone shading, with less contrast in distant scenery; retain a clear uncluttered walking area. This is an original Flash fantasy game, not a polished splash illustration.
+
 Create a full-body 2D fantasy game character for CARDSLAYER.
 
 CHARACTER:
@@ -14,22 +23,22 @@ Use simple angular geometry and slightly exaggerated proportions. Characters sho
 The character must remain immediately readable when displayed very small on screen.
 
 FACE:
-Extremely simple face designed for a small game sprite.
-Visible colored eyes with thick dark outlines.
+Angular expressive face following human-base.png: defined jaw angle, small flat chin plane, cheek and temple shadows.
+Almond eyes with gradient irises, dark pupils and one small catchlight. Strong tapered angled brows.
 Simple small nose indication if necessary.
 Small straight or slightly expressive mouth.
-Minimal facial anatomy.
+Readable cheek, nose and jaw planes; ears with a defined helix and concha.
 No realistic facial rendering.
-No detailed eyelashes, lips, skin texture, pores, or complex facial shading.
+No detailed eyelashes, lips, skin texture, pores, or photorealistic facial shading.
 Expression: [EXPRESSION].
 
 SHADING:
 Simple flat cel shading.
-Base color plus ONE darker shadow tone for most surfaces.
+Base color plus TWO darker cel-shadow tones per material, roughly 76% and 52% brightness.
 Occasional small highlight only when necessary.
 Large clean shadow shapes.
 No soft shadows.
-No gradients.
+No broad gradients on materials; smooth iris gradients are allowed.
 No realistic lighting.
 No ambient occlusion.
 No glossy rendering.
@@ -49,7 +58,7 @@ Limited color palette.
 Colors should remain readable at thumbnail size.
 
 DETAIL LEVEL:
-LOW TO MEDIUM.
+MEDIUM: purposeful structural details, clean angular folds and coherent shadow planes.
 Prioritize silhouette, large shapes and color blocks over decoration.
 Remove details that would disappear when the character is shown at approximately 150–250 pixels tall.
 Accessories should be large and iconic rather than numerous and intricate.

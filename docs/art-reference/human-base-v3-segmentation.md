@@ -1,0 +1,28 @@
+# Human base v3 — explicit part boundaries
+
+Reference: assets/art-reference/human-base-v3-segmented.png. Generated with the built-in image tool. This supersedes the two-pose sheet as the segmentation reference, pending fitting.
+
+Sixteen part IDs from humanoid-art-mannequin.json: head, neck, torso, hips, frontUpperArm, frontForearm, frontHand, rearUpperArm, rearForearm, rearHand, frontThigh, frontShin, frontFoot, rearThigh, rearShin, rearFoot.
+
+Shoulder cap belongs to upper arm, not a separate piece. Each shorts leg belongs to its thigh; central waistband/crotch belongs to hips. Shorts hems and boot cuffs are clothing lines, not extra skeletal cuts. Keep hidden overlap at all rotating joints when extracting; a visible boundary alone does not provide the concealed pixels needed for rotation.
+
+Do not generate another running body. Run previews must reuse the exact extracted sprites and existing skeleton/clips, with rigid transforms only. No pose-specific reshaping, stretching, hand replacement or invented joint positions. The earlier illustrative run is retired as an animation reference. The real approved head and customization remain authoritative; the generated head in this guide must not replace them.
+
+This is an assembled segmentation guide, not extracted PNGs or verified in-game animation. No skeleton/code changes made.
+
+## Generation prompt
+
+Edit the approved human-base concept (image 1) into a clear CUTOUT PART BOUNDARY REFERENCE. Image 2 is the segmentation guide for our existing mannequin. Output ONE full-body IDLE character only, on flat pale ivory background; remove the running figure entirely. Center the idle figure at large scale with margins. Preserve the idle character's existing outer silhouette, face, skin tone, teal shorts, brown boots, anatomy, stance and cel shading. Rear arm/hand and rear leg/boot stay darker. Do not redesign or add clothes/armor.
+
+Draw unambiguous dark clean seam lines separating exactly these SIXTEEN existing sprite pieces: head, neck, torso, hips/pelvis, front upper arm, front forearm, front hand, rear upper arm, rear forearm, rear hand, front thigh, front shin, front foot, rear thigh, rear shin, rear foot. Front/near is viewer-left in this idle pose; rear/far is viewer-right. Use near-black seam strokes matching the character's outline style, thinner than outer contour but clearly visible.
+
+BOUNDARIES: curved line across both shoulder sockets from outside shoulder cap to armpit separates upper arms from torso; curved transverse line at BOTH elbows separates upper arms from forearms; transverse wrist line separates each hand from forearm. Existing jaw separates head from neck; draw neckline at base of neck to separate neck from chest. Continuous waist edge separates torso from pelvis. CRITICAL pelvis-versus-thigh lines: draw curved hip-socket seam across EACH upper thigh at its attachment to pelvis, through the TOP section of the teal shorts, so the central shorts crotch/waist belongs to pelvis but each shorts leg belongs to its respective THIGH. Shorts hems lower down remain clothing boundaries, NOT extra skeletal joints. Draw transverse rounded seam at each KNEE to separate thigh and shin. Draw ankle seam immediately above EACH boot to separate shin and whole boot/foot. Each joint boundary is one clear shared curved edge; no gaps, missing limbs, ball-bearing circles, spheres, metal joints or robot parts. Do not split chest into halves or calf into extra segments. Preserve the hand shape, limb length and width exactly as much as possible. Keep all sixteen parts visibly connected in the idle pose. No labels or text. This is a segmentation guide for later masked extraction, not an exploded parts sheet. The future run must use precisely these same rigid parts rotated about their joints, so DO NOT draw or invent any running pose in this image.
+
+## Shoulder correction
+
+Edit this segmentation reference with TWO precise corrections only. 1) The near/viewer-left shoulder currently looks like a separate oval shoulder pad, which would create an extra seventeenth part. REMOVE the curved line across the bottom of the deltoid that separates the shoulder cap from the biceps. The shoulder cap and biceps MUST be ONE CONTINUOUS UPPER ARM ASSET from shoulder socket to elbow. Keep only the INNER shoulder socket seam where the entire upper arm overlaps the torso, curving from the upper shoulder/torso junction down to the armpit. Apply the same principle to the far/viewer-right shoulder: shoulder plus biceps one piece, only inner socket boundary separates it from chest. All elbow, wrist, pelvis, knee, ankle, neck and jaw seams stay. No extra shoulder pad pieces. 2) Replace ALL background glow/black/brown with solid opaque white (#FFFFFF), plain white contact sheet, no shadow or gradient. Preserve the exact face, pose, proportions, limbs, skin shading, shorts and boots. Sixteen assets total, not eighteen. Only one standing figure, no running pose or extra drawings.
+
+## Rear shading correction
+
+Precise recoloring only of this exact image. Darken the ENTIRE viewer-right arm (shoulder through upper arm, forearm and hand) and ENTIRE viewer-right leg (teal shorts thigh section through bare thigh, shin and brown boot) by 18 percent to clearly identify the rear limbs in shadow. Preserve their existing local shading. Keep viewer-left front limbs, torso, head, neck and central pelvis unchanged. Preserve every pixel-position silhouette, every boundary seam, pose and shape as closely as possible; NO separate shoulder caps or extra seams. Background must be solid WHITE not black or brown glow. One full figure, exactly this image with the two rear limbs darker. Do not redraw the face or change limb geometry.
+

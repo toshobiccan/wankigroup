@@ -16,6 +16,7 @@
 import { PROTOCOL_VERSION, WS_PATH } from "../src/net/protocol.js";
 import { recordDeckImport, claimQuest } from "../src/game/progression.js";
 import { DEFAULT_ROLE } from "../src/game/roles.js";
+import { normalizeHead } from "../src/sprites/character-head.js";
 import {
   createSessionToken, hashSessionToken, hashPassword, verifyPassword,
   validateDisplayName, validateUsername, validatePassword,
@@ -79,6 +80,18 @@ export function createApi({ config, store, players, world }) {
     "GET /api/me": ({ account }) => {
       requireAuth(account);
       return withPlayer(account, () => ({ account: accountView(account) }));
+    },
+
+    "POST /api/actions/customize-character": ({ body, account }) => {
+      requireAuth(account);
+      limit(actionLimiter, account.id);
+      if (!body.appearance || typeof body.appearance !== "object" || Array.isArray(body.appearance)) throw new HttpError(400, "invalid_appearance");
+      return withPlayer(account, player => {
+        player.character = normalizeHead(body.appearance);
+        player.characterCreated = true;
+        players.changed(account.id);
+        return {};
+      });
     },
 
     "POST /api/actions/deck-imported": ({ body, account }) => {

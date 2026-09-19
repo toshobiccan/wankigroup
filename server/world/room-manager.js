@@ -3,6 +3,7 @@
 // copy with space, and a copy is thrown away once its last player leaves.
 
 import { Room } from "../../src/game/room.js";
+import { roomExits } from "../../src/world/room-exits.js";
 import { START_ZONE_ID } from "../../src/game/constants.js";
 
 export function instanceId(zoneId, number) {
@@ -31,8 +32,7 @@ export class RoomManager {
     if (!this.zones.has(zoneId)) return false;
     const current = this.roomOf(playerId);
     if (!current || zoneId === START_ZONE_ID || zoneId === current.zoneId) return true;
-    const links = current.zone.links ?? {};
-    return links.prev === zoneId || links.next === zoneId;
+    return Object.values(roomExits(current.zone)).some(exit => exit.roomId === zoneId);
   }
 
   join(playerId, zoneId, position = null) {

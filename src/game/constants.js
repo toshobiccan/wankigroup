@@ -11,7 +11,7 @@ export const RESPAWN_DELAY_MS = 5000; // how long a defeated mob stays gone befo
 // players each. A zone JSON can override it with its own "capacity".
 export const DEFAULT_ROOM_CAPACITY = 5;
 
-export const START_ZONE_ID = "plains1";
+export const START_ZONE_ID = "spawn-1";
 
 // Rewarding a deck import is capped per day -- otherwise re-importing the same
 // file over and over would be a free coin/XP farm once progress lives on a server.

@@ -1,0 +1,145 @@
+{
+  "version": 2,
+  "id": "spawn",
+  "name": "Home and garden",
+  "prompt": "A warm cottage, sunny garden and nearby practice clearing.",
+  "count": 3,
+  "width": 1920,
+  "height": 1080,
+  "groundTopFrac": 0.64,
+  "groundBottomFrac": 1,
+  "spawnXFrac": 0.2,
+  "mapX": 220,
+  "mapY": 330,
+  "biome": "village",
+  "connectFrom": "",
+  "rooms": [
+    {
+      "id": "spawn-1",
+      "displayName": "Home and garden 1",
+      "regionId": "spawn",
+      "role": "entrance",
+      "composition": "cottage garden",
+      "backgroundImage": "assets/rooms/spawn-1.png",
+      "groundTopFrac": 0.64,
+      "groundBottomFrac": 1,
+      "spawnXFrac": 0.2,
+      "spawnYFrac": 0.8200000000000001,
+      "exits": {
+        "east": {
+          "roomId": "spawn-2",
+          "entry": "west",
+          "at": 0.5
+        }
+      },
+      "links": {},
+      "mobs": [],
+      "map": {
+        "areaId": "spawn",
+        "areaName": "Home and garden",
+        "biome": "village",
+        "x": 120,
+        "y": 180,
+        "gridX": 0,
+        "gridY": 0,
+        "worldX": 220,
+        "worldY": 330
+      }
+    },
+    {
+      "id": "spawn-2",
+      "displayName": "Home and garden 2",
+      "regionId": "spawn",
+      "role": "encounter",
+      "composition": "training clearing",
+      "backgroundImage": "assets/rooms/spawn-2.png",
+      "groundTopFrac": 0.64,
+      "groundBottomFrac": 1,
+      "spawnXFrac": 0.2,
+      "spawnYFrac": 0.8200000000000001,
+      "exits": {
+        "west": {
+          "roomId": "spawn-1",
+          "entry": "east",
+          "at": 0.5
+        },
+        "east": {
+          "roomId": "spawn-3",
+          "entry": "west",
+          "at": 0.5
+        }
+      },
+      "links": {},
+      "mobs": [
+        {
+          "id": "spawn-2-mob-1",
+          "definitionId": "placeholder-elite",
+          "role": "normal",
+          "xFrac": 0.5,
+          "yFrac": 0.82
+        }
+      ],
+      "map": {
+        "areaId": "spawn",
+        "areaName": "Home and garden",
+        "biome": "village",
+        "x": 215,
+        "y": 180,
+        "gridX": 1,
+        "gridY": 0,
+        "worldX": 220,
+        "worldY": 330
+      }
+    },
+    {
+      "id": "spawn-3",
+      "displayName": "Home and garden 3",
+      "regionId": "spawn",
+      "role": "encounter",
+      "composition": "garden edge",
+      "backgroundImage": "assets/rooms/spawn-3.png",
+      "groundTopFrac": 0.64,
+      "groundBottomFrac": 1,
+      "spawnXFrac": 0.2,
+      "spawnYFrac": 0.8200000000000001,
+      "exits": {
+        "west": {
+          "roomId": "spawn-2",
+          "entry": "east",
+          "at": 0.5
+        }
+      },
+      "links": {},
+      "mobs": [],
+      "map": {
+        "areaId": "spawn",
+        "areaName": "Home and garden",
+        "biome": "village",
+        "x": 310,
+        "y": 180,
+        "gridX": 2,
+        "gridY": 0,
+        "worldX": 220,
+        "worldY": 330
+      }
+    }
+  ],
+  "regionType": "spawn",
+  "seed": "cardslayer-spawn-v1",
+  "connectDirection": "east",
+  "region": {
+    "id": "spawn",
+    "name": "Home and garden",
+    "biome": "village",
+    "seed": "cardslayer-spawn-v1",
+    "entryRoomId": "spawn-1",
+    "bossRoomId": null,
+    "roomIds": [
+      "spawn-1",
+      "spawn-2",
+      "spawn-3"
+    ],
+    "worldX": 220,
+    "worldY": 330
+  }
+}

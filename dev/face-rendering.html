@@ -1,0 +1,6 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Face rendering comparison</title>
+<style>body{margin:24px;background:#263e42;color:#eee6c9;font:14px system-ui}h1{font:24px Georgia}p{max-width:760px;line-height:1.5}.samples{display:flex;gap:16px;flex-wrap:wrap}article{background:#314d50;border:1px solid #ac985f;padding:12px}h2{font:17px Georgia;margin:0 0 8px}canvas{display:block}button,a{color:#eee6c9;background:#405f53;padding:9px 14px;border:1px solid #ac985f;cursor:pointer}small{display:block;color:#ccd8d2}</style></head>
+<body><h1>Same face. Three rendering methods.</h1><p>Top: representative world size (54 × 45 pixels). Bottom: enlarged for inspection. Compare the eyes and outlines, both stationary and moving. All three use the same face, hair and blink timing.</p>
+<p><button id="motion">Pause movement</button> <a href="/">Return to game</a></p><div class="samples" id="samples"></div><p id="status">Loading face…</p>
+<script type="module" src="./face-rendering.js"></script></body></html>

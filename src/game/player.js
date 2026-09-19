@@ -4,6 +4,7 @@
 // (online mode), so nothing here may touch the DOM, storage or the network.
 
 import { XP_PER_LEVEL, GEMS_PER_LEVEL } from "./constants.js";
+import { DEFAULT_HEAD, normalizeHead } from "../sprites/character-head.js";
 
 // Bump when the saved shape changes in a way normalizePlayer() can't fill in
 // by itself, and add the migration step there.
@@ -13,6 +14,8 @@ export function createDefaultPlayer({ name = "Adventurer" } = {}) {
   return {
     schemaVersion: PLAYER_SCHEMA_VERSION,
     name,
+    character: { ...DEFAULT_HEAD },
+    characterCreated: false,
     level: 1,
     xp: 0,
     coins: 0,
@@ -57,6 +60,8 @@ export function normalizePlayer(saved, { name } = {}) {
   const defaults = createDefaultPlayer({ name });
   const source = saved && typeof saved === "object" ? structuredClone(saved) : {};
   const player = { ...defaults, ...source };
+  player.character = normalizeHead(source.character);
+  player.characterCreated = source.characterCreated === true;
   for (const group of ["stats", "inventory", "status", "daily"]) {
     player[group] = { ...defaults[group], ...(source[group] ?? {}) };
   }

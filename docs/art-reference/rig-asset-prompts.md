@@ -1,3 +1,5 @@
+CURRENT STYLE: use shared-art-style.md for shading, detail and gradient rules; it supersedes older style wording below. Preserve geometry and attachment requirements.
+
 # Cardslayer Cutout-Rig Asset Recipe
 
 Use Astra for the next asset pass. Generate the neutral body first, approve it, then use that approved body image plus `human-base.png` as references for every wearable and held item. Do not generate a complete dressed character for the rig: the runtime needs separate transparent cutouts.
@@ -6,7 +8,7 @@ Use Astra for the next asset pass. Generate the neutral body first, approve it, 
 
 Append this production contract verbatim to every prompt below.
 
-> CARDSLAYER CUTOUT-RIG PRODUCTION CONTRACT: Create exactly one isolated game-sprite cutout on a transparent alpha background. Square 512 × 512 canvas. Do not crop, trim, add a drop shadow, ground, text, UI, border, background, or other objects. Place the named attachment point exactly at canvas center (256, 256); preserve at least 32 px of transparent margin around all painted pixels. The attachment point must be visually identifiable from the cutout but do not draw a marker. Keep the cutout aligned to a three-quarter right-facing adult fantasy adventurer. Early-2000s browser Flash fantasy RPG: thick near-black outer contour, dark-brown inner lines, angular simple shapes, flat base colour plus one hard cel shadow, moderate saturation, low-to-medium detail, readable at 90 px tall. No gradients, soft light, painterly texture, realism, anime, chibi, 3D, modern mobile splash-art styling, or white fringe. Match the supplied Cardslayer human reference exactly in line weight, palette restraint, and proportions.
+> CARDSLAYER CUTOUT-RIG PRODUCTION CONTRACT: Create exactly one isolated game-sprite cutout on a transparent alpha background. Square 512 × 512 canvas. Do not crop, trim, add a drop shadow, ground, text, UI, border, background, or other objects. Place the named attachment point exactly at canvas center (256, 256); preserve at least 32 px of transparent margin around all painted pixels. The attachment point must be visually identifiable from the cutout but do not draw a marker. Keep the cutout aligned to a three-quarter right-facing adult fantasy adventurer. Early-2000s browser Flash fantasy RPG: thick near-black outer contour, dark-brown inner lines, angular simple shapes, base colour plus two angular cel-shadow tones, moderate saturation, low-to-medium detail, readable at 90 px tall. No gradients, soft light, painterly texture, realism, anime, chibi, 3D, modern mobile splash-art styling, or white fringe. Match the supplied Cardslayer human reference exactly in line weight, palette restraint, and proportions.
 
 ## Reference order
 
@@ -28,7 +30,7 @@ Attach, in this order: `human-base.png` (style/proportions), then every already-
 >
 > No armor, no weapon, no held items, no cape, no background scenery. Plain, single flat background color for contrast. Full body head to toe, generous margin, centered.
 >
-> Style: early-2000s browser Flash fantasy RPG. Thick near-black outer contour, dark-brown inner lines, angular simple shapes, flat base colour plus one hard cel shadow, moderate saturation, low-to-medium detail, readable at 90 px tall. No gradients, soft light, painterly texture, realism, anime, chibi, 3D, or modern mobile splash-art styling. Match the attached Cardslayer references exactly in line weight, palette restraint, and proportions.
+> Style: early-2000s browser Flash fantasy RPG. Thick near-black outer contour, dark-brown inner lines, angular simple shapes, base colour plus two angular cel-shadow tones, moderate saturation, low-to-medium detail, readable at 90 px tall. No gradients, soft light, painterly texture, realism, anime, chibi, 3D, or modern mobile splash-art styling. Match the attached Cardslayer references exactly in line weight, palette restraint, and proportions.
 
 Acceptance:
 
@@ -47,7 +49,7 @@ The head is four separate pieces, not one — hair, eyes, and nose are each thei
 
 > Create `body-head.png`, a neutral adult human adventurer head for the Cardslayer rig, bald and bare-faced. Attachment point: bottom-centre of the neck. The head grows upward from that point. Warm light skin, smooth hairless scalp, plain closed-eyelid or eye-socket area with no iris or pupil detail, no nose detail beyond the underlying skull shape, no mouth beyond a simple closed line if unavoidable, no helmet, no earrings, no neckwear. Make the neck short and narrow enough to overlap the torso cleanly. [Append the production contract.]
 
-> Create `body-hair.png`, a short tousled brown hairstyle cutout for the Cardslayer rig, to sit on top of and behind `body-head.png` as its own piece. Attachment point: top-centre of the skull, matching the `hair` bone. Hair only — no scalp, ears, face, or neck. Brown, two-tone cel shading, silhouette readable at 90 px tall. [Append the production contract.]
+> Create `body-hair.png`, a short tousled brown hairstyle cutout for the Cardslayer rig, to sit on top of and behind `body-head.png` as its own piece. Attachment point: top-centre of the skull, matching the `hair` bone. Hair only — no scalp, ears, face, or neck. Brown, three-tone cel shading, silhouette readable at 90 px tall. [Append the production contract.]
 
 > Create `body-eyes.png`, a pair of simple calm eyes for the Cardslayer rig, to sit on `body-head.png` as their own piece. Attachment point: centre of the visible eye, matching the `eyes` bone. Eyes only — no eyebrows, skin, nose, or face outline beyond the eye shapes themselves. Simple dark iris, minimal detail, readable at 90 px tall. [Append the production contract.]
 

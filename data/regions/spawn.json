@@ -1,0 +1,15 @@
+{
+  "id": "spawn",
+  "name": "Home and garden",
+  "biome": "village",
+  "seed": "cardslayer-spawn-v1",
+  "entryRoomId": "spawn-1",
+  "bossRoomId": null,
+  "roomIds": [
+    "spawn-1",
+    "spawn-2",
+    "spawn-3"
+  ],
+  "worldX": 220,
+  "worldY": 330
+}

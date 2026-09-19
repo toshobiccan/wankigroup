@@ -1,12 +1,14 @@
+import { roomExits, exitPoint, reachedExit } from './room-exits.js';
+import { resolveMob } from '../game/mob-definitions.js';
 import * as PIXI from "../../vendor/pixi.min.mjs";
-import { clampToZone, stepTowardTarget, computeCameraX, computeCenteredCameraX } from "./world-movement.js";
+import { clampToZone, stepTowardTarget, computeCenteredCameraX, easeToward, worldFraming, smoothCameraX } from "./world-movement.js";
+import { WorldInput } from "./world-input.js";
 import { ROLE_COLORS, DEFAULT_ROLE, normalizeRole, cssColor } from "../game/roles.js";
 import { CHAT_MAX_LENGTH } from "../game/constants.js";
 import { loadRigArt } from "../sprites/load-rig-art.js";
 import { RigActor } from "../sprites/rig-actor.js";
 
 const MOVE_SPEED = 220; // world-pixels/second
-const DEAD_ZONE_FRACTION = 0.4;
 const PLAYER_HEIGHT = 118; // keeps the cutout equipment readable on a phone-sized world view
 const MOB_HEIGHT = 70; // a bit shorter than the player -- these are the weak, early mobs
 const APPROACH_DISTANCE = 60; // how close (world-pixels) the player walks before a fight actually starts
@@ -38,7 +40,8 @@ const PLAYER_CLIP_URLS = {
 const PLAYER_ART_URL = new URL("../../data/rigs/humanoid-art-starter-v1.json", import.meta.url).href;
 
 export class WorldScene {
-  constructor({ mountElement, onMobSelected, onCombatStart, onPageEnter, onMoveIntent, onChatSend, playerAppearance = {} }) {
+  constructor({ mountElement, onMobSelected, onCombatStart, onPageEnter, onMoveIntent, onChatSend, playerAppearance = {}, characterAppearance = null, zoneUrlForId = null }) {
+    this.zoneUrlForId=zoneUrlForId;
     this.mountElement = mountElement;
     this.onMobSelected = onMobSelected; // (mobData | null) -- fires on select, re-select of a different mob, and deselect
     this.onCombatStart = onCombatStart; // (mobData) -- fires once, when the player finishes walking up to an engaged mob
@@ -51,14 +54,20 @@ export class WorldScene {
     // (text) -- fires when the player submits a chat message from the chat input.
     this.onChatSend = onChatSend;
     this.playerAppearance = playerAppearance;
+    this.characterAppearance = characterAppearance;
     this.zone = null;
     this.pageId = null; // the current page's own id, e.g. "plains1"
     this.links = { prev: null, next: null }; // neighboring page ids this page connects to, or null
     this.position = { x: 0, y: 0 };
     this.target = { x: 0, y: 0 };
     this.cameraX = 0;
+    this.cameraY = 0;
+    this.zoom = 1;
+    this.velocity = { x: 0, y: 0 };
+    this._directMovement = false;
     this.app = new PIXI.Application();
     this.world = new PIXI.Container();
+    this.world.sortableChildren = true;
     this.background = null;
     this.player = null;
     this._roomLabel = null; // DOM element, bottom-left current-page name (see loadZone)
@@ -119,16 +128,19 @@ export class WorldScene {
         resolution: window.devicePixelRatio || 1, // otherwise the canvas renders soft/blocky on Retina screens
         autoDensity: true,
         backgroundColor: 0x000000,
-        roundPixels: true,
+        roundPixels: false,
       });
       this.mountElement.appendChild(this.app.canvas);
+      this.mountElement.style.position = 'relative';
+      this.app.canvas.style.touchAction = 'none';
       this.app.stage.addChild(this.world);
+      this.input = new WorldInput(this.mountElement, action => this._inputAction(action));
 
       // Bottom-left page-name label -- a plain DOM element (not world-space),
       // so it stays fixed on screen instead of scrolling with the camera.
       this._roomLabel = document.createElement("div");
       this._roomLabel.className = "room-label";
-      this.mountElement.appendChild(this._roomLabel);
+      // Keep the internal label detached; the world HUD now shows deck progress.
 
       // Loaded unconditionally, regardless of which branch below the local
       // player ends up using: remote players in the room always render with
@@ -136,6 +148,7 @@ export class WorldScene {
       // been extended to them yet -- so this._playerTexture has to be set
       // even when the local player successfully loads a RigActor instead.
       this._playerTexture = await PIXI.Assets.load(PLAYER_TEXTURE_URL);
+      this._playerBaseScale = PLAYER_HEIGHT / this._playerTexture.height;
 
       try {
         const [rig, idle, run, rigArt] = await Promise.all([
@@ -144,7 +157,8 @@ export class WorldScene {
           fetch(PLAYER_CLIP_URLS.run).then((response) => response.json()),
           loadRigArt(PLAYER_ART_URL),
         ]);
-        this.player = new RigActor({ rig, clips: { idle, run }, appearance: { equipment: this.playerAppearance }, art: rigArt.art, textures: rigArt.textures });
+        const character = rigArt.character && { ...rigArt.character, appearance: this.characterAppearance ?? rigArt.character.appearance };
+        this.player = new RigActor({ rig, clips: { idle, run }, appearance: { equipment: this.playerAppearance }, art: rigArt.art, textures: rigArt.textures, character });
         this.player.setDisplayHeight(PLAYER_HEIGHT);
         this._isRigPlayer = true;
       } catch (error) {
@@ -227,6 +241,12 @@ export class WorldScene {
     if (this._isRigPlayer) this.player.applyAppearance({ equipment: this.playerAppearance });
   }
 
+  setCharacterAppearance(appearance) {
+    if (JSON.stringify(this.characterAppearance) === JSON.stringify(appearance)) return;
+    this.characterAppearance = appearance;
+    if (this._isRigPlayer) this.player.setCharacterAppearance(appearance);
+  }
+
   // Tears down and rebuilds everything that's specific to one page: the
   // background (real image, or a flat placeholder for a "blank" page),
   // mobs, edge arrows, and the room label. The PIXI app/canvas/player/
@@ -257,8 +277,8 @@ export class WorldScene {
 
     if (zone.blank) {
       this._backgroundTexture = null;
-      this.zone.groundTopFrac = BLANK_ROOM_GROUND_TOP_FRAC;
-      this.zone.groundBottomFrac = BLANK_ROOM_GROUND_BOTTOM_FRAC;
+      this.zone.groundTopFrac = zone.groundTopFrac ?? BLANK_ROOM_GROUND_TOP_FRAC;
+      this.zone.groundBottomFrac = zone.groundBottomFrac ?? BLANK_ROOM_GROUND_BOTTOM_FRAC;
       this.zone.spawnXFrac = zone.spawnXFrac ?? 0.5;
       this.zone.spawnYFrac = zone.spawnYFrac ?? BLANK_ROOM_GROUND_TOP_FRAC + 0.02;
       this.background = new PIXI.Graphics();
@@ -268,11 +288,12 @@ export class WorldScene {
       // paths -- resolved against the server root, not the page that
       // happened to load this zone, so it's correct from both index.html
       // and dev/world-preview.html.
-      const backgroundUrl = new URL(zone.backgroundImage, document.baseURI).href;
+      const backgroundUrl = new URL(zone.backgroundImage, new URL('../../',import.meta.url)).href;
       this._backgroundTexture = await PIXI.Assets.load(backgroundUrl);
       this.background = new PIXI.Sprite(this._backgroundTexture);
     }
     this.world.addChildAt(this.background, 0); // always stays behind the player/mobs/arrows
+    this.background.zIndex=-100000;
 
     // Ground bounds are stored as fractions of the display height, not fixed
     // pixels -- the background always scales to fill the canvas's current
@@ -281,23 +302,26 @@ export class WorldScene {
     // units. This is what "where the character can/cannot walk" comes from:
     // it's the actual dirt path in the artwork (or the placeholder band, for
     // a blank page), not a guessed range.
-    this._applyBackgroundLayout(height);
+    this._applyBackgroundLayout(Math.max(480,height));
     this._updateRoomLabel();
 
     if (spawn) {
       this.position = { x: this.zone.spawnX, y: this.zone.spawnY };
-    } else if (entryEdge === "left") {
-      this.position = { x: EDGE_TRANSITION_MARGIN + 2, y: this.position.y };
-    } else if (entryEdge === "right") {
-      this.position = { x: this.zone.width - EDGE_TRANSITION_MARGIN - 2, y: this.position.y };
+    } else if (entryEdge) {
+      const direction=({left:'west',right:'east'})[entryEdge]??entryEdge;
+      const point=exitPoint(this.zone,direction,roomExits(this.zone)[direction]?.at??.5,.025);
+      this.position={x:point.x*this.zone.width,y:point.y*this._lastDisplayHeight};
     }
     this.position = clampToZone(this.position, this.zone);
     this.target = { ...this.position };
+    this.velocity = { x: 0, y: 0 };
+    this._directMovement = false;
     this.player.position.set(this.position.x, this.position.y);
 
     for (const rawMobData of zone.mobs ?? []) {
-      const mobData = { ...rawMobData, hp: rawMobData.stats.hp };
-      const mobUrl = new URL(mobData.image, document.baseURI).href;
+      const resolved=resolveMob(rawMobData);
+      const mobData = { ...resolved, hp: resolved.stats.hp };
+      const mobUrl = new URL(mobData.image, new URL('../../',import.meta.url)).href;
       const mobTexture = await PIXI.Assets.load(mobUrl);
 
       const container = new PIXI.Container();
@@ -353,6 +377,9 @@ export class WorldScene {
     }
     this._layoutMobs();
     this._pageReady = true;
+    const bounds=this.mountElement.getBoundingClientRect();
+    this.resize(bounds.width,bounds.height);
+    this._updateCamera(0, true);
     this.onPageEnter?.(zone.id, this._positionFrac());
   }
 
@@ -376,7 +403,7 @@ export class WorldScene {
     this._approaching = false;
     this._pendingMobStates.clear();
     this.clearRemotePlayers();
-    for (const key of ["prev", "next"]) {
+    for (const key of Object.keys(this._arrows)) {
       if (this._arrows[key]) {
         this.world.removeChild(this._arrows[key]);
         this._arrows[key] = null;
@@ -417,28 +444,29 @@ export class WorldScene {
   // most two small Graphics objects) wherever this.links says a neighboring
   // page exists. Called after every layout change, since arrow x position
   // depends on zone.width.
-  _layoutArrows() {
-    for (const key of ["prev", "next"]) {
-      if (this._arrows[key]) {
-        this.world.removeChild(this._arrows[key]);
-        this._arrows[key] = null;
-      }
-    }
-    const groundY = (this.zone.groundTop + this.zone.groundBottom) / 2;
-    if (this.links.prev) this._arrows.prev = this._createArrow("left", groundY);
-    if (this.links.next) this._arrows.next = this._createArrow("right", groundY);
+  walkToExit(direction) {
+    if(this.inCombat||this._approaching||this._transitioning||!this._pageReady)return;
+    const exit=roomExits(this.zone)[direction];if(!exit)return;
+    const target=exitPoint(this.zone,direction,exit.at);
+    this.target={x:target.x*this.zone.width,y:target.y*this._lastDisplayHeight};
+    this._directMovement=false;this._emitMove(true);
   }
 
-  _createArrow(direction, groundY) {
-    const pointingLeft = direction === "left";
-    const size = 22;
-    const graphic = new PIXI.Graphics()
-      .poly(pointingLeft ? [size, -size, -size, 0, size, size] : [-size, -size, size, 0, -size, size])
-      .fill({ color: ARROW_COLOR, alpha: 0.85 })
-      .stroke({ color: 0x000000, width: 2, alpha: 0.6 });
-    graphic.position.set(pointingLeft ? 18 : this.zone.width - 18, groundY);
-    this.world.addChild(graphic);
-    return graphic;
+  _layoutArrows() {
+    for(const arrow of Object.values(this._arrows))if(arrow){this.world.removeChild(arrow);arrow.destroy();}
+    this._arrows={};
+    for(const [direction,exit] of Object.entries(roomExits(this.zone))){
+      const point=exitPoint(this.zone,direction,exit.at,.015);
+      const graphic=new PIXI.Graphics().poly([-12,-16,12,0,-12,16]).fill({color:ARROW_COLOR,alpha:.85}).stroke({color:0x292619,width:2});
+      graphic.rotation={east:0,south:Math.PI/2,west:Math.PI,north:-Math.PI/2}[direction];
+      graphic.position.set(point.x*this.zone.width,point.y*this._lastDisplayHeight);
+      graphic.eventMode='static';graphic.cursor='pointer';
+      graphic.on('pointertap',event=>{
+        event.stopPropagation();
+        this.walkToExit(direction);
+      });
+      this.world.addChild(graphic);this._arrows[direction]=graphic;
+    }
   }
 
   _updateRoomLabel() {
@@ -452,9 +480,9 @@ export class WorldScene {
   async _transitionToPage(pageId, entryEdge) {
     if (this._transitioning) return; // ignore a re-trigger while the fetch/rebuild is already in flight
     this._transitioning = true;
-    const url = new URL(`data/zones/${pageId}.json`, document.baseURI).href;
-    await this._loadPage(url, { entryEdge });
-    this._transitioning = false;
+    const url = this.zoneUrlForId?this.zoneUrlForId(pageId):new URL(`../../data/zones/${pageId}.json`, import.meta.url).href;
+    try {await this._loadPage(url, { entryEdge });}
+    finally {this._transitioning = false;}
   }
 
   // Mobs stand at a fixed xFrac of the zone width, on the same ground line the
@@ -462,7 +490,7 @@ export class WorldScene {
   _layoutMobs() {
     const groundY = (this.zone.groundTop + this.zone.groundBottom) / 2;
     for (const { data, container } of this.mobs) {
-      container.position.set(data.xFrac * this.zone.width, groundY);
+      container.position.set(data.xFrac * this.zone.width, Number.isFinite(data.yFrac)?data.yFrac*this._lastDisplayHeight:groundY);
     }
   }
 
@@ -494,22 +522,50 @@ export class WorldScene {
     const targetXFrac = canRescalePosition ? this.target.x / oldWidth : null;
     const targetYFrac = canRescalePosition ? this.target.y / oldHeight : null;
 
-    this._applyBackgroundLayout(height);
+    this._applyBackgroundLayout(Math.max(480,height));
     this._layoutMobs();
 
     if (canRescalePosition) {
-      this.position = { x: posXFrac * this.zone.width, y: posYFrac * height };
-      this.target = { x: targetXFrac * this.zone.width, y: targetYFrac * height };
+      this.position = { x: posXFrac * this.zone.width, y: posYFrac * this._lastDisplayHeight };
+      this.target = { x: targetXFrac * this.zone.width, y: targetYFrac * this._lastDisplayHeight };
       this.player.position.set(this.position.x, this.position.y);
     }
+    this.velocity={x:0,y:0};
+    this._updateCamera(0,true);
   }
 
   pause() {
+    this.input?.setActive(false);
+    this.velocity = { x: 0, y: 0 };
+    if(this._directMovement){this.target={...this.position};this._emitMove(true);}
+    this._directMovement=false;
+    this._pointerHeld=false;
     this.app.ticker?.stop();
   }
 
   resume() {
+    this.input?.setActive(true);
     this.app.ticker?.start();
+  }
+
+  _inputAction(action) {
+    if(!this._pageReady || this.inCombat || this._transitioning)return;
+    if(action==='cancel') {
+      this._approaching=false;this.target={...this.position};this.velocity={x:0,y:0};this.input.reset();this._directMovement=false;this._deselectMob();this._emitMove(true);return;
+    }
+    if(this._approaching)return;
+    if(this.selectedMob){this.engageSelectedMob();return;}
+    const nearest=this.mobs.filter(m=>!m.dead).sort((a,b)=>Math.hypot(a.container.x-this.position.x,a.container.y-this.position.y)-Math.hypot(b.container.x-this.position.x,b.container.y-this.position.y))[0];
+    if(nearest && Math.abs(nearest.container.x-this.position.x)<260)this._onMobClick(nearest);
+  }
+
+  _updateCamera(deltaMS, snap=false) {
+    const frame=worldFraming(this.app.screen.width,this.app.screen.height,this.zone.width,this.zone.exits?this.position.y:(this.zone.groundTop+this.zone.groundBottom)/2,this.input?.touch,this._lastDisplayHeight);
+    this.zoom=frame.zoom;this.cameraY=snap?frame.cameraY:easeToward(this.cameraY??frame.cameraY,frame.cameraY,deltaMS,5);
+    const focus=this.selectedMob && (this.inCombat || this._approaching)?(this.position.x+this.selectedMob.container.x)/2:null;
+    this.cameraX=snap?computeCenteredCameraX(this.position.x,frame.viewWidth,this.zone.width):smoothCameraX(this.position.x,this.cameraX,this.velocity.x,frame.viewWidth,this.zone.width,deltaMS,focus);
+    this.world.scale.set(this.zoom);
+    this.world.position.set(-this.cameraX*this.zoom,-this.cameraY*this.zoom);
   }
 
   _setTargetFromPointer(event) {
@@ -522,9 +578,10 @@ export class WorldScene {
       return;
     }
     const rect = this.app.canvas.getBoundingClientRect();
+    this.velocity={x:0,y:0};this._directMovement=false;
     const worldPoint = {
-      x: event.clientX - rect.left + this.cameraX,
-      y: event.clientY - rect.top,
+      x: (event.clientX - rect.left) / this.zoom + this.cameraX,
+      y: (event.clientY - rect.top) / this.zoom + this.cameraY,
     };
     this.target = clampToZone(worldPoint, this.zone);
     this._emitMove();
@@ -553,7 +610,7 @@ export class WorldScene {
     const mobEntry = this.selectedMob;
     const mobX = mobEntry.container.position.x;
     const approachX = mobX + (this.position.x < mobX ? -APPROACH_DISTANCE : APPROACH_DISTANCE);
-    this.target = clampToZone({ x: approachX, y: this.position.y }, this.zone);
+    this.target = clampToZone({ x: approachX, y: mobEntry.container.y }, this.zone);
     this._emitMove(true);
   }
 
@@ -595,9 +652,12 @@ export class WorldScene {
   // once the grey fade (owned by app.js) has fully covered the screen. No
   // walk animation: this is a teleport, not a walk.
   respawnPlayer() {
+    this.velocity={x:0,y:0};this._directMovement=false;this.input?.reset();
     this.position = { x: this.zone.spawnX, y: this.zone.spawnY };
     this.target = { x: this.zone.spawnX, y: this.zone.spawnY };
     this.player.position.set(this.position.x, this.position.y);
+    this._syncOwnOverlays();
+    this._updateCamera(0,true);
     this._emitMove(true);
   }
 
@@ -815,6 +875,11 @@ export class WorldScene {
   // this.player -- see the note in loadZone) glued to this.player's current
   // world position every tick.
   _syncOwnOverlays() {
+    this.player.zIndex=this.position.y;
+    for(const mob of this.mobs)mob.container.zIndex=mob.container.y;
+    for(const remote of this.remotePlayers.values())remote.container.zIndex=remote.container.y;
+    if(this._ownLabel)this._ownLabel.zIndex=10000;
+    if(this._ownBubble)this._ownBubble.zIndex=10001;
     if (this._ownLabel) this._ownLabel.position.set(this.position.x, this.position.y + NAMEPLATE_OFFSET_Y);
     if (this._ownBubble) this._ownBubble.position.set(this.position.x, this.position.y + CHAT_BUBBLE_OFFSET_Y);
   }
@@ -915,6 +980,7 @@ export class WorldScene {
     text.anchor.set(0.5, 1);
     const startY = targetContainer.position.y - MOB_HEIGHT - 30;
     text.position.set(targetContainer.position.x, startY);
+    text.zIndex=10002;
     this.world.addChild(text);
     const RISE_DISTANCE = 36; // total world-pixels risen over the animation -- frame-rate independent, unlike a fixed per-frame offset
     this._animate(700, (t) => {
@@ -941,17 +1007,33 @@ export class WorldScene {
     // this session for position/target via a degenerate-resize guard.
     if (!this._pageReady) return;
 
-    const previousX = this.position.x;
-    this.position = stepTowardTarget(this.position, this.target, ticker.deltaMS, MOVE_SPEED);
+    const dt=Math.min(50,Math.max(0,ticker.deltaMS));
+    const previousX = this.position.x, previousY=this.position.y;
+    const axis=this.input?.vector ?? {x:0,y:0};
+    const direct=!this.inCombat && !this._approaching && (axis.x || axis.y);
+    if(direct || (this._directMovement && !this.inCombat && !this._approaching)) {
+      this._directMovement=true;this._pointerHeld=false;
+      this.velocity.x=easeToward(this.velocity.x,axis.x*MOVE_SPEED,dt,18);
+      this.velocity.y=easeToward(this.velocity.y,axis.y*MOVE_SPEED,dt,18);
+      if(!direct && Math.hypot(this.velocity.x,this.velocity.y)<2){this.velocity={x:0,y:0};this._directMovement=false;}
+      this.position=clampToZone({x:this.position.x+this.velocity.x*dt/1000,y:this.position.y+this.velocity.y*dt/1000},this.zone);
+      // Short prediction target lets remote clients follow held controls.
+      this.target=clampToZone({x:this.position.x+this.velocity.x*.12,y:this.position.y+this.velocity.y*.12},this.zone);
+      if(!this._directMovement)this.target={...this.position};
+      this._emitMove();
+    } else {
+      this.position = stepTowardTarget(this.position, this.target, dt, MOVE_SPEED);
+      this.velocity={x:dt?(this.position.x-previousX)*1000/dt:0,y:dt?(this.position.y-previousY)*1000/dt:0};
+    }
     const dx = this.position.x - previousX;
     if (dx > 0.01) this._facingLeft = false;
     else if (dx < -0.01) this._facingLeft = true;
-    const moving = this.position.x !== this.target.x || this.position.y !== this.target.y;
+    const moving = Math.hypot(this.position.x-previousX,this.position.y-previousY)>.01;
 
     if (this._isRigPlayer) {
       this.player.play(moving ? "run" : "idle");
       this.player.faceLeft(this._facingLeft);
-      this.player.update(ticker.deltaMS);
+      this.player.update(moving ? dt * Math.min(1,Math.max(.3,Math.hypot(this.velocity.x,this.velocity.y)/MOVE_SPEED)) : dt);
     } else {
       this.player.scale.x = this._facingLeft ? -this._playerBaseScale : this._playerBaseScale;
     }
@@ -963,7 +1045,7 @@ export class WorldScene {
 
     for (const remote of this.remotePlayers.values()) this._placeRemote(remote, ticker.deltaMS);
 
-    if (this._approaching && Math.abs(this.position.x - this.target.x) < 2) {
+    if (this._approaching && Math.hypot(this.position.x - this.target.x, this.position.y-this.target.y) < 2) {
       this._approaching = false;
       this.inCombat = true;
       // "Within 2px" can be a frame before we actually stop, so the last intent
@@ -982,24 +1064,12 @@ export class WorldScene {
     // edges at once and would bounce between two pages forever, so skip it.
     const hasRealWidth = this.zone.width > EDGE_TRANSITION_MARGIN * 4;
     if (!this.inCombat && !this._approaching && hasRealWidth) {
-      if (this.position.x <= EDGE_TRANSITION_MARGIN && this.links.prev) {
-        this._transitionToPage(this.links.prev, "right");
-      } else if (this.position.x >= this.zone.width - EDGE_TRANSITION_MARGIN && this.links.next) {
-        this._transitionToPage(this.links.next, "left");
-      }
+      const exit=reachedExit(this.zone,{x:this.position.x/this.zone.width,y:this.position.y/this._lastDisplayHeight});
+      if(exit)this._transitionToPage(exit.roomId,exit.entry).catch(error=>console.error('Room transition failed',error));
     }
-
     this._arrowPhase += ticker.deltaMS / 400;
-    const arrowBob = Math.sin(this._arrowPhase) * 4;
-    if (this._arrows.prev) this._arrows.prev.position.x = 18 + arrowBob;
-    if (this._arrows.next) this._arrows.next.position.x = this.zone.width - 18 + arrowBob;
+    for(const arrow of Object.values(this._arrows))if(arrow)arrow.alpha=.8+Math.sin(this._arrowPhase)*.15;
 
-    if (this.selectedMob && (this.inCombat || this._approaching)) {
-      const midpointX = (this.position.x + this.selectedMob.container.position.x) / 2;
-      this.cameraX = computeCenteredCameraX(midpointX, this.app.screen.width, this.zone.width);
-    } else {
-      this.cameraX = computeCameraX(this.position.x, this.cameraX, this.app.screen.width, this.zone.width, DEAD_ZONE_FRACTION);
-    }
-    this.world.x = -this.cameraX;
+    this._updateCamera(dt);
   }
 }

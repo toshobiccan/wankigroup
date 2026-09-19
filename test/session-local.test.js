@@ -22,6 +22,31 @@ async function start(storage = memoryStorage()) {
 }
 
 describe("LocalSession", () => {
+  it("leaves appearance unchanged when local saving fails", async () => {
+    const storage = memoryStorage(), session = await start(storage);
+    const before = structuredClone(session.player.character), onPlayer = vi.fn();
+    session.on("player", onPlayer);
+    storage.setItem = () => { throw new Error("Storage full"); };
+    await expect(session.customizeCharacter({ hair: "swept" })).rejects.toThrow("Storage full");
+    expect(session.player.character).toEqual(before);
+    expect(session.player.characterCreated).toBe(false);
+    expect(onPlayer).not.toHaveBeenCalled();
+  });
+  it("saves a player's wardrobe choices and completes creation without touching equipment or stats", async () => {
+    const storage = memoryStorage(), session = await start(storage);
+    const original = structuredClone(session.player);
+    expect(session.player.characterCreated).toBe(false);
+    await session.customizeCharacter({ hair: "swept", eyeColor: "#538967", coins: 999999, hairColor: "url(bad)" });
+    const restored = await start(storage);
+    expect(restored.player.characterCreated).toBe(true);
+    expect(restored.player.character).toMatchObject({ hair: "swept", eyeColor: "#538967", hairColor: "#56351f" });
+    expect(restored.player.coins).toBe(original.coins);
+    expect(restored.player.stats).toEqual(original.stats);
+    expect(restored.player.equipment).toEqual(original.equipment);
+    const other = await start(memoryStorage());
+    expect(other.player.character.hair).toBe("spiky");
+    expect(other.player.characterCreated).toBe(false);
+  });
   it("keeps displaced starter equipment available to equip again", async () => {
     const session = await start();
     const previous = session.player.equipment.armor;

@@ -1,0 +1,812 @@
+{
+  "version": 2,
+  "id": "plains",
+  "name": "Plains",
+  "prompt": "A sunny plains region with coherent green grass, scattered trees, stone ruins and a boss clearing.",
+  "count": 14,
+  "width": 1920,
+  "height": 1080,
+  "groundTopFrac": 0.58,
+  "groundBottomFrac": 0.9,
+  "spawnXFrac": 0.2,
+  "mapX": 540,
+  "mapY": 330,
+  "biome": "plains",
+  "connectFrom": "spawn-3",
+  "rooms": [
+    {
+      "id": "plains-1",
+      "displayName": "Plains 1",
+      "regionId": "plains",
+      "role": "entrance",
+      "composition": "rocky verge",
+      "backgroundImage": "assets/rooms/plains-1.png",
+      "groundTopFrac": 0.5807125694071874,
+      "groundBottomFrac": 0.9,
+      "spawnXFrac": 0.2,
+      "spawnYFrac": 0.7403562847035937,
+      "exits": {
+        "south": {
+          "roomId": "plains-2",
+          "entry": "north",
+          "at": 0.5
+        },
+        "west": {
+          "roomId": "spawn-3",
+          "entry": "east",
+          "at": 0.5
+        }
+      },
+      "links": {},
+      "mobs": [
+        {
+          "id": "plains-1-mob-1",
+          "definitionId": "placeholder-elite",
+          "role": "normal",
+          "xFrac": 0.36,
+          "yFrac": 0.7644833252018899
+        },
+        {
+          "id": "plains-1-mob-2",
+          "definitionId": "placeholder-ranged",
+          "role": "normal",
+          "xFrac": 0.64,
+          "yFrac": 0.7439337949659961
+        }
+      ],
+      "map": {
+        "areaId": "plains",
+        "areaName": "Plains",
+        "biome": "plains",
+        "x": 120,
+        "y": 180,
+        "gridX": 0,
+        "gridY": 0,
+        "worldX": 540,
+        "worldY": 330
+      }
+    },
+    {
+      "id": "plains-2",
+      "displayName": "Plains 2",
+      "regionId": "plains",
+      "role": "encounter",
+      "composition": "open clearing",
+      "backgroundImage": "assets/rooms/plains-2.png",
+      "groundTopFrac": 0.5804819898598361,
+      "groundBottomFrac": 0.9,
+      "spawnXFrac": 0.2,
+      "spawnYFrac": 0.740240994929918,
+      "exits": {
+        "north": {
+          "roomId": "plains-1",
+          "entry": "south",
+          "at": 0.5
+        },
+        "south": {
+          "roomId": "plains-3",
+          "entry": "north",
+          "at": 0.5
+        }
+      },
+      "links": {},
+      "mobs": [
+        {
+          "id": "plains-2-mob-1",
+          "definitionId": "placeholder-ranged",
+          "role": "normal",
+          "xFrac": 0.36,
+          "yFrac": 0.7941703346947576
+        },
+        {
+          "id": "plains-2-mob-2",
+          "definitionId": "placeholder-melee",
+          "role": "normal",
+          "xFrac": 0.64,
+          "yFrac": 0.7028972456471767
+        }
+      ],
+      "map": {
+        "areaId": "plains",
+        "areaName": "Plains",
+        "biome": "plains",
+        "x": 120,
+        "y": 275,
+        "gridX": 0,
+        "gridY": 1,
+        "worldX": 540,
+        "worldY": 330
+      }
+    },
+    {
+      "id": "plains-3",
+      "displayName": "Plains 3",
+      "regionId": "plains",
+      "role": "encounter",
+      "composition": "open clearing",
+      "backgroundImage": "assets/rooms/plains-3.png",
+      "groundTopFrac": 0.5933449327677953,
+      "groundBottomFrac": 0.9,
+      "spawnXFrac": 0.2,
+      "spawnYFrac": 0.7466724663838977,
+      "exits": {
+        "north": {
+          "roomId": "plains-2",
+          "entry": "south",
+          "at": 0.5
+        },
+        "east": {
+          "roomId": "plains-4",
+          "entry": "west",
+          "at": 0.5
+        },
+        "south": {
+          "roomId": "plains-11",
+          "entry": "north",
+          "at": 0.5
+        }
+      },
+      "links": {},
+      "mobs": [
+        {
+          "id": "plains-3-mob-1",
+          "definitionId": "placeholder-elite",
+          "role": "normal",
+          "xFrac": 0.29000000000000004,
+          "yFrac": 0.7366341001992138
+        },
+        {
+          "id": "plains-3-mob-2",
+          "definitionId": "placeholder-melee",
+          "role": "normal",
+          "xFrac": 0.43000000000000005,
+          "yFrac": 0.8140953215175966
+        },
+        {
+          "id": "plains-3-mob-3",
+          "definitionId": "placeholder-elite",
+          "role": "normal",
+          "xFrac": 0.5700000000000001,
+          "yFrac": 0.7163980839850674
+        },
+        {
+          "id": "plains-3-mob-4",
+          "definitionId": "placeholder-melee",
+          "role": "normal",
+          "xFrac": 0.7100000000000001,
+          "yFrac": 0.7639996579880517
+        }
+      ],
+      "map": {
+        "areaId": "plains",
+        "areaName": "Plains",
+        "biome": "plains",
+        "x": 120,
+        "y": 370,
+        "gridX": 0,
+        "gridY": 2,
+        "worldX": 540,
+        "worldY": 330
+      }
+    },
+    {
+      "id": "plains-4",
+      "displayName": "Plains 4",
+      "regionId": "plains",
+      "role": "encounter",
+      "composition": "meadow",
+      "backgroundImage": "assets/rooms/plains-4.png",
+      "groundTopFrac": 0.5870623370783868,
+      "groundBottomFrac": 0.9,
+      "spawnXFrac": 0.2,
+      "spawnYFrac": 0.7435311685391934,
+      "exits": {
+        "west": {
+          "roomId": "plains-3",
+          "entry": "east",
+          "at": 0.5
+        },
+        "east": {
+          "roomId": "plains-5",
+          "entry": "west",
+          "at": 0.5
+        }
+      },
+      "links": {},
+      "mobs": [
+        {
+          "id": "plains-4-mob-1",
+          "definitionId": "placeholder-melee",
+          "role": "normal",
+          "xFrac": 0.36,
+          "yFrac": 0.7372661516807405
+        },
+        {
+          "id": "plains-4-mob-2",
+          "definitionId": "placeholder-melee",
+          "role": "normal",
+          "xFrac": 0.64,
+          "yFrac": 0.7523066621494794
+        }
+      ],
+      "map": {
+        "areaId": "plains",
+        "areaName": "Plains",
+        "biome": "plains",
+        "x": 215,
+        "y": 370,
+        "gridX": 1,
+        "gridY": 2,
+        "worldX": 540,
+        "worldY": 330
+      }
+    },
+    {
+      "id": "plains-5",
+      "displayName": "Plains 5",
+      "regionId": "plains",
+      "role": "encounter",
+      "composition": "rocky verge",
+      "backgroundImage": "assets/rooms/plains-5.png",
+      "groundTopFrac": 0.5804882488283328,
+      "groundBottomFrac": 0.9,
+      "spawnXFrac": 0.2,
+      "spawnYFrac": 0.7402441244141664,
+      "exits": {
+        "west": {
+          "roomId": "plains-4",
+          "entry": "east",
+          "at": 0.5
+        },
+        "east": {
+          "roomId": "plains-6",
+          "entry": "west",
+          "at": 0.5
+        },
+        "north": {
+          "roomId": "plains-12",
+          "entry": "south",
+          "at": 0.5
+        }
+      },
+      "links": {},
+      "mobs": [
+        {
+          "id": "plains-5-mob-1",
+          "definitionId": "placeholder-melee",
+          "role": "normal",
+          "xFrac": 0.31333333333333335,
+          "yFrac": 0.7082448669594286
+        },
+        {
+          "id": "plains-5-mob-2",
+          "definitionId": "placeholder-elite",
+          "role": "normal",
+          "xFrac": 0.5,
+          "yFrac": 0.8040800713967455
+        },
+        {
+          "id": "plains-5-mob-3",
+          "definitionId": "placeholder-ranged",
+          "role": "normal",
+          "xFrac": 0.6866666666666668,
+          "yFrac": 0.6920762853855345
+        }
+      ],
+      "map": {
+        "areaId": "plains",
+        "areaName": "Plains",
+        "biome": "plains",
+        "x": 310,
+        "y": 370,
+        "gridX": 2,
+        "gridY": 2,
+        "worldX": 540,
+        "worldY": 330
+      }
+    },
+    {
+      "id": "plains-6",
+      "displayName": "Plains 6",
+      "regionId": "plains",
+      "role": "encounter",
+      "composition": "open clearing",
+      "backgroundImage": "assets/rooms/plains-6.png",
+      "groundTopFrac": 0.5653561662870924,
+      "groundBottomFrac": 0.9,
+      "spawnXFrac": 0.2,
+      "spawnYFrac": 0.7326780831435462,
+      "exits": {
+        "west": {
+          "roomId": "plains-5",
+          "entry": "east",
+          "at": 0.5
+        },
+        "north": {
+          "roomId": "plains-7",
+          "entry": "south",
+          "at": 0.5
+        }
+      },
+      "links": {},
+      "mobs": [
+        {
+          "id": "plains-6-mob-1",
+          "definitionId": "placeholder-elite",
+          "role": "normal",
+          "xFrac": 0.36,
+          "yFrac": 0.7539360052062324
+        },
+        {
+          "id": "plains-6-mob-2",
+          "definitionId": "placeholder-elite",
+          "role": "normal",
+          "xFrac": 0.64,
+          "yFrac": 0.7114561286728507
+        }
+      ],
+      "map": {
+        "areaId": "plains",
+        "areaName": "Plains",
+        "biome": "plains",
+        "x": 405,
+        "y": 370,
+        "gridX": 3,
+        "gridY": 2,
+        "worldX": 540,
+        "worldY": 330
+      }
+    },
+    {
+      "id": "plains-7",
+      "displayName": "Plains 7",
+      "regionId": "plains",
+      "role": "encounter",
+      "composition": "meadow",
+      "backgroundImage": "assets/rooms/plains-7.png",
+      "groundTopFrac": 0.5687824211118276,
+      "groundBottomFrac": 0.9,
+      "spawnXFrac": 0.2,
+      "spawnYFrac": 0.7343912105559138,
+      "exits": {
+        "south": {
+          "roomId": "plains-6",
+          "entry": "north",
+          "at": 0.5
+        },
+        "east": {
+          "roomId": "plains-8",
+          "entry": "west",
+          "at": 0.5
+        }
+      },
+      "links": {},
+      "mobs": [
+        {
+          "id": "plains-7-mob-1",
+          "definitionId": "placeholder-elite",
+          "role": "normal",
+          "xFrac": 0.36,
+          "yFrac": 0.7833663562116612
+        },
+        {
+          "id": "plains-7-mob-2",
+          "definitionId": "placeholder-elite",
+          "role": "normal",
+          "xFrac": 0.64,
+          "yFrac": 0.7587044648613506
+        }
+      ],
+      "map": {
+        "areaId": "plains",
+        "areaName": "Plains",
+        "biome": "plains",
+        "x": 405,
+        "y": 275,
+        "gridX": 3,
+        "gridY": 1,
+        "worldX": 540,
+        "worldY": 330
+      }
+    },
+    {
+      "id": "plains-8",
+      "displayName": "Plains 8",
+      "regionId": "plains",
+      "role": "encounter",
+      "composition": "rocky verge",
+      "backgroundImage": "assets/rooms/plains-8.png",
+      "groundTopFrac": 0.593344782270724,
+      "groundBottomFrac": 0.9,
+      "spawnXFrac": 0.2,
+      "spawnYFrac": 0.746672391135362,
+      "exits": {
+        "west": {
+          "roomId": "plains-7",
+          "entry": "east",
+          "at": 0.5
+        },
+        "south": {
+          "roomId": "plains-9",
+          "entry": "north",
+          "at": 0.5
+        }
+      },
+      "links": {},
+      "mobs": [
+        {
+          "id": "plains-8-mob-1",
+          "definitionId": "placeholder-ranged",
+          "role": "normal",
+          "xFrac": 0.31333333333333335,
+          "yFrac": 0.7142663233407803
+        },
+        {
+          "id": "plains-8-mob-2",
+          "definitionId": "placeholder-ranged",
+          "role": "normal",
+          "xFrac": 0.5,
+          "yFrac": 0.8103927513085665
+        },
+        {
+          "id": "plains-8-mob-3",
+          "definitionId": "placeholder-elite",
+          "role": "normal",
+          "xFrac": 0.6866666666666668,
+          "yFrac": 0.7161080823147059
+        }
+      ],
+      "map": {
+        "areaId": "plains",
+        "areaName": "Plains",
+        "biome": "plains",
+        "x": 500,
+        "y": 275,
+        "gridX": 4,
+        "gridY": 1,
+        "worldX": 540,
+        "worldY": 330
+      }
+    },
+    {
+      "id": "plains-9",
+      "displayName": "Plains 9",
+      "regionId": "plains",
+      "role": "encounter",
+      "composition": "meadow",
+      "backgroundImage": "assets/rooms/plains-9.png",
+      "groundTopFrac": 0.5767669796093833,
+      "groundBottomFrac": 0.9,
+      "spawnXFrac": 0.2,
+      "spawnYFrac": 0.7383834898046917,
+      "exits": {
+        "north": {
+          "roomId": "plains-8",
+          "entry": "south",
+          "at": 0.5
+        },
+        "east": {
+          "roomId": "plains-10",
+          "entry": "west",
+          "at": 0.5
+        }
+      },
+      "links": {},
+      "mobs": [
+        {
+          "id": "plains-9-mob-1",
+          "definitionId": "placeholder-ranged",
+          "role": "normal",
+          "xFrac": 0.36,
+          "yFrac": 0.6900598434827008
+        },
+        {
+          "id": "plains-9-mob-2",
+          "definitionId": "placeholder-ranged",
+          "role": "normal",
+          "xFrac": 0.64,
+          "yFrac": 0.8028120802199696
+        }
+      ],
+      "map": {
+        "areaId": "plains",
+        "areaName": "Plains",
+        "biome": "plains",
+        "x": 500,
+        "y": 370,
+        "gridX": 4,
+        "gridY": 2,
+        "worldX": 540,
+        "worldY": 330
+      }
+    },
+    {
+      "id": "plains-10",
+      "displayName": "Plains 10",
+      "regionId": "plains",
+      "role": "encounter",
+      "composition": "stone ruins",
+      "backgroundImage": "assets/rooms/plains-10.png",
+      "groundTopFrac": 0.5908123028895351,
+      "groundBottomFrac": 0.9,
+      "spawnXFrac": 0.2,
+      "spawnYFrac": 0.7454061514447676,
+      "exits": {
+        "west": {
+          "roomId": "plains-9",
+          "entry": "east",
+          "at": 0.5
+        },
+        "east": {
+          "roomId": "plains-14",
+          "entry": "west",
+          "at": 0.5
+        },
+        "south": {
+          "roomId": "plains-13",
+          "entry": "north",
+          "at": 0.5
+        }
+      },
+      "links": {},
+      "mobs": [
+        {
+          "id": "plains-10-mob-1",
+          "definitionId": "placeholder-melee",
+          "role": "normal",
+          "xFrac": 0.29000000000000004,
+          "yFrac": 0.8023226967249542
+        },
+        {
+          "id": "plains-10-mob-2",
+          "definitionId": "placeholder-ranged",
+          "role": "normal",
+          "xFrac": 0.43000000000000005,
+          "yFrac": 0.8133320116696348
+        },
+        {
+          "id": "plains-10-mob-3",
+          "definitionId": "placeholder-ranged",
+          "role": "normal",
+          "xFrac": 0.5700000000000001,
+          "yFrac": 0.8185871606313864
+        },
+        {
+          "id": "plains-10-mob-4",
+          "definitionId": "placeholder-elite",
+          "role": "normal",
+          "xFrac": 0.7100000000000001,
+          "yFrac": 0.7818816150178813
+        }
+      ],
+      "map": {
+        "areaId": "plains",
+        "areaName": "Plains",
+        "biome": "plains",
+        "x": 595,
+        "y": 370,
+        "gridX": 5,
+        "gridY": 2,
+        "worldX": 540,
+        "worldY": 330
+      }
+    },
+    {
+      "id": "plains-11",
+      "displayName": "Plains 11",
+      "regionId": "plains",
+      "role": "encounter",
+      "composition": "meadow",
+      "backgroundImage": "assets/rooms/plains-11.png",
+      "groundTopFrac": 0.587145043213386,
+      "groundBottomFrac": 0.9,
+      "spawnXFrac": 0.2,
+      "spawnYFrac": 0.7435725216066931,
+      "exits": {
+        "north": {
+          "roomId": "plains-3",
+          "entry": "south",
+          "at": 0.5
+        }
+      },
+      "links": {},
+      "mobs": [
+        {
+          "id": "plains-11-mob-1",
+          "definitionId": "placeholder-ranged",
+          "role": "normal",
+          "xFrac": 0.36,
+          "yFrac": 0.7413105182605265
+        },
+        {
+          "id": "plains-11-mob-2",
+          "definitionId": "placeholder-ranged",
+          "role": "normal",
+          "xFrac": 0.64,
+          "yFrac": 0.7596688807613851
+        }
+      ],
+      "map": {
+        "areaId": "plains",
+        "areaName": "Plains",
+        "biome": "plains",
+        "x": 120,
+        "y": 465,
+        "gridX": 0,
+        "gridY": 3,
+        "worldX": 540,
+        "worldY": 330
+      }
+    },
+    {
+      "id": "plains-12",
+      "displayName": "Plains 12",
+      "regionId": "plains",
+      "role": "encounter",
+      "composition": "stone ruins",
+      "backgroundImage": "assets/rooms/plains-12.png",
+      "groundTopFrac": 0.5649903373897541,
+      "groundBottomFrac": 0.9,
+      "spawnXFrac": 0.2,
+      "spawnYFrac": 0.7324951686948771,
+      "exits": {
+        "south": {
+          "roomId": "plains-5",
+          "entry": "north",
+          "at": 0.5
+        }
+      },
+      "links": {},
+      "mobs": [
+        {
+          "id": "plains-12-mob-1",
+          "definitionId": "placeholder-melee",
+          "role": "normal",
+          "xFrac": 0.31333333333333335,
+          "yFrac": 0.7582427011491573
+        },
+        {
+          "id": "plains-12-mob-2",
+          "definitionId": "placeholder-elite",
+          "role": "normal",
+          "xFrac": 0.5,
+          "yFrac": 0.7813244182865471
+        },
+        {
+          "id": "plains-12-mob-3",
+          "definitionId": "placeholder-melee",
+          "role": "normal",
+          "xFrac": 0.6866666666666668,
+          "yFrac": 0.8185497760129621
+        }
+      ],
+      "map": {
+        "areaId": "plains",
+        "areaName": "Plains",
+        "biome": "plains",
+        "x": 310,
+        "y": 275,
+        "gridX": 2,
+        "gridY": 1,
+        "worldX": 540,
+        "worldY": 330
+      }
+    },
+    {
+      "id": "plains-13",
+      "displayName": "Plains 13",
+      "regionId": "plains",
+      "role": "encounter",
+      "composition": "open clearing",
+      "backgroundImage": "assets/rooms/plains-13.png",
+      "groundTopFrac": 0.570687816486461,
+      "groundBottomFrac": 0.9,
+      "spawnXFrac": 0.2,
+      "spawnYFrac": 0.7353439082432305,
+      "exits": {
+        "north": {
+          "roomId": "plains-10",
+          "entry": "south",
+          "at": 0.5
+        }
+      },
+      "links": {},
+      "mobs": [
+        {
+          "id": "plains-13-mob-1",
+          "definitionId": "placeholder-melee",
+          "role": "normal",
+          "xFrac": 0.36,
+          "yFrac": 0.6727705365757415
+        },
+        {
+          "id": "plains-13-mob-2",
+          "definitionId": "placeholder-melee",
+          "role": "normal",
+          "xFrac": 0.64,
+          "yFrac": 0.7802627196186727
+        }
+      ],
+      "map": {
+        "areaId": "plains",
+        "areaName": "Plains",
+        "biome": "plains",
+        "x": 595,
+        "y": 465,
+        "gridX": 5,
+        "gridY": 3,
+        "worldX": 540,
+        "worldY": 330
+      }
+    },
+    {
+      "id": "plains-14",
+      "displayName": "Plains 14",
+      "regionId": "plains",
+      "role": "boss",
+      "composition": "boss clearing",
+      "backgroundImage": "assets/rooms/plains-14.png",
+      "groundTopFrac": 0.5852683693671134,
+      "groundBottomFrac": 0.9,
+      "spawnXFrac": 0.2,
+      "spawnYFrac": 0.7426341846835567,
+      "exits": {
+        "west": {
+          "roomId": "plains-10",
+          "entry": "east",
+          "at": 0.5
+        }
+      },
+      "links": {},
+      "mobs": [
+        {
+          "id": "plains-14-mob-1",
+          "definitionId": "placeholder-boss",
+          "role": "boss",
+          "xFrac": 0.5,
+          "yFrac": 0.7056667573100104
+        }
+      ],
+      "map": {
+        "areaId": "plains",
+        "areaName": "Plains",
+        "biome": "plains",
+        "x": 690,
+        "y": 370,
+        "gridX": 6,
+        "gridY": 2,
+        "worldX": 540,
+        "worldY": 330
+      }
+    }
+  ],
+  "regionType": "plains",
+  "seed": "cardslayer-plains-v1",
+  "connectDirection": "east",
+  "region": {
+    "id": "plains",
+    "name": "Plains",
+    "biome": "plains",
+    "seed": "cardslayer-plains-v1",
+    "entryRoomId": "plains-1",
+    "bossRoomId": "plains-14",
+    "roomIds": [
+      "plains-1",
+      "plains-2",
+      "plains-3",
+      "plains-4",
+      "plains-5",
+      "plains-6",
+      "plains-7",
+      "plains-8",
+      "plains-9",
+      "plains-10",
+      "plains-11",
+      "plains-12",
+      "plains-13",
+      "plains-14"
+    ],
+    "worldX": 540,
+    "worldY": 330
+  }
+}

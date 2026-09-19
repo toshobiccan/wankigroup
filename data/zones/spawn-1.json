@@ -1,0 +1,32 @@
+{
+  "id": "spawn-1",
+  "displayName": "Home and garden 1",
+  "regionId": "spawn",
+  "role": "entrance",
+  "composition": "cottage garden",
+  "backgroundImage": "assets/rooms/spawn-1.png",
+  "groundTopFrac": 0.64,
+  "groundBottomFrac": 1,
+  "spawnXFrac": 0.2,
+  "spawnYFrac": 0.8200000000000001,
+  "exits": {
+    "east": {
+      "roomId": "spawn-2",
+      "entry": "west",
+      "at": 0.5
+    }
+  },
+  "links": {},
+  "mobs": [],
+  "map": {
+    "areaId": "spawn",
+    "areaName": "Home and garden",
+    "biome": "village",
+    "x": 120,
+    "y": 180,
+    "gridX": 0,
+    "gridY": 0,
+    "worldX": 220,
+    "worldY": 330
+  }
+}

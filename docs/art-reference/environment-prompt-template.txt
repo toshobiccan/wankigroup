@@ -1,102 +1,19 @@
-Create a 2D fantasy game environment background for CARDSLAYER.
+CARDSLAYER ROOM ART STYLE — Approved Spawn / Plains reference standard:
+PRIMARY VISUAL REFERENCE: assets/art-reference/room-style-approved.png, the user-approved Spawn cottage background. assets/world-background.png is the original secondary Plains reference. Attach and inspect this image for EVERY room generation. Match its actual detail density, rendering, palette relationships and depth. It takes priority over older room instructions and character-derived environment rules.
+STYLE: explicit AQW-inspired 2005–2010 Flash fantasy browser-game environment, with original scenery. Angular hand-drawn silhouettes, chunky faceted rocks, geometric leaf clusters, pointed grass shapes and simple architectural silhouettes. A finished gameplay background with the SAME medium level of environmental detail as Plains: neither a bare flat lawn nor richly textured concept art.
+LINEWORK: selective dark contours on nearer trees, rocks and terrain edges, thinner internal facet lines, and mostly unoutlined distant silhouettes. Match the Plains image visually; do not apply character-head outline thickness to every environmental object.
+COLOR AND SHADING: muted olive grass, slate rock planes and blue atmospheric distances, adapted coherently to each biome. Broad angular cel-shaded planes with restrained tonal variation. Gentle sky/atmospheric transitions are permitted where the Plains reference uses them. No mottled painted grass, realistic material textures, tiny leaf or roof-tile repetition, bloom or glossy 3D lighting.
+DEPTH AND COMPOSITION: use the same side-view adventure perspective and layered silhouettes as Plains. Foreground has stronger contrast; mountains, trees and architecture in the distance have lower contrast. Preserve its readable shapes and visual interest without copying its exact cliffs, lake, castle or narrow platform into every room.
+WALKABILITY IS SEPARATE FROM STYLE: all unobstructed playable ground is intended to be walkable, not just a painted path. No mandatory yellow strip or narrow lane. Sky, distant scenery, water, cliffs and solid obstacle footprints are not walkable. Use the room-specific ground and collision guide for geometry; never infer collision from a color. Do not bake arrows, markers or collision overlays into artwork.
+REFERENCE EXCLUSIONS: only the rejected Spawn v1/v2 previews are excluded; the approved v3 cottage is the primary reference. human-base-v5-front-grip.png is a character reference, not the authority for room rendering. Later rooms also reference the accepted first room of their region for palette consistency, while the approved Spawn cottage remains the style benchmark.
+OUTPUT: one coherent room background; no characters, mobs, text, UI, logos or collage. Match Plains, not a painterly fantasy illustration, modern mobile-game scene, isometric map or oversimplified cartoon.
 
-ENVIRONMENT:
+ROOM / REGION:
 [ENVIRONMENT DESCRIPTION]
 
-CARDSLAYER ENVIRONMENT ART STYLE:
+Attach assets/world-background.png as the primary visual reference.
+For subsequent rooms, also attach the accepted first room of this region.
+[ROOM GROUND / OBSTACLE FOOTPRINTS / EXIT POSITIONS]
+[OUTPUT DIMENSIONS AND FILENAME]
 
-Early-to-mid 2000s browser Flash fantasy RPG environment.
-
-The environment must visually belong to the same game as simple thick-outlined cel-shaded fantasy characters.
-
-Use clean, simplified vector-like shapes, bold silhouettes and restrained cel shading.
-
-BACKGROUND DETAIL LEVEL:
-LOW.
-
-This is a GAMEPLAY BACKGROUND, not concept art.
-
-The player and enemies will be placed on top of this environment and must remain much more visually prominent than the scenery.
-
-Use large simple shapes rather than many small objects.
-
-LINEWORK:
-Dark, clearly visible outlines around major foreground and midground objects.
-Thicker outlines on objects closer to the player.
-Slightly thinner or softer outlines on distant scenery.
-Avoid outlining every tiny environmental feature.
-
-SHADING:
-Simple flat colors.
-Maximum approximately 2–3 tones per major object.
-Large cel-shaded shadow shapes.
-No gradients.
-No realistic lighting.
-No detailed textures.
-No photorealistic grass, rocks, water or clouds.
-
-GROUND / WALKABILITY:
-VERY IMPORTANT:
-
-The playable walking area must be immediately obvious.
-
-Create a broad, mostly flat foreground and middle-ground surface where characters can stand and move.
-
-Keep the playable ground relatively empty.
-
-Do not cover the walking area with excessive grass, rocks, flowers, bushes or props.
-
-Use environmental boundaries such as water, cliffs, trees, rocks, fences or elevation changes to make non-walkable areas visually obvious.
-
-The environment should communicate:
-"This area is playable."
-"This area is scenery."
-
-COMPOSITION:
-Design the scene so the important gameplay area remains useful when cropped to BOTH:
-16:9 landscape
-and
-9:16 portrait.
-
-Keep essential gameplay terrain and landmarks near the central portion of the composition.
-
-Do not place essential features only at the far left or right edges.
-
-Create enough additional scenery around the central gameplay area to allow responsive cropping.
-
-DEPTH:
-Use approximately three simple layers:
-
-1. Foreground / playable ground
-2. Midground landmarks
-3. Simplified distant background
-
-Do not create excessive atmospheric depth.
-
-COLOR:
-Moderately saturated fantasy palette.
-Background colors should generally be slightly less intense than character colors.
-Strong separation between ground, obstacles and distant scenery.
-
-IMPORTANT STYLE EXCLUSIONS:
-NOT realistic.
-NOT painterly.
-NOT anime landscape.
-NOT highly detailed.
-NOT 3D.
-NOT isometric.
-NOT modern mobile-game background.
-NOT cinematic concept art.
-NOT photorealistic.
-NOT soft digital painting.
-NOT excessive vegetation.
-NOT detailed texture work.
-NOT polished AI fantasy artwork.
-
-The result should feel like a hand-drawn vector environment from a fantasy browser MMORPG made around 2005–2010, but with an original visual identity.
-
-No characters.
-No enemies.
-No UI.
-No text.
-No logo.
+Ground and collision design are separate from art style. Match Plains' rendering, not its narrow platform geometry. All open playable ground should be traversable; physical obstacles and scenery require corresponding collision boundaries. The current runtime still uses rectangular bounds: do not claim obstacle-aware movement exists before it is implemented.

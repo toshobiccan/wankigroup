@@ -1,0 +1,16 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Approved head registration</title><style>body{background:#e9e1ce;color:#303a35;font:14px sans-serif;margin:20px}.row{display:flex;gap:12px}figure{margin:0;flex:1;min-width:0}canvas{width:100%;height:auto;border:1px solid #887}button,label{margin:6px}figcaption{padding:8px}</style></head><body>
+<h1>Approved head registration</h1><p>One source image, one shared transform. Ears are fixed. Classic eyes and Friendly mouth retain the original pixels.</p>
+<button id="shape">Eye shape: Classic</button><button id="mouth">Mouth: Friendly</button><button data-frame="open">Open</button><button data-frame="half">Half blink</button><button data-frame="closed">Closed</button><label><input type="checkbox" id="hair">Hair</label>
+<p id="result" role="status">Loading…</p><div class="row"><figure><canvas id="ref" width="512" height="512"></canvas><figcaption>Approved template</figcaption></figure><figure><canvas id="new" width="512" height="512"></canvas><figcaption>Customizable render</figcaption></figure><figure><canvas id="overlay" width="512" height="512"></canvas><figcaption>50% overlay</figcaption></figure></div>
+<script type="module">
+import{loadHeadAssets,HeadRenderer}from'/src/sprites/head-renderer.js';
+const resources=await loadHeadAssets(),r=new HeadRenderer(resources,{hair:'none'}),ref=document.querySelector('#ref'),target=document.querySelector('#new'),overlay=document.querySelector('#overlay');
+const sourceCanvas=document.createElement('canvas');sourceCanvas.width=resources.manifest.master.width;sourceCanvas.height=resources.manifest.master.height;sourceCanvas.getContext('2d').drawImage(resources.image,0,0);ref.getContext('2d').drawImage(sourceCanvas,...resources.manifest.master.rect);
+let frame='open',eyeShape='standard',mouth='smile';
+function draw(){r.setAppearance({hair:document.querySelector('#hair').checked?'spiky':'none',eyeShape,mouth});r.draw(frame);const c=target.getContext('2d');c.clearRect(0,0,512,512);c.drawImage(r.canvas,0,0);const o=overlay.getContext('2d');o.clearRect(0,0,512,512);o.globalAlpha=1;o.drawImage(ref,0,0);o.globalAlpha=.5;o.drawImage(r.canvas,0,0);o.globalAlpha=1;
+const a=sourceCanvas.getContext('2d').getImageData(0,0,sourceCanvas.width,sourceCanvas.height).data,b=r.native.getContext('2d').getImageData(0,0,sourceCanvas.width,sourceCanvas.height).data;let changed=0;for(let i=0;i<a.length;i+=4)if(a[i]!==b[i]||a[i+1]!==b[i+1]||a[i+2]!==b[i+2]||a[i+3]!==b[i+3])changed++;
+document.querySelector('#result').textContent=`Changed native pixels versus approved template: ${changed}. ${changed===0?'Exact match.':'Selected customization shown.'}`;}
+document.querySelector('#shape').onclick=e=>{eyeShape=eyeShape==='standard'?'lashes':'standard';e.target.textContent='Eye shape: '+(eyeShape==='standard'?'Classic':'Lashes');draw();};
+document.querySelector('#mouth').onclick=e=>{mouth=mouth==='smile'?'neutral':'smile';e.target.textContent='Mouth: '+(mouth==='smile'?'Friendly':'Calm');draw();};
+document.querySelector('#hair').onchange=draw;for(const b of document.querySelectorAll('[data-frame]'))b.onclick=()=>{frame=b.dataset.frame;draw();};draw();
+</script></body></html>

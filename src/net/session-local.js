@@ -6,6 +6,7 @@ import { Emitter, SessionError } from "./emitter.js";
 import { Room } from "../game/room.js";
 import { normalizePlayer } from "../game/player.js";
 import { recordDeckImport, claimQuest } from "../game/progression.js";
+import { normalizeHead } from "../sprites/character-head.js";
 
 const PLAYER_KEY = "cardslayer-player";
 const LOCAL_ID = "local";
@@ -65,6 +66,16 @@ export class LocalSession extends Emitter {
       this._player.inventory.equipables.push({ ...previous, kind: "equipable", slot: item.slot });
     }
     this._player.equipment[item.slot] = item; this._changed();
+  }
+
+  async customizeCharacter(appearance) {
+    const character = normalizeHead(appearance);
+    // Do not report success or alter the live player if device storage fails.
+    this.storage.setItem(PLAYER_KEY, JSON.stringify({ ...this._player, character, characterCreated: true }));
+    this._player.character = character;
+    this._player.characterCreated = true;
+    this.emit("player", this._player);
+    return this._player.character;
   }
 
   async importedDeck(cardCount) {

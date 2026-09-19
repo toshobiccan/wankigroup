@@ -88,6 +88,19 @@ describe("server (online)", () => {
     expect(data).toMatchObject({ online: true, protocol: 1, wsPath: "/ws" });
   });
 
+  it("saves wardrobe appearance per authenticated account without accepting progression fields", async () => {
+    const a = await guest("TailorA"), b = await guest("TailorB");
+    const body = { appearance: { hair: "swept", eyeColor: "#538967", coins: 9999 }, accountId: b.account.id };
+    expect((await api(ctx.base, "POST", "/api/actions/customize-character", { body })).status).toBe(401);
+    const result = await api(ctx.base, "POST", "/api/actions/customize-character", { body, token: a.token });
+    expect(result.status).toBe(200);
+    expect(result.data.player).toMatchObject({ characterCreated: true, character: { hair: "swept", eyeColor: "#538967" }, coins: 0 });
+    const restored = await api(ctx.base, "GET", "/api/me", { token: a.token });
+    expect(restored.data.player.character).toEqual(result.data.player.character);
+    expect((await api(ctx.base, "GET", "/api/me", { token: b.token })).data.player.characterCreated).toBe(false);
+    expect((await api(ctx.base, "POST", "/api/actions/customize-character", { body: { appearance: [] }, token: a.token })).status).toBe(400);
+  });
+
   it("only serves allowlisted static files", async () => {
     expect((await fetch(ctx.base + "/")).status).toBe(200);
     expect((await fetch(ctx.base + "/src/game/room.js")).status).toBe(200);

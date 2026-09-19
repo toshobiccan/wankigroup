@@ -1,3 +1,4 @@
+import { resolveMob } from './mob-definitions.js';
 // One live copy of a zone page: who is in it, where they stand, every mob's
 // HP, and who is fighting what. The server runs one Room per instance
 // ("plains1-0001"); local mode runs a single Room with just you in it -- same
@@ -48,7 +49,8 @@ export class Room {
 
     this.members = new Map(); // playerId -> { id, name, level, x, y, tx, ty, fightMobId }
     this.mobs = new Map(); // mobId -> { id, name, level, stats, hp, xFrac, xpReward, coinReward, dead }
-    for (const mob of zone.mobs ?? []) {
+    for (const spawn of zone.mobs ?? []) {
+      const mob=resolveMob(spawn);
       this.mobs.set(mob.id, { ...structuredClone(mob), hp: mob.stats.hp, dead: false });
     }
     this._respawnTimers = new Set();
@@ -108,7 +110,7 @@ export class Room {
     if (!mob) return { ok: false, error: "unknown_mob" };
     if (mob.dead) return { ok: false, error: "mob_gone" };
     if (member.fightMobId && member.fightMobId !== mobId) return { ok: false, error: "already_fighting" };
-    if (Math.abs(member.x - mob.xFrac) > ENGAGE_RANGE_FRAC) return { ok: false, error: "too_far" };
+    if (Math.hypot(member.x - mob.xFrac, Number.isFinite(mob.yFrac)?(member.y-mob.yFrac)*9/16:0) > ENGAGE_RANGE_FRAC) return { ok: false, error: "too_far" };
     member.fightMobId = mobId;
     return { ok: true, mob: this._mobView(mob) };
   }

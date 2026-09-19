@@ -1,4 +1,6 @@
 import * as PIXI from "../../vendor/pixi.min.mjs";
+import { loadHeadAssets } from "./head-renderer.js";
+import { normalizeHead } from "./character-head.js";
 
 function collectEntries(section, entries = []) {
   for (const value of Object.values(section ?? {})) {
@@ -31,5 +33,21 @@ export async function loadRigArt(artUrl) {
   await Promise.all([...new Set(entries.map(({ src }) => src))].map(async (src) => {
     textures.set(src, await PIXI.Assets.load(new URL(src, location.origin).href));
   }));
-  return { art, textures };
+  let character = null;
+  if (art.character) {
+    // Optional head failure must not replace a working animated body with the
+    // world's legacy still-image fallback.
+    try {
+      const [assets, response] = await Promise.all([
+        loadHeadAssets(), fetch(art.character, { cache: "no-store" }),
+      ]);
+      if (!response.ok) throw new Error("Could not load standard character.");
+      character = { ...assets, appearance: normalizeHead(await response.json()) };
+      if (art.body?.neck?.src) {
+        const neckImage = new Image(); neckImage.src = new URL(art.body.neck.src, location.origin).href;
+        await neckImage.decode(); character.neckImage = neckImage;
+      }
+    } catch (error) { character = null; console.warn("Using original head artwork:", error); }
+  }
+  return { art, textures, character };
 }

@@ -20,7 +20,7 @@ it("queues the exact template and returns a completed image only when published"
     const response = await fetch(base, { method: "POST", headers: { "Content-Type": "application/json" }, body });
     expect(response.status).toBe(201); const { id } = await response.json();
     expect(await readFile(join(root, id, "mannequin-template.png"))).toEqual(png);
-    expect(await readFile(join(root, id, "prompt.txt"), "utf8")).toContain("very thick, confident");
+    expect(await readFile(join(root, id, "prompt.txt"), "utf8")).toContain("base plus TWO darker cel-shadow tones");
     expect((await (await fetch(`${base}/${id}`)).json()).state).toBe("waiting");
     await writeFile(join(root, id, "result.png"), png);
     const ready = await (await fetch(`${base}/${id}`)).json();

@@ -90,6 +90,12 @@ export class OnlineSession extends Emitter {
     return outcome;
   }
 
+  async customizeCharacter(appearance) {
+    const outcome = await this._api("POST", "/api/actions/customize-character", { appearance });
+    this._setPlayer(outcome.player);
+    return outcome.player.character;
+  }
+
   async claimQuest(questId) {
     const outcome = await this._api("POST", "/api/actions/claim-quest", { questId });
     this._setPlayer(outcome.player);

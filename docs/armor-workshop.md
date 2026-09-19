@@ -13,7 +13,7 @@ For the simpler no-API workflow, click **Prepare for Codex**, then ask Codex to 
 
 ## Fixed art style
 
-Every template export includes the fixed Cardslayer style sections verbatim from `docs/art-reference/character-prompt-template.txt`: very thick near-black contours, slightly handmade Flash-vector lines, limited colors, one darker shadow tone, and low-to-medium detail. Face, standing pose and white-background composition instructions are excluded because this tool produces transparent cutout sheets. `src/sprites/armor-art-style.js` stores these sections; a test checks they match the source. The item prompt controls design, not rendering style. Both Armor and Weapon use this contract, including reopened older projects. Re-export old template packs to receive the style references and complete brief. Prompt consistency cannot guarantee model compliance: compare generated art with the references before accepting it.
+Every template export includes the shared Cardslayer recipe from `docs/art-reference/shared-art-style.md`: bold near-black contours, handmade angular lines, restrained material colors, base plus two darker cel-shadow tones, and medium structural detail. Full-character pose and background composition are excluded from cutout sheets. `src/sprites/armor-art-style.js` stores the recipe; tests verify the character and environment templates contain the same contract. The item prompt controls design, not rendering style. Both Armor and Weapon use this contract, including reopened older projects. Re-export old template packs to receive the style references and complete brief. Prompt consistency cannot guarantee model compliance: compare generated art with the references before accepting it.
 
 ## Installing a package
 

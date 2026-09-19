@@ -2,6 +2,8 @@ import * as PIXI from "../../vendor/pixi.min.mjs";
 import { advanceClip, blendPose, sampleClip } from "./animation-player.js";
 import { normalizeAppearance } from "./appearance.js";
 import { validateClips, validateRig } from "./load-rig.js";
+import { RigHead } from "./rig-head.js";
+import { tintNeck } from "./head-renderer.js";
 
 const BODY_COLORS = {
   hips: 0x51437a,
@@ -151,7 +153,7 @@ function makeEquipmentShape(slotId) {
 }
 
 export class RigActor extends PIXI.Container {
-  constructor({ rig, clips = {}, appearance, art = null, textures = null } = {}) {
+  constructor({ rig, clips = {}, appearance, art = null, textures = null, character = null } = {}) {
     super();
     this.rig = validateRig(rig);
     this.clips = validateClips(this.rig, clips);
@@ -204,6 +206,23 @@ export class RigActor extends PIXI.Container {
       }
     }
 
+    if (character && this.bones.has("head")) {
+      this.characterResources = character;
+      const neck = this.bodyVisuals.get("neck");
+      try {
+        this.characterHead = new RigHead(character);
+        if (neck && character.neckImage) this.characterNeckTexture = PIXI.Texture.from(tintNeck(character.neckImage, this.characterHead.renderer.appearance.skinColor));
+      } catch (error) {
+        this.characterHead?.destroy(); this.characterHead = null;
+        console.warn("Using original head artwork:", error);
+      }
+      if (this.characterHead) {
+        this.bodyVisuals.get("head")?.destroy({ children: true });
+        this.bones.get("head").layers.base.addChild(this.characterHead);
+        this.bodyVisuals.set("head", this.characterHead);
+        if (this.characterNeckTexture) neck.texture = this.characterNeckTexture;
+      }
+    }
     this.applyAppearance(appearance);
     this.play(this.clips.idle ? "idle" : Object.keys(this.clips)[0]);
     this.syncRenderWrappers();
@@ -247,6 +266,7 @@ export class RigActor extends PIXI.Container {
   }
 
   update(deltaMs) {
+    this.characterHead?.update(deltaMs);
     const clip = this.clips[this.currentClip];
     if (!clip) return;
     const next = advanceClip(clip, this.elapsedMs + deltaMs);
@@ -285,6 +305,23 @@ export class RigActor extends PIXI.Container {
     return true;
   }
 
+  destroy(options) {
+    super.destroy(options);
+    if (this.characterNeckTexture && !this.characterNeckTexture.destroyed) this.characterNeckTexture.destroy(true);
+  }
+
+  setCharacterAppearance(appearance) {
+    if (!this.characterHead) return;
+    this.characterHead.setAppearance(appearance);
+    const neck = this.bodyVisuals.get("neck");
+    if (neck && this.characterResources?.neckImage) {
+      const old = this.characterNeckTexture;
+      this.characterNeckTexture = PIXI.Texture.from(tintNeck(this.characterResources.neckImage, this.characterHead.renderer.appearance.skinColor));
+      neck.texture = this.characterNeckTexture;
+      old?.destroy(true);
+    }
+  }
+
   setBoneZIndex(boneId, zIndex) {
     const entry = this.bones.get(boneId);
     if (!entry) return false;
@@ -302,7 +339,7 @@ export class RigActor extends PIXI.Container {
     this.artVisuals.clear();
     for (const [boneId, body] of this.bodyVisuals) {
       body.visible = true;
-      if (this.art?.body?.[boneId]) this.artVisuals.set(artKey({ kind: "body", boneId }), body);
+      if (this.art?.body?.[boneId] && !(boneId === "head" && this.characterHead)) this.artVisuals.set(artKey({ kind: "body", boneId }), body);
     }
 
     for (const [slotId, itemId] of Object.entries(this.appearance.equipment)) {

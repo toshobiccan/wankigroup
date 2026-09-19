@@ -1,5 +1,40 @@
 import { describe, it, expect } from "vitest";
-import { clampToZone, stepTowardTarget, computeCameraX, computeCenteredCameraX } from "../src/world/world-movement.js";
+import { clampToZone, stepTowardTarget, computeCameraX, computeCenteredCameraX, movementVector, easeToward, worldFraming, smoothCameraX } from "../src/world/world-movement.js";
+
+it('normalizes held diagonal controls and opposing directions',()=>{
+  expect(Math.hypot(...Object.values(movementVector(1,1)))).toBeCloseTo(1);
+  expect(movementVector(0,0)).toEqual({x:0,y:0});
+});
+it('camera easing is independent of refresh rate and never overshoots',()=>{
+  let x=0;for(let i=0;i<60;i++)x=easeToward(x,300,1000/60);
+  expect(x).toBeCloseTo(easeToward(0,300,1000),8);
+  expect(x).toBeLessThan(300);
+});
+it('frames wide and portrait rooms without exposing background edges',()=>{
+  for(const [w,h] of [[390,650],[1100,580],[844,280]]) {
+    const f=worldFraming(w,h,h*16/9,h*.75,true);
+    expect(h*16/9*f.zoom).toBeGreaterThanOrEqual(w);
+    expect(f.cameraY).toBeGreaterThanOrEqual(0);
+    expect(f.cameraY+h/f.zoom).toBeLessThanOrEqual(h+.001);
+  }
+});
+it('smooth following stays bounded and holds still in its dead zone',()=>{
+  expect(smoothCameraX(200,0,0,400,2000,16)).toBe(0);
+  expect(smoothCameraX(1999,1900,220,400,2000,16)).toBeLessThanOrEqual(1600);
+  const x=smoothCameraX(900,300,220,400,2000,16);
+  expect(x).toBeGreaterThan(300);expect(x).toBeLessThan(600);
+});
+it('uses the room height rather than a short battle viewport for vertical bounds',()=>{
+  const f=worldFraming(844,240,480*16/9,360,true,480);
+  expect(f.zoom).toBeLessThan(1.25);
+  expect(f.cameraY+240/f.zoom).toBeLessThanOrEqual(480);
+  expect((360-f.cameraY)*f.zoom).toBeCloseTo(240*.65);
+});
+it('keeps the whole character visible in a short touch viewport',()=>{
+  const f=worldFraming(390,180,480*16/9,360,true,480);
+  expect((360-118-f.cameraY)*f.zoom).toBeGreaterThanOrEqual(0);
+  expect((360-f.cameraY)*f.zoom).toBeLessThan(180);
+});
 
 const ZONE = { id: "plains", width: 2000, groundTop: 110, groundBottom: 190 };
 

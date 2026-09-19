@@ -1,0 +1,24 @@
+CURRENT STYLE: use shared-art-style.md for shading, detail and gradient rules; it supersedes older style wording below. Preserve geometry and attachment requirements.
+
+Create a production sprite atlas of SEPARATED facial parts for the provided reference character. Reference image is STYLE AND IDENTITY reference: match its angular three-quarter-right head, thick black outlines, compact simple eyes and spiky hair. DO NOT draw a full character or assembled portrait. Output ONE transparent PNG atlas, 4 equal columns by 3 equal rows, 1536x1152. Each cell is 384x384. Each isolated part must stay inside its cell with transparent margin, centered. NO text, NO labels, NO guides, NO borders, NO checkerboard painted in.
+
+Art style lock: 2005-2010 AQW/Flash fantasy browser game. Very thick near-black outer outlines, slightly thinner inner strokes. Hand-drawn angular cuts. LOW detail. Use ONLY grayscale: near-white #eeeeee base and ONE flat #aaaaaa shadow, outlines #101010. These neutral sprites will be recolored by the game. No gradients, no highlights, no gloss, no texture, no strand lines, no fine decoration, no soft shading, no realism. On a head 300 pixels tall, outer strokes 9 pixels and inner strokes 5 pixels. Eyes remain compact like reference, not large anime eyes. Young adult angular jaw; not chibi.
+
+Exact cell contents, left to right:
+Row1:
+1. Bald blank head, three-quarter facing RIGHT. No neck, no hair, no ears, NO eyes, NO eyebrows, NO mouth. Include the simple nose silhouette. ONE broad angular shadow down left cheek. Skull and angular jaw only, light gray.
+2. Spiky hair ONLY from reference, including bangs and side/back silhouette. Hollow transparent face opening; no face, no ears. Light gray + one gray shadow. Thick black outline. Same right-facing three-quarter perspective.
+3. Short swept hair ONLY, angular chunky silhouette and 4-6 large tufts, same perspective; transparent face opening. No face.
+4. Single human ear ONLY for the visible LEFT side of this right-facing face. Broad simple ear, one inner angular stroke, gray.
+Row2:
+1. Single pointed elf ear ONLY for same visible side. Gray.
+2. Pair of eyebrows ONLY, compact dark near-black confident slightly angled strokes, perspective near eyebrow on left longer, far eyebrow on right shorter.
+3. Pair of open EYE SOCKETS ONLY: thick black upper/outer outlines and opaque white interiors, no irises or pupils. Left eye wider than right due to perspective. Compact angular eyes, matching reference.
+4. Pair of irises ONLY: light gray iris with dark pupil, no sparkles. Left iris bigger than right, center spacing corresponding to previous eye pair. No eye whites or skin.
+Row3:
+1. Pair of HALF CLOSED eyes ONLY: gray eyelids, simple thick outlines with narrow white openings; NO irises, no brows. Same spacing as open eyes.
+2. Pair of CLOSED eye lines ONLY: two simple near-black eyelid strokes matching eye positions; no gray face patch, no brows.
+3. Neutral mouth ONLY: one short near-black slightly angled line, no lips, no face.
+4. Slight confident smile mouth ONLY: one short near-black subtly curved line, no teeth, no lips, no face.
+
+All 12 cells populated. Keep parts disjoint. Preserve transparent empty space. This is a modular head asset atlas, not a character sheet of 12 complete heads.

@@ -1,0 +1,252 @@
+{
+  "version": 1,
+  "atlas": "/assets/character/face-atlas-v6.png",
+  "columns": 4,
+  "rows": 3,
+  "rigPlacement": {
+    "x": -17,
+    "y": -24,
+    "width": 36,
+    "height": 30
+  },
+  "parts": {
+    "face": {
+      "rect": [
+        145,
+        75,
+        202,
+        265
+      ],
+      "tint": "skinColor",
+      "source": [
+        45,
+        55,
+        380,
+        470
+      ]
+    },
+    "hairSpiky": {
+      "rect": [
+        118,
+        49,
+        251,
+        236
+      ],
+      "tint": "hairColor",
+      "source": [
+        0,
+        0,
+        887,
+        887
+      ]
+    },
+    "hairSwept": {
+      "rect": [
+        120,
+        51,
+        249,
+        237
+      ],
+      "tint": "hairColor",
+      "source": [
+        887,
+        0,
+        887,
+        887
+      ]
+    },
+    "earHuman": {
+      "rect": [
+        150,
+        194,
+        43,
+        59
+      ],
+      "tint": "skinColor",
+      "source": [
+        480,
+        215,
+        165,
+        225
+      ]
+    },
+    "earPointed": {
+      "rect": [
+        112,
+        176,
+        89,
+        83
+      ],
+      "tint": "skinColor",
+      "source": [
+        720,
+        195,
+        240,
+        280
+      ]
+    },
+    "brows": {
+      "rect": [
+        205,
+        178,
+        131,
+        29
+      ],
+      "tint": "hairColor",
+      "inkOnly": true,
+      "source": [
+        1030,
+        270,
+        375,
+        130
+      ]
+    },
+    "eyesOpen": {
+      "rect": [
+        207,
+        199,
+        128,
+        39
+      ],
+      "source": [
+        65,
+        605,
+        315,
+        135
+      ]
+    },
+    "irises": {
+      "rect": [
+        228,
+        197,
+        99,
+        43
+      ],
+      "tint": "eyeColor",
+      "source": [
+        475,
+        620,
+        200,
+        120
+      ]
+    },
+    "eyesHalf": {
+      "rect": [
+        207,
+        199,
+        128,
+        39
+      ],
+      "tint": "skinColor",
+      "source": [
+        740,
+        605,
+        300,
+        130
+      ]
+    },
+    "eyesClosed": {
+      "rect": [
+        207,
+        230,
+        128,
+        9
+      ],
+      "source": [
+        1095,
+        640,
+        320,
+        80
+      ]
+    },
+    "mouthNeutral": {
+      "rect": [
+        253,
+        287,
+        43,
+        7
+      ],
+      "source": [
+        130,
+        930,
+        170,
+        75
+      ],
+      "tint": "skinColor"
+    },
+    "mouthSmile": {
+      "rect": [
+        251,
+        285,
+        46,
+        11
+      ],
+      "source": [
+        460,
+        920,
+        185,
+        85
+      ],
+      "tint": "skinColor"
+    },
+    "nose": {
+      "source": [
+        820,
+        880,
+        125,
+        100
+      ],
+      "rect": [
+        290,
+        254,
+        14,
+        11
+      ],
+      "tint": "skinColor"
+    }
+  },
+  "hairAtlas": "/assets/character/hair-atlas-v7.png",
+  "referenceOverlay": {
+    "src": "/assets/art-reference/human-base.png",
+    "source": [
+      438,
+      0,
+      300,
+      270
+    ],
+    "rect": [
+      65,
+      20,
+      345,
+      315
+    ],
+    "landmarks": {
+      "nearEye": [
+        266,
+        215
+      ],
+      "farEye": [
+        325,
+        232
+      ],
+      "mouth": [
+        284,
+        282
+      ]
+    }
+  },
+  "proportionStudy": {
+    "source": [
+      185,
+      11,
+      75,
+      99
+    ],
+    "rect": [
+      145,
+      75,
+      202,
+      265
+    ]
+  }
+}

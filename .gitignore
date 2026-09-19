@@ -6,3 +6,5 @@ Thumbs.db
 .data/
 # Local generation requests and draft sheets; installed items live in assets/equipment.
 output/armor-workshop/
+output/character-server*.log
+output/character-drafts/

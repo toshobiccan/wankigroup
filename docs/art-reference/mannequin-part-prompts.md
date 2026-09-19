@@ -1,3 +1,5 @@
+CURRENT STYLE: use shared-art-style.md for shading, detail and gradient rules; it supersedes older style wording below. Preserve geometry and attachment requirements.
+
 # Mannequin Body-Part Segmentation Prompts
 
 Purpose: replace the placeholder colored shapes in `dev/rig-preview.html` with real cutouts of the actual `mannequin.png` reference — same grey mannequin, same exact pose, same exact pixel scale, just sliced into per-bone layers. This is **not** the final Cardslayer-style art pass (that's `rig-asset-prompts.md`, a separate, later step, still using this same rig once it's validated). This pass exists only to prove the rig's joints and gap-free stacking against real pixels instead of rough geometric guesses.

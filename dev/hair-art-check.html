@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Registered hairstyle fitting</title>
+<style>body{margin:20px;background:#e9dfcc;color:#39291d;font:16px Georgia}h1{font-size:24px}main{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}figure{margin:0;background:#f9f2e5;border:1px solid #aa8e65;text-align:center;border-radius:8px}canvas{width:100%;display:block}figcaption{padding:8px}button{padding:8px;margin:5px}@media(max-width:800px){main{grid-template-columns:repeat(3,minmax(0,1fr))}}</style>
+<h1>Hairstyles fitted to the approved head</h1><p id="status">Loading…</p><button id="color">Toggle silver / chestnut</button><button id="blink">Blink all</button><main></main>
+<script type="module">
+import {loadHeadAssets,HeadRenderer} from '/src/sprites/head-renderer.js';
+import {DEFAULT_HEAD,HAIR_STYLES} from '/src/sprites/character-head.js';
+const assets=await loadHeadAssets(),items=[];let silver=false;
+for(const [hair,label] of HAIR_STYLES.filter(([id])=>assets.manifest.hairstyles[id])){
+ const figure=document.createElement('figure'),canvas=document.createElement('canvas'),caption=document.createElement('figcaption');
+ canvas.width=512;canvas.height=512;caption.textContent=label;figure.append(canvas,caption);document.querySelector('main').append(figure);
+ const renderer=new HeadRenderer(assets,{...DEFAULT_HEAD,hair});items.push({renderer,canvas,hair});
+}
+function paint(frame='open'){for(const {renderer,canvas} of items){renderer.draw(frame);const ctx=canvas.getContext('2d');ctx.clearRect(0,0,512,512);ctx.drawImage(renderer.canvas,0,0);}}
+document.querySelector('#color').onclick=()=>{silver=!silver;for(const {renderer,hair} of items)renderer.setAppearance({...DEFAULT_HEAD,hair,hairColor:silver?'#ded8c4':DEFAULT_HEAD.hairColor});paint();};
+document.querySelector('#blink').onclick=()=>{paint('closed');setTimeout(()=>paint(),250);};
+paint();document.querySelector('#status').textContent=`${items.length} registered styles. Face and ear positions remain fixed.`;
+</script></html>

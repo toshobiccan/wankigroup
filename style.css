@@ -155,6 +155,17 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
   min-height: 0;
   display: flex;
 }
+.world-progress { flex: 0 0 52px; box-sizing: border-box; padding: 6px 12px; background: #263e42; border-top: 2px solid #af995f; color: #eee6c9; font-size: 11px; }
+.world-progress-row { display: flex; align-items: center; gap: 10px; min-width: 0; height: 18px; }
+#worldDeckName { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+#worldDeckCounts, #worldDeckPercent, #worldLevel, #worldXpText { white-space: nowrap; }
+#worldDeckCounts, #worldXpText { color: #c7d4ce; font-size: 10px; font-variant-numeric: tabular-nums; }
+#worldDeckPercent { color: #e4cf87; }
+#worldXp { flex: 1; min-width: 20px; height: 7px; appearance: none; border: 1px solid #13272c; background: #13272c; border-radius: 3px; overflow: hidden; }
+#worldXp::-webkit-progress-bar { background: #13272c; }
+#worldXp::-webkit-progress-value { background: #b7c978; }
+#worldXp::-moz-progress-bar { background: #b7c978; }
+.view[data-view="world"] .encounter-sheet { bottom: 52px; }
 
 /* Current page's name -- appended directly into #worldRoot by WorldScene
    itself (see loadZone), positioned relative to .view[data-view="world"]

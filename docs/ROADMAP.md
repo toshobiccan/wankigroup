@@ -1,5 +1,9 @@
 # Cardslayer — Feature Roadmap
 
+## 2026-09-19 — House onboarding and room creator
+
+Saved the requested 1–2 minute house, identity, controls, capital-cities demo fight, XP and deck-choice flow in [onboarding-and-world-plan.md](onboarding-and-world-plan.md). Room creator comes first. Premium document generation and paid renaming are deferred. Keep the approved face and balanced world rendering.
+
 Living backlog and status log for the project, kept alongside `docs/HANDOFF.md` (which orients a new session on *decisions already made*) — this file tracks *what's built* and *what's next*. Update it whenever a feature lands or the team agrees on new scope, rather than letting status live only in chat.
 
 ---

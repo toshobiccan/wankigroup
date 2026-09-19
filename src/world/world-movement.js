@@ -5,6 +5,31 @@ export function clampToZone(pos, zone) {
   };
 }
 
+export function movementVector(x, y) {
+  const length = Math.hypot(x, y);
+  return length ? { x: x / Math.max(1, length), y: y / Math.max(1, length) } : { x: 0, y: 0 };
+}
+
+export function easeToward(current, target, deltaMS, response = 9) {
+  return current + (target - current) * (1 - Math.exp(-response * Math.max(0, deltaMS) / 1000));
+}
+
+export function worldFraming(width, height, zoneWidth, groundY, touch = false, worldHeight = height) {
+  const zoom = Math.max(.9, Math.min(1.485, height * .234 / 118), width / zoneWidth, height / worldHeight);
+  const viewWidth = width / zoom;
+  const viewHeight = height / zoom;
+  const feetScreenY = Math.min(height - 10, Math.max(height * (touch ? .65 : .76), 138 * zoom));
+  const cameraY = Math.max(0, Math.min(worldHeight - viewHeight, groundY - feetScreenY / zoom));
+  return { zoom, viewWidth, cameraY };
+}
+
+export function smoothCameraX(playerX, cameraX, velocityX, viewWidth, zoneWidth, deltaMS, focusX = null) {
+  const desired = focusX === null
+    ? computeCameraX(playerX + Math.max(-60, Math.min(60, velocityX * .22)), cameraX, viewWidth, zoneWidth, .22)
+    : computeCenteredCameraX(focusX, viewWidth, zoneWidth);
+  return Math.max(0, Math.min(Math.max(0, zoneWidth - viewWidth), easeToward(cameraX, desired, deltaMS)));
+}
+
 export function stepTowardTarget(current, target, deltaMS, speedPxPerSec) {
   const dx = target.x - current.x;
   const dy = target.y - current.y;

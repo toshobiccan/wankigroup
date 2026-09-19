@@ -147,11 +147,12 @@ async function exportTemplate() {
   zip.file("anchor-guide.png", guide.toDataURL("image/png").split(",")[1], { base64: true });
   zip.file("template.json", JSON.stringify(template, null, 2)); zip.file("prompt.txt", generationPrompt({ ...project, ...template }));
   for (const filename of STYLE_REFERENCES) {
-    const response = await fetch(`../assets/art-reference/${filename}`);
+    const directory = filename === "head-template-approved.png" ? "character" : "art-reference";
+    const response = await fetch(`../assets/${directory}/${filename}`);
     if (!response.ok) throw new Error(`Missing style reference: ${filename}. Template export stopped.`);
     zip.file(filename, await response.blob());
   }
-  download(`${project.id}-template.zip`, await zip.generateAsync({ type: "blob" })); status("Template pack exported. Attach prompt.txt, mannequin-template.png, human-base.png and goblin-mace-medic.png in Codex. Keep anchor-guide.png as your fitting reference.");
+  download(`${project.id}-template.zip`, await zip.generateAsync({ type: "blob" })); status(`Template pack exported. Attach prompt.txt, mannequin-template.png and ${STYLE_REFERENCES.join(", ")} in Codex. Keep anchor-guide.png as your fitting reference.`);
 }
 async function exportPackage() {
   if (!hasImported) throw new Error("Import a generated sheet or use the mannequin test first.");

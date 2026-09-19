@@ -1,5 +1,6 @@
 {
   "id": "plains1",
+  "map": { "areaId": "plains", "areaName": "The Green March", "biome": "plains", "x": 240, "y": 330 },
   "displayName": "Plains 1",
   "backgroundImage": "assets/world-background.png",
   "groundTopFrac": 0.7354,

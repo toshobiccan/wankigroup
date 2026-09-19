@@ -8,15 +8,18 @@ const project = () => ({ id: "test-armor", name: "Test Armor", prompt: "Green le
   parts: ARMOR_PARTS.map((bone, i) => ({ bone, crop: { x: i % 4 * 512, y: Math.floor(i / 4) * 512, width: 512, height: 512 }, pivot: [200, 100], distalPivot: [220, 400], scale: 0.03, mode: "replace" })) });
 describe("armor workshop metadata", () => {
   it("preserves the canonical style sections in armor and weapon prompts", () => {
-    const source = readFileSync(new URL("../docs/art-reference/character-prompt-template.txt", import.meta.url), "utf8").replace(/\r\n/g, "\n");
-    const sections = [["CARDSLAYER CHARACTER ART STYLE:", "FACE:"], ["SHADING:", "POSE:"], ["IMPORTANT STYLE EXCLUSIONS:", null]];
-    expect(ARMOR_ART_STYLE).toBe(sections.map(([start, end]) => source.slice(source.indexOf(start), end ? source.indexOf(end) : undefined).trim()).join("\n\n"));
+    for (const file of ["shared-art-style.md", "character-prompt-template.txt"]) {
+      const source = readFileSync(new URL(`../docs/art-reference/${file}`, import.meta.url), "utf8").replace(/\r\n/g, "\n");
+      expect(source).toContain(ARMOR_ART_STYLE);
+    }
     for (const slot of ["armor", "weapon"]) {
       const prompt = generationPrompt({ ...project(), slot, prompt: "glossy detailed steel" });
       expect(prompt).toContain(ARMOR_ART_STYLE);
-      expect(prompt).toContain("human-base.png and goblin-mace-medic.png control line weight");
+      expect(prompt).toContain("human-base-v5-front-grip.png controls line weight");
       expect(prompt).toContain("even if the design brief requests conflicting rendering");
       expect(prompt).not.toContain("Plain white background.");
+      expect(prompt).toContain("TWO darker");
+      expect(prompt).not.toContain("at most ONE darker");
     }
   });
   it("exports exactly one item with all body pieces and local anchors", () => {

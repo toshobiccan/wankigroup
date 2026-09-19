@@ -47,9 +47,20 @@ function renderHeader() {
   document.getElementById("playerLevel").textContent = `Lv ${player.level}`;
   document.getElementById("xpText").textContent = `${player.xp} / ${XP_PER_LEVEL}`;
   document.getElementById("xpFill").style.width = `${(player.xp / XP_PER_LEVEL) * 100}%`;
+  document.getElementById("worldLevel").textContent = `Lv ${player.level}`;
+  document.getElementById("worldXp").max = XP_PER_LEVEL;
+  document.getElementById("worldXp").value = player.xp;
+  document.getElementById("worldXpText").textContent = `${player.xp} / ${XP_PER_LEVEL} XP`;
   document.getElementById("coins").textContent = fmt(player.coins);
   document.getElementById("gems").textContent = fmt(player.gems);
+  const avatarKey = JSON.stringify(player.character);
+  if (avatarKey !== lastAvatarKey && window.Cardslayer?.renderCharacterAvatar) {
+    lastAvatarKey = avatarKey;
+    window.Cardslayer.renderCharacterAvatar($("#characterAvatar"), player.character).catch(() => { lastAvatarKey = null; });
+  }
 }
+
+let lastAvatarKey = null;
 
 // ================= HELPERS =================
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -92,9 +103,17 @@ function closeModal() {
 
 // ================= NAVIGATION =================
 const renderers = {};
+let wardrobeDispose = null;
+let wardrobeReturn = "home";
 
 function go(view) {
+  if (view === "import") { go("home"); $("#importDrawer").open = true; $("#importDrawer").scrollIntoView({block:"nearest"}); return; }
+  if (player && !player.characterCreated && view !== "wardrobe") { openWardrobe(); return; }
   const previousView = document.querySelector(".view.is-active")?.dataset.view;
+  if (previousView === "wardrobe") { wardrobeDispose?.(); wardrobeDispose = null; }
+  document.body.classList.toggle("creating-character", view === "wardrobe" && !player?.characterCreated);
+  document.body.classList.toggle("world-open", view === "world");
+  document.body.classList.toggle("map-open", view === "map");
   if (previousView === "world" && previousView !== view) worldScene?.pause();
 
   document.querySelectorAll(".view").forEach((v) => v.classList.toggle("is-active", v.dataset.view === view));
@@ -106,6 +125,59 @@ function go(view) {
 }
 
 document.querySelectorAll(".nav-item").forEach((btn) => btn.addEventListener("click", () => go(btn.dataset.target)));
+document.getElementById('homeWorldBtn').addEventListener('click',()=>go('world'));
+document.getElementById('browseDecksBtn').addEventListener('click',browsePremadeDecks);
+document.getElementById('tutorialBtn').addEventListener('click',()=>startTutorial(true));
+document.getElementById('homeQuestsBtn').addEventListener('click',()=>go('quests'));
+document.getElementById('mapReturnBtn').addEventListener('click',()=>go('world'));
+let mapLoadRequest=0;
+renderers.map=async()=>{
+  const request=++mapLoadRequest,root=$('#worldMap'),detail=$('#mapDetails');
+  detail.textContent='Unrolling the map…';
+  try {
+    const zones=await window.Cardslayer.loadWorldMap();
+    if(request!==mapLoadRequest)return;
+    const currentId=worldScene?.pageId??window.Cardslayer.game.START_ZONE_ID;
+    const regions=window.Cardslayer.worldRegions(zones);
+    const currentRegion=regions.find(region=>region.rooms.some(room=>room.id===currentId));
+    const showWorld=()=>{
+      window.Cardslayer.renderWorldMap(root,regions,{currentId:currentRegion?.id,onSelect:showRegion});
+      detail.replaceChildren(el('strong',{},'Regions'),el('p',{},'Select a region to explore its rooms.'));
+    };
+    const showRegion=region=>{
+      const choose=node=>{
+        window.Cardslayer.renderWorldMap(root,region.rooms,{title:region.displayName,currentId,selectedId:node.id,onSelect:choose});
+        const exits=node.exits?Object.values(node.exits).map(e=>e.roomId):[node.links?.prev,node.links?.next].filter(Boolean);
+        const paths=exits.map(id=>zones.find(zone=>zone.id===id)?.displayName??id);
+        detail.replaceChildren(el('button',{class:'btn-small',onclick:showWorld},'All regions'),el('strong',{},node.displayName??node.id),el('p',{},node.id===currentId?'You are here.':region.displayName),el('p',{},paths.length?'Paths: '+paths.join(' · '):'No connected paths.'),el('p',{},node.role==='boss'?'Region boss':node.blank?'This room is still being built.':(node.mobs?.length??0)+' encounters'));
+      };
+      choose(region.rooms.find(room=>room.id===currentId)??region.rooms[0]);
+    };
+    if(zones.length)showWorld();
+    else {root.replaceChildren();detail.textContent='No rooms have been installed yet.';}
+  }catch(error){if(request!==mapLoadRequest)return;root.replaceChildren();detail.textContent=error.message;}
+};
+
+function openWardrobe() {
+  if (!session || !player || session.needsLogin) return;
+  if (worldScene?.inCombat) {
+    showModal(el("h3", {}, "Finish your battle first"), el("p", {}, "Your wardrobe will be waiting."), el("button", { class: "btn-small", onclick: closeModal }, "OK"));
+    return;
+  }
+  const view = document.querySelector(".view.is-active")?.dataset.view;
+  if (view && view !== "wardrobe") wardrobeReturn = player.characterCreated ? view : "home";
+  go("wardrobe");
+}
+
+renderers.wardrobe = () => {
+  wardrobeDispose?.();
+  wardrobeDispose = window.Cardslayer.mountCharacterCreator($("#wardrobeRoot"), {
+    appearance: player.character, firstTime: !player.characterCreated,
+    onSave: appearance => session.customizeCharacter(appearance),
+    onSaved: () => go(wardrobeReturn),
+    onCancel: () => go(wardrobeReturn),
+  });
+};
 
 // ================= IMPORT =================
 const dropzone = $("#dropzone");
@@ -214,7 +286,7 @@ renderers.home = async () => {
       el("div", { class: "panel empty-state" },
         "No decks yet.",
         el("br"),
-        el("button", { class: "btn-small", onclick: () => go("import") }, "Import your first deck")
+        el("button", { class: "btn-small", onclick: () => go("import") }, "Import your first deck"), el("p",{},"Or start with a short capital-cities deck below.")
       )
     );
     return;
@@ -350,7 +422,7 @@ function renderInventoryLeft() {
   );
   root.replaceChildren(
     el("div", { class: "inventory-character" },
-      el("img", { class: "inventory-portrait", src: "assets/world-character.png", alt: "" }),
+      el("canvas", { class: "inventory-portrait", id:"inventoryAvatar", width:"256", height:"256", "aria-label":"Your character" }),
       el("div", { class: "inventory-name" }, player.name),
       el("div", { class: "inventory-level" }, `Lv ${player.level}`),
       el("div", { class: "equipment-slots", "aria-label": "Equipped gear" }, ...gearSlots),
@@ -375,18 +447,20 @@ function renderInventoryTabs() {
 // description, optional stack-count badge for materials. item is a plain
 // Item object (see src/items.js) -- picture/description render only when
 // present, since no real item exists yet to supply either.
+let selectedItemId = null;
+function showItemDetails(item) {
+  selectedItemId = item.id;
+  document.querySelectorAll('.inventory-item').forEach(row => row.classList.toggle('is-selected', row.dataset.itemId === item.id));
+  const equipped = player.equipment[item.slot]?.id === item.id;
+  const stats = Object.entries(item.stats ?? {}).filter(([,value])=>Number.isFinite(value));
+  $('#itemDetails').replaceChildren(el('span',{class:'eyebrow'},item.slot ?? 'Material'),el('h3',{},item.name),el('p',{},item.description || 'An item for your adventures.'),stats.length ? el('p',{class:'item-stats'},stats.map(([key,value])=>`${key}: ${value > 0 ? '+' : ''}${value}`).join(' · ')) : null,item.kind==='equipable' && session?.mode==='local' ? el('button',{class:'btn-small',...(equipped?{disabled:''}:{}),onclick:()=>{session.equipItem(item.id);showItemDetails(item);}},equipped?'Equipped':'Equip item') : null);
+}
 function renderItemRow(item, quantity) {
-  return el("div", { class: "panel inventory-item" },
-    item.picture ? el("img", { class: "inventory-item-pic", src: item.picture, alt: "" }) : null,
-    el("div", { class: "inventory-item-info" },
-      el("div", { class: "inventory-item-name" }, item.name),
-      item.description ? el("div", { class: "inventory-item-desc" }, item.description) : null
-    ),
-    quantity != null ? el("div", { class: "inventory-item-qty" }, `×${quantity}`) : null,
-    item.kind === "equipable" && session?.mode === "local" ? el("button", {
-      onclick: () => session.equipItem(item.id),
-    }, player.equipment[item.slot]?.id === item.id ? "Equipped" : "Equip") : null
-  );
+  const equipped = player.equipment[item.slot]?.id === item.id;
+  return el('button', {type:'button',class:'inventory-item'+(selectedItemId===item.id?' is-selected':''),'data-item-id':item.id,onclick:()=>showItemDetails(item)},
+    item.picture ? el('img',{class:'inventory-item-pic',src:item.picture,alt:''}) : el('span',{class:'inventory-item-pic item-monogram','aria-hidden':'true'},(item.name||'?').slice(0,1)),
+    el('span',{class:'inventory-item-info'},el('strong',{class:'inventory-item-name'},item.name),el('span',{class:'inventory-item-desc'},item.slot ?? 'Crafting material')),
+    quantity != null ? el('span',{class:'inventory-item-qty'},`×${quantity}`) : el('span',{class:'item-state'},equipped?'Equipped':'›'));
 }
 
 // The Status tab isn't a list -- it's exactly two fixed slots (per spec:
@@ -410,6 +484,7 @@ function renderStatusTab(root) {
 
 function renderInventoryList() {
   const root = $("#inventoryList");
+  $("#itemDetails").replaceChildren(el("p",{},"Select an item to inspect it."));
   if (inventoryTab === "status") {
     renderStatusTab(root);
     return;
@@ -432,6 +507,8 @@ renderers.inventory = () => {
   renderInventoryLeft();
   renderInventoryTabs();
   renderInventoryList();
+  const portrait = $("#inventoryAvatar");
+  if (portrait) window.Cardslayer.renderCharacterAvatar(portrait, player.character);
 };
 
 // ================= SCHEDULING =================
@@ -467,6 +544,33 @@ let fight = null; // { mob, queue, endedWithRewards? } while a fight is in progr
 let gradeInFlight = false; // true while a single handleGrade() call is resolving -- blocks double-taps on the grade buttons
 const roomPeople = new Set(); // ids of the other players in our current room (for the badge)
 let currentRoomId = null;
+
+let deckProgressRequest = 0;
+async function renderWorldDeckProgress() {
+  const request = ++deckProgressRequest;
+  const deckId = device.activeDeckId;
+  try {
+    const [decks, cards] = await Promise.all([DB.listDecks(), deckId ? DB.cardsForDeck(deckId) : Promise.resolve([])]);
+    if (request !== deckProgressRequest || deckId !== device.activeDeckId) return;
+    const deck = decks.find((entry) => entry.id === deckId);
+    const name = $("#worldDeckName");
+    name.textContent = deck?.name ?? "No active deck";
+    name.title = name.textContent;
+    // A card is complete for now only after a successful grade, until due again.
+    // 'Again' leaves interval at zero and must remain in the unfinished count.
+    const now = Date.now();
+    const done = cards.filter((card) => card.reps > 0 && card.interval > 0 && card.due > now).length;
+    $("#worldDeckCounts").textContent = deck ? `${done} done · ${cards.length - done} left` : "Choose a deck on Home";
+    $("#worldDeckCounts").title = "Cards currently reviewed; new, due and retry cards remain unfinished.";
+    $("#worldDeckPercent").textContent = deck && cards.length ? `${Math.round(done / cards.length * 100)}%` : "—";
+  } catch (error) {
+    if (request !== deckProgressRequest) return;
+    $("#worldDeckName").textContent = "Deck unavailable";
+    $("#worldDeckCounts").textContent = "Reopen World to retry";
+    $("#worldDeckPercent").textContent = "—";
+    console.error("Deck progress unavailable", error);
+  }
+}
 
 const FIGHT_ERRORS = {
   mob_gone: "Too late -- that monster is already down.",
@@ -574,6 +678,7 @@ async function handleGrade(grade) {
   try {
     const card = fight.queue.shift();
     await schedule(card, grade);
+    void renderWorldDeckProgress();
     const result = await session.grade(grade);
     if (!fight) return;
     if (fight.endedWithRewards) return finishWithVictory(fight.endedWithRewards);
@@ -663,6 +768,7 @@ function applyRoom(snapshot) {
 
 renderers.world = async () => {
   if (!session || !player) return;
+  void renderWorldDeckProgress();
   if (worldScene) {
     // Re-entering World from another tab: the encounter sheet is a plain
     // absolute-positioned overlay (see .encounter-sheet in style.css), so it
@@ -691,6 +797,7 @@ renderers.world = async () => {
       }
     },
     playerAppearance: player.equipment,
+    characterAppearance: player.character,
   });
   await worldScene.loadZone(`data/zones/${window.Cardslayer.game.START_ZONE_ID}.json`);
   worldScene.setOwnPlayerId(session.playerId);
@@ -703,6 +810,7 @@ function wireSessionEvents() {
     player = updated;
     worldScene?.setOwnProfile({ name: updated.name });
     worldScene?.setPlayerAppearance(updated.equipment);
+    worldScene?.setCharacterAppearance(updated.character);
     renderHeader();
     const view = document.querySelector(".view.is-active")?.dataset.view;
     if (view === "quests") renderers.quests();
@@ -799,6 +907,7 @@ async function afterSignIn() {
   closeModal();
   updateNetBadge();
   if (worldScene?.pageId) enterPage(worldScene.pageId, worldScene._positionFrac());
+  if (!player.characterCreated || new URLSearchParams(location.search).has("wardrobe")) { openWardrobe(); return; }
   const view = document.querySelector(".view.is-active")?.dataset.view;
   renderers[view]?.();
 }
@@ -910,6 +1019,8 @@ function updateNetBadge() {
 // ================= BOOT =================
 $("#modal").addEventListener("click", (e) => { if (e.target.id === "modal" && !modalLocked) closeModal(); });
 $("#settingsBtn").addEventListener("click", showAccountModal);
+$("#wardrobeBtn").addEventListener("click", openWardrobe);
+$("#worldWardrobeBtn").addEventListener("click", openWardrobe);
 
 // src/world/bootstrap.js is an ES module, so it runs after this script.
 function whenModulesReady() {
@@ -935,6 +1046,7 @@ async function boot() {
   }
   player = session.player;
   renderHeader();
+  if (!player.characterCreated || new URLSearchParams(location.search).has("wardrobe")) { openWardrobe(); return; }
   const view = document.querySelector(".view.is-active")?.dataset.view;
   if (view && view !== "import") renderers[view]?.();
 }

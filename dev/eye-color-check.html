@@ -1,0 +1,21 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Iris skin-tint check</title>
+<style>body{background:#e9dfcc;font:16px Georgia;margin:24px}main{display:flex;flex-wrap:wrap}figure{margin:8px}canvas{width:340px;height:340px}</style>
+<h1>Same amber eyes across all skin colors</h1><p id="status">Checking…</p><main></main>
+<script type="module">
+import {HeadRenderer,loadHeadAssets} from '/src/sprites/head-renderer.js';
+import {DEFAULT_HEAD} from '/src/sprites/character-head.js';
+const assets=await loadHeadAssets();let baseline,changed=0;
+for(const skinColor of ['#dda568','#f1c69d','#c08854','#9f6846','#724b37','#bcbdac']){
+const r=new HeadRenderer(assets,{...DEFAULT_HEAD,hair:'none',skinColor});
+const f=document.createElement('figure'),c=document.createElement('canvas'),label=document.createElement('figcaption');c.width=512;c.height=512;c.getContext('2d').drawImage(r.canvas,0,0);label.textContent=skinColor;f.append(c,label);document.querySelector('main').append(f);
+const ctx=r.native.getContext('2d'),left=ctx.getImageData(620,530,65,90).data,right=ctx.getImageData(902,550,45,40).data,p=[...left,...right];
+if(!baseline)baseline=p;else changed+=p.reduce((n,v,i)=>n+(v!==baseline[i]),0);
+}
+let edgeBaseline,edgeChanged=0;
+for(const eyeColor of ['#b99a48','#5382aa','#8972a6','#538967']) {
+ const r=new HeadRenderer(assets,{...DEFAULT_HEAD,hair:'none',eyeColor});
+ const pixels=r.native.getContext('2d').getImageData(970,540,6,70).data;
+ if(!edgeBaseline)edgeBaseline=pixels;else edgeChanged+=pixels.reduce((n,v,i)=>n+(v!==edgeBaseline[i]),0);
+}
+document.querySelector('#status').textContent=`Iris sample channel differences across skin colors: ${changed}. Skin east of rear iris differences across eye colors: ${edgeChanged}.`;
+</script></html>

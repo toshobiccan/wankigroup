@@ -1,5 +1,6 @@
 {
   "id": "humanoid-art-starter-v1",
+  "character": "/data/rigs/default-character.json",
   "catalog": "/data/equipment/catalog.json",
   "body": {
     "hips": {

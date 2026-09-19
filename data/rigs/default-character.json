@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "hair": "spiky",
+  "eyeShape": "standard",
+  "mouth": "smile",
+  "hairColor": "#56351f",
+  "eyeColor": "#b99a48",
+  "skinColor": "#dda568",
+  "autoBlink": true
+}

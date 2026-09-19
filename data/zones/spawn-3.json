@@ -1,0 +1,32 @@
+{
+  "id": "spawn-3",
+  "displayName": "Home and garden 3",
+  "regionId": "spawn",
+  "role": "encounter",
+  "composition": "garden edge",
+  "backgroundImage": "assets/rooms/spawn-3.png",
+  "groundTopFrac": 0.64,
+  "groundBottomFrac": 1,
+  "spawnXFrac": 0.2,
+  "spawnYFrac": 0.8200000000000001,
+  "exits": {
+    "west": {
+      "roomId": "spawn-2",
+      "entry": "east",
+      "at": 0.5
+    }
+  },
+  "links": {},
+  "mobs": [],
+  "map": {
+    "areaId": "spawn",
+    "areaName": "Home and garden",
+    "biome": "village",
+    "x": 310,
+    "y": 180,
+    "gridX": 2,
+    "gridY": 0,
+    "worldX": 220,
+    "worldY": 330
+  }
+}
