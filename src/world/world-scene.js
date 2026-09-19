@@ -12,12 +12,26 @@ const MOVE_SPEED = 220; // world-pixels/second
 const PLAYER_HEIGHT = 118; // keeps the cutout equipment readable on a phone-sized world view
 const MOB_HEIGHT = 70; // a bit shorter than the player -- these are the weak, early mobs
 const APPROACH_DISTANCE = 60; // how close (world-pixels) the player walks before a fight actually starts
-// While fighting, the camera zooms in on the two combatants and frames them
-// noticeably higher on screen than during exploration -- so they stay visible
-// above the reading sheet (see style.css's .encounter-sheet) instead of only
-// the ground/background peeking out from behind it.
-const COMBAT_ZOOM_BOOST = 1.35;
-const COMBAT_FEET_FRACTION = 0.42;
+// While fighting, the world canvas itself shrinks to a fixed rectangle
+// pinned to the top of the screen (see enterCombatStage()) -- a dedicated
+// combat stage, not a variable peek behind the reading sheet, and it is set
+// once at the start of the fight (with a brief animated transition into
+// place, not a jump cut) and never resized or re-panned again between cards.
+// COMBAT_STAGE_FRACTION is that rectangle's height as a fraction of the
+// battle-viewable area (the view minus the deck-progress bar).
+//
+// The fighters' zoom is picked directly from the stage's own (often quite
+// small) height -- see enterCombatStage()'s explicitZoom -- rather than
+// exploration's absolute-character-size formula, so there's no dead space
+// above/below regardless of how tall the stage ends up on a given screen.
+// COMBAT_FILL_FRACTION is how much of the stage height the character's
+// reference height (the "138" constant world-movement.js's feetScreenY
+// clamp uses) should fill; COMBAT_FEET_FRACTION positions their feet near
+// the stage's bottom edge so that fill lands with the head near the top.
+const COMBAT_STAGE_FRACTION = 0.2;
+const COMBAT_FILL_FRACTION = 0.95;
+const COMBAT_FEET_FRACTION = 0.97;
+const COMBAT_STAGE_TRANSITION_MS = 450;
 const EDGE_TRANSITION_MARGIN = 4; // world-pixels from a page's exact edge that counts as "reached it"
 const MOVE_SEND_INTERVAL_MS = 100; // at most this often, movement intents go to the session (and the server)
 const CHAT_BUBBLE_MS = 4500; // how long a chat bubble stays up before fading
@@ -229,6 +243,15 @@ export class WorldScene {
       this.app.ticker.add((ticker) => this._onTick(ticker));
 
       this._resizeObserver = new ResizeObserver((entries) => {
+        // The combat stage's own shrink/restore (enterCombatStage/
+        // exitCombatStage) resizes the renderer directly and deliberately
+        // skips the zone/background re-layout the full resize() does -- if
+        // this observer's generic handler also ran for that same size
+        // change, it would re-layout the whole zone at the tiny stage size
+        // and corrupt it. A real container resize (rotation, window resize)
+        // is rare enough mid-fight to accept picking it back up once the
+        // fight ends (exitCombatStage measures fresh at that point).
+        if (this.inCombat) return;
         const { width, height } = entries[0].contentRect;
         this.resize(width, height);
       });
@@ -566,12 +589,68 @@ export class WorldScene {
   }
 
   _updateCamera(deltaMS, snap=false) {
-    const frame=worldFraming(this.app.screen.width,this.app.screen.height,this.zone.width,this.zone.exits?this.position.y:(this.zone.groundTop+this.zone.groundBottom)/2,this.input?.touch,this._lastDisplayHeight,this.inCombat?COMBAT_ZOOM_BOOST:1,this.inCombat?COMBAT_FEET_FRACTION:undefined,!this.inCombat);
+    const frame=worldFraming(this.app.screen.width,this.app.screen.height,this.zone.width,this.zone.exits?this.position.y:(this.zone.groundTop+this.zone.groundBottom)/2,this.input?.touch,this._lastDisplayHeight,1,this.inCombat?COMBAT_FEET_FRACTION:undefined,!this.inCombat,this.inCombat?this._combatZoom:null);
     this.zoom=frame.zoom;this.cameraY=snap?frame.cameraY:easeToward(this.cameraY??frame.cameraY,frame.cameraY,deltaMS,5);
     const focus=this.selectedMob && (this.inCombat || this._approaching)?(this.position.x+this.selectedMob.container.x)/2:null;
     this.cameraX=snap?computeCenteredCameraX(this.position.x,frame.viewWidth,this.zone.width):smoothCameraX(this.position.x,this.cameraX,this.velocity.x,frame.viewWidth,this.zone.width,deltaMS,focus);
     this.world.scale.set(this.zoom);
     this.world.position.set(-this.cameraX*this.zoom,-this.cameraY*this.zoom);
+  }
+
+  // Shrinks the canvas to a fixed rectangle pinned to the top of the screen
+  // for the whole fight -- a dedicated combat stage, set once here and never
+  // resized or re-panned again until exitCombatStage(). Deliberately resizes
+  // just the renderer + camera, not the full resize() pipeline: that also
+  // re-lays-out the zone's background/ground/mobs to fit the new height,
+  // which is right for a real container resize but would rescale the whole
+  // room down to fit this tiny stage instead of just cropping into it.
+  enterCombatStage() {
+    const view = this.mountElement.closest(".view") ?? this.mountElement.parentElement;
+    const viewRect = view?.getBoundingClientRect();
+    const bottomBar = view?.querySelector(".world-progress");
+    const battleHeight = (viewRect?.height ?? this.app.screen.height) - (bottomBar?.getBoundingClientRect().height ?? 0);
+    const stageHeight = Math.max(60, battleHeight * COMBAT_STAGE_FRACTION);
+    document.documentElement.style.setProperty("--combat-stage-height", `${stageHeight}px`);
+    document.body.classList.add("in-combat");
+
+    // Capture where the camera visually is right now, resize the renderer to
+    // the new stage, then let _updateCamera(snap) compute (not yet render)
+    // where it needs to end up -- the actual this.world.scale/position get
+    // animated from the old values to those new ones below, rather than
+    // jumping straight there.
+    const startZoom = this.zoom, startX = this.cameraX, startY = this.cameraY;
+    this.app.renderer.resize(this.app.screen.width, stageHeight);
+    this._combatZoom = (stageHeight * COMBAT_FILL_FRACTION) / 138;
+    this._updateCamera(0, true);
+    const targetZoom = this.zoom, targetX = this.cameraX, targetY = this.cameraY;
+
+    this._animate(COMBAT_STAGE_TRANSITION_MS, (t) => {
+      const eased = 1 - (1 - t) ** 3; // ease-out: fast start, gentle settle
+      const zoom = startZoom + (targetZoom - startZoom) * eased;
+      const x = startX + (targetX - startX) * eased;
+      const y = startY + (targetY - startY) * eased;
+      this.world.scale.set(zoom);
+      this.world.position.set(-x * zoom, -y * zoom);
+    });
+  }
+
+  // Restores the canvas to its normal full size and framing once a fight ends.
+  exitCombatStage() {
+    document.body.classList.remove("in-combat");
+    const { width, height } = this.mountElement.getBoundingClientRect();
+    this.app.renderer.resize(width, height);
+    this._updateCamera(0, true);
+  }
+
+  // Hit animations from successive grades must never visually overlap (both
+  // would fight over the same sprites' positions) -- but showing the next
+  // card must never wait for one to finish either (see app.js's handleGrade).
+  // Queuing lets a caller fire-and-forget while still guaranteeing order.
+  queueHit(hits) {
+    this._hitQueue = (this._hitQueue ?? Promise.resolve())
+      .then(() => this.playHit(hits))
+      .catch((err) => console.error(err));
+    return this._hitQueue;
   }
 
   _setTargetFromPointer(event) {
@@ -647,6 +726,7 @@ export class WorldScene {
     this.selectedMob = null;
     this.inCombat = false;
     this._approaching = false; // defensive -- should already be false by the time a fight can end
+    this.exitCombatStage();
     if (entry && this._pendingMobStates.has(entry.data.id)) {
       const pending = this._pendingMobStates.get(entry.data.id);
       this._pendingMobStates.delete(entry.data.id);
@@ -1062,13 +1142,7 @@ export class WorldScene {
       this.player.position.set(this.position.x, this.position.y);
       this._wasMoving = false;
       this._emitMove(true);
-      // Snap straight to the zoomed combat framing rather than letting the
-      // usual eased pan catch up over time: onCombatStart below leads
-      // straight into showing a card, which stops the ticker (see app.js's
-      // onReading) almost immediately -- an eased camera would freeze
-      // partway through the transition, well short of framing the fighters
-      // above the reading sheet.
-      this._updateCamera(0, true);
+      this.enterCombatStage();
       this.onCombatStart?.(this.selectedMob.data);
     }
 
@@ -1084,6 +1158,10 @@ export class WorldScene {
     this._arrowPhase += ticker.deltaMS / 400;
     for(const arrow of Object.values(this._arrows))if(arrow)arrow.alpha=.8+Math.sin(this._arrowPhase)*.15;
 
-    this._updateCamera(dt);
+    // The combat stage is framed once (enterCombatStage) and never re-panned
+    // or re-zoomed between cards -- only the fighters' own lunge/shake tweens
+    // move within that fixed frame (see _playSingleHit), so skip the usual
+    // per-tick camera recompute for the whole fight, not just this tick.
+    if (!this.inCombat) this._updateCamera(dt);
   }
 }

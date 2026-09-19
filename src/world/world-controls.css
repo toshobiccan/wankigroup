@@ -11,3 +11,23 @@
 @media(pointer:coarse){.world-root .chat-input{bottom:140px;max-width:190px}.world-root .chat-log{bottom:170px;max-width:190px;max-height:48px}.world-root .room-label{top:8px;bottom:auto}}
 @media(min-width:760px){body.world-open .app{max-width:1100px}}
 .world-controls[data-mode="tap"]{display:none!important}.world-dpad{opacity:.38;border-radius:50%;background:#253c38a0;box-shadow:none;transition:opacity .15s}.world-dpad:active,.world-dpad:hover{opacity:.72}.world-actions{opacity:.55}.world-actions:active{opacity:.85}
+/* Movement is locked for the whole fight, and the joystick/A-B buttons sit
+   at the same screen position the grade buttons need -- hide them for the
+   whole fight (see world-scene.js's enterCombatStage/exitCombatStage, which
+   set this class), not just while a card is actually shown, so they can't
+   flash back between grades and collide with a fast tap. */
+body.in-combat .world-controls{display:none!important}
+/* The fixed combat stage: world-scene.js's enterCombatStage() sets both the
+   --combat-stage-height variable and this class together, resizing the
+   canvas to match. .world-root's own box has to shrink to the same height
+   (not just the canvas inside it) so nothing leaves a gap before the
+   reading sheet, which starts exactly where this stage ends. Both are set
+   once per fight and never move again -- see world-scene.js's comment on
+   COMBAT_STAGE_FRACTION for why. */
+body.in-combat .world-root{flex:0 0 var(--combat-stage-height,140px)}
+/* Scoped to .is-reading (set by EncounterPanel._setHeight), not every sheet
+   state -- combat can already be running for a moment before the first card
+   loads, while the mob-select "peek" panel is still showing; without this
+   scoping that panel would get stretched to fill the whole stage-sized
+   sheet instead of staying its own compact size during that gap. */
+body.in-combat .encounter-sheet.is-reading{top:var(--combat-stage-height,140px);height:auto!important}

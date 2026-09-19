@@ -29,8 +29,12 @@ export function easeToward(current, target, deltaMS, response = 9) {
 // skip it: anything genuinely past the room's bottom edge that this exposes
 // only shows up in the lower portion of the crop, which is exactly the
 // portion the reading sheet covers anyway.
-export function worldFraming(width, height, zoneWidth, groundY, touch = false, worldHeight = height, zoomBoost = 1, feetFraction = touch ? .65 : .76, clampToRoomBottom = true) {
-  const zoom = Math.max(.9, Math.min(1.485, height * .234 / 118), width / zoneWidth, height / worldHeight) * zoomBoost;
+// explicitZoom, when given, replaces the whole formula above -- used for the
+// combat stage, which wants a zoom picked to fill its own fixed (and often
+// quite small) rectangle exactly, not the absolute-character-size formula
+// exploration uses across widely varying viewport heights.
+export function worldFraming(width, height, zoneWidth, groundY, touch = false, worldHeight = height, zoomBoost = 1, feetFraction = touch ? .65 : .76, clampToRoomBottom = true, explicitZoom = null) {
+  const zoom = explicitZoom ?? (Math.max(.9, Math.min(1.485, height * .234 / 118), width / zoneWidth, height / worldHeight) * zoomBoost);
   const viewWidth = width / zoom;
   const viewHeight = height / zoom;
   const feetScreenY = Math.min(height - 10, Math.max(height * feetFraction, 138 * zoom));

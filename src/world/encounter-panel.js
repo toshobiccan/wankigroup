@@ -11,23 +11,14 @@ import { isUnseen, cardLabel } from '../game/srs.js';
 const HEIGHTS = {
   hidden: 0,
   peek: 132,
-  default: 320,
-  expanded: 560,
-  // Deliberately taller than any real screen -- _setHeight() clamps this down
-  // via _maxSheetHeightPx() so the battle's top third always stays visible.
-  // The sheet itself is translucent and blurred, and the combat camera zooms
-  // in and frames the fighters near the top of that band (see world-scene.js's
-  // COMBAT_ZOOM_BOOST), so even at "full" the fight stays visible and legible
-  // behind the card.
-  full: 9999,
-  retracted: 40, // smaller than peek -- just enough to keep the handle visible during a hit
+  // The real height while a card (or a combat message) is up comes from CSS
+  // -- .in-combat .encounter-sheet { top: var(--combat-stage-height); height:
+  // auto } -- fixed for the whole fight by world-scene.js's enterCombatStage(),
+  // never resized per-card. This is just the fallback for the rare moment
+  // that class isn't present yet (e.g. a "no active deck" message shown
+  // before a fight has actually started).
+  reading: 560,
 };
-
-// A card with an image, or with enough text to need real room, gets the
-// full-height treatment automatically -- reading and answering the card
-// matters more here than seeing the fight behind it, and nobody should have
-// to remember to drag the handle up before it's readable.
-const LONG_TEXT_CHARS = 140;
 
 export class EncounterPanel {
   constructor({ mountElement, onGrade, onFight, onFlee, onReading }) {
@@ -60,35 +51,21 @@ export class EncounterPanel {
     mountElement.appendChild(this.root);
     mountElement.appendChild(this.lightbox);
 
-    this._state = "hidden"; // "hidden" | "peek" | "default" | "expanded" | "retracted"
-    this._preferredCombatHeight = "default"; // remembered default/expanded choice, per fight
-    this._beforeRetractState = null;
-
-    this.handle.addEventListener("pointerdown", (event) => this._onHandlePointerDown(event));
-  }
-
-  // The battle must always keep at least its top quarter free of the reading
-  // sheet, measured live off the actual view box -- this app's height chain
-  // (nothing between .app's 100dvh and .view gives <main> a definite height)
-  // leaves percentage-based CSS max-heights unable to resolve, so this can't
-  // be done in CSS alone.
-  //
-  // The fraction is of the battle-viewable area specifically (the view minus
-  // the deck-progress bar the sheet's `bottom` offset sits above), not the
-  // whole view box -- that bar isn't battle, and counting it made the actual
-  // visible peek noticeably short of a true quarter.
-  _maxSheetHeightPx() {
-    const view = this.mountElement.closest(".view") ?? this.mountElement.parentElement;
-    const viewHeight = view?.getBoundingClientRect().height || window.innerHeight;
-    const bottomOffset = parseFloat(getComputedStyle(this.root).bottom) || 0;
-    const battleHeight = viewHeight - bottomOffset;
-    return (battleHeight * 3) / 4;
+    this._state = "hidden"; // "hidden" | "peek" | "reading"
   }
 
   _setHeight(state) {
-    this.onReading?.(["default","expanded","full"].includes(state) && this.content.querySelector(".sheet-card-content") !== null);
+    this.onReading?.(state === "reading" && this.content.querySelector(".sheet-card-content") !== null);
     this._state = state;
-    this.root.style.height = `${Math.min(HEIGHTS[state], this._maxSheetHeightPx())}px`;
+    // .in-combat's CSS fixes the sheet to the combat-stage layout (see
+    // world-controls.css), but combat can already be running (the canvas
+    // already shrunk to its stage) for a moment before the first card
+    // actually loads -- the mob-select "peek" panel is still showing then.
+    // Scope that CSS override to genuinely "reading" content only, or the
+    // peek panel would get stretched to fill the whole stage-sized sheet
+    // instead of staying its own compact size during that gap.
+    this.root.classList.toggle("is-reading", state === "reading");
+    this.root.style.height = `${HEIGHTS[state]}px`;
   }
 
   hide() {
@@ -96,17 +73,7 @@ export class EncounterPanel {
     this.content.replaceChildren();
   }
 
-  retract() {
-    this._beforeRetractState = this._state;
-    this._setHeight("retracted");
-  }
-
-  restore() {
-    this._setHeight(this._beforeRetractState || "default");
-  }
-
   showPeek(mob) {
-    this._preferredCombatHeight = "default"; // a fresh fight (if one starts) begins at default height
     const wrap = document.createElement("div");
     wrap.className = "sheet-peek";
 
@@ -170,7 +137,7 @@ export class EncounterPanel {
     }
 
     this.content.replaceChildren(wrap);
-    this._setHeight("default");
+    this._setHeight("reading");
   }
 
   // card.front/card.back are either a plain string (legacy/premade cards) or
@@ -201,6 +168,14 @@ export class EncounterPanel {
     const wrap = document.createElement("div");
     wrap.className = "sheet-combat";
 
+    // Everything that can grow long (the card face) scrolls in here; the
+    // grade buttons live in `footer` below, outside this scroller, so they're
+    // always reachable in one tap regardless of how long the card is --
+    // answering a well-known card should never need a scroll first.
+    const scroll = document.createElement("div");
+    scroll.className = "sheet-scroll";
+    wrap.appendChild(scroll);
+
     const hpRow = document.createElement("div");
     hpRow.className = "sheet-hp-row";
     const hpLabel = document.createElement("div");
@@ -216,7 +191,7 @@ export class EncounterPanel {
     hpFill.style.width = `${Math.max(0, (playerState.hp / playerState.maxHp) * 100)}%`;
     hpBar.appendChild(hpFill);
     hpRow.append(hpLabel, hpBar);
-    wrap.appendChild(hpRow);
+    scroll.appendChild(hpRow);
 
     const statusRow = document.createElement("div");
     statusRow.className = "sheet-card-status";
@@ -231,7 +206,7 @@ export class EncounterPanel {
     explainBtn.disabled = true;
     explainBtn.title = "Coming soon: an AI explanation of this card, for premium members.";
     statusRow.appendChild(explainBtn);
-    wrap.appendChild(statusRow);
+    scroll.appendChild(statusRow);
 
     const cardEl = document.createElement("div");
     cardEl.className = "sheet-card-content";
@@ -251,7 +226,16 @@ export class EncounterPanel {
       }
       cardEl.appendChild(backEl);
     }
-    wrap.appendChild(cardEl);
+    const cardSlot = document.createElement("div");
+    cardSlot.className = "sheet-card-slot";
+    cardSlot.appendChild(cardEl);
+    scroll.appendChild(cardSlot);
+
+    // Grade buttons, the reveal button, and the review-controller pad all
+    // stay outside `scroll` -- pinned, never scrolled away.
+    const footer = document.createElement("div");
+    footer.className = "sheet-footer";
+    wrap.appendChild(footer);
 
     let submitted=false;
     if(Array.isArray(card.tutorialChoices) && card.tutorialChoices.length && !revealed){
@@ -262,7 +246,7 @@ export class EncounterPanel {
         button.onclick=()=>{if(submitted)return;if(answer!==card.back){feedback.textContent='Not quite. Try another answer.';button.disabled=true;return;}
           submitted=true;wrap.querySelectorAll('button').forEach(b=>b.disabled=true);this.onGrade?.('good');};
         actions.append(button);
-      }wrap.append(actions,feedback);
+      }footer.append(actions,feedback);
     }else if (revealed) {
       const actions = document.createElement("div");
       actions.className = "answer-actions";
@@ -280,11 +264,10 @@ export class EncounterPanel {
         const subText = document.createElement("small");
         subText.textContent = sub;
         btn.append(labelText, subText);
-        // Disable all four grade buttons the moment any one is tapped -- retract()
-        // only animates the sheet's CSS height over .25s, it doesn't stop the
-        // buttons from staying clickable during that transition, so a fast
-        // double-tap could otherwise fire onGrade() twice for one card. They get
-        // naturally replaced/re-enabled next time showCard()/reveal() rebuilds
+        // Disable all four grade buttons the moment any one is tapped -- the
+        // next card replaces this content right away, but a fast double-tap
+        // could otherwise fire onGrade() twice for the same card in the gap.
+        // They get naturally replaced next time showCard()/reveal() rebuilds
         // this content, so no re-enable logic is needed here.
         btn.addEventListener("click", () => {
           submitted=true;
@@ -294,13 +277,13 @@ export class EncounterPanel {
         gradeButtons.push(btn);
         actions.appendChild(btn);
       }
-      wrap.appendChild(actions);
+      footer.appendChild(actions);
     } else {
       const revealBtn = document.createElement("button");
       revealBtn.className = "btn-primary sheet-reveal-btn";
       revealBtn.textContent = "Show Answer";
       revealBtn.addEventListener("click", () => this.reveal(card, mob, playerState, media));
-      wrap.appendChild(revealBtn);
+      footer.appendChild(revealBtn);
     }
 
     const choices=[...wrap.querySelectorAll('.answer-actions button,.sheet-reveal-btn')];
@@ -313,7 +296,7 @@ export class EncounterPanel {
       const pad=document.createElement('div');pad.className='review-controller';pad.setAttribute('aria-label','Review controls');
       for(const [label,title,act]of [['‹','Previous answer',()=>move(-1)],['›','Next answer',()=>move(1)],['B','Hide answer',back],['A','Confirm selected answer',()=>choices[selected]?.click()]]){
         const b=document.createElement('button');b.type='button';b.textContent=label;b.setAttribute('aria-label',title);if(label==='B' && !revealed)b.disabled=true;b.onclick=()=>{if(preferences.haptics)navigator.vibrate?.(8);act();};pad.append(b);
-      }wrap.append(pad);highlight();
+      }footer.append(pad);highlight();
     }
     wrap.tabIndex=-1;
     wrap.addEventListener('keydown',event=>{
@@ -328,34 +311,21 @@ export class EncounterPanel {
     return wrap;
   }
 
-  // True if these parts (a card's front, or front+back) need the full-height
-  // treatment: any image, or enough combined text that a cramped sheet would
-  // get in the way of reading it.
-  _needsFullView(...partsLists) {
-    let chars = 0;
-    for (const parts of partsLists) {
-      for (const part of Array.isArray(parts) ? parts : [{ t: "text", v: parts ?? "" }]) {
-        if (part.t === "img") return true;
-        chars += part.v?.length ?? 0;
-      }
-    }
-    return chars > LONG_TEXT_CHARS;
-  }
-
   // media: optional Map<filename, objectURL> for this card's deck (app.js
   // builds it from DB.mediaForDeck's Blobs). Omitted, images just don't render.
+  // The sheet's actual height is fixed for the whole fight (see HEIGHTS.reading's
+  // comment) regardless of this card's own length -- .sheet-scroll inside
+  // _buildCardContent handles anything that doesn't fit, so there's nothing
+  // to measure or pick a size for here.
   showCard(card, mob, playerState, media) {
     this.content.replaceChildren(this._buildCardContent(card, mob, playerState, { revealed: false, media }));
-    this._setHeight(this._needsFullView(card.front) ? "full" : this._preferredCombatHeight);
+    this._setHeight("reading");
     this.content.firstElementChild?.focus({preventScroll:true});
   }
 
   reveal(card, mob, playerState, media) {
     this.content.replaceChildren(this._buildCardContent(card, mob, playerState, { revealed: true, media }));
-    // The back can turn a short question into a long or image-bearing answer
-    // (or vice versa going "back" to the front) -- re-check every time either
-    // side of the card changes what's on screen, don't just inherit showCard's height.
-    this._setHeight(this._needsFullView(card.front, card.back) ? "full" : this._preferredCombatHeight);
+    this._setHeight("reading");
     this.content.firstElementChild?.focus({preventScroll:true});
   }
 
@@ -366,41 +336,5 @@ export class EncounterPanel {
 
   _closeLightbox() {
     this.lightbox.hidden = true;
-  }
-
-  _onHandlePointerDown(event) {
-    // Draggable during combat (default/expanded), and from an auto-expanded
-    // "full" card so a long/image card never traps the handle -- not from
-    // peek/retracted, which aren't combat reading states at all.
-    if (!["default", "expanded", "full"].includes(this._state)) return;
-    const dragStartY = event.clientY;
-    // Clamped into the normal drag range even from "full" (an oversized
-    // sentinel height, see HEIGHTS.full) -- otherwise the first pointermove
-    // below would need an impossible multi-thousand-pixel drag to register.
-    const dragStartHeight = Math.min(HEIGHTS.expanded, HEIGHTS[this._state]);
-    let dragHeight = dragStartHeight; // tracks the intended target height, not the rendered one
-
-    const onMove = (moveEvent) => {
-      const delta = dragStartY - moveEvent.clientY; // dragging up increases height
-      const nextHeight = Math.min(HEIGHTS.expanded, this._maxSheetHeightPx(), Math.max(HEIGHTS.default, dragStartHeight + delta));
-      dragHeight = nextHeight;
-      this.root.style.height = `${nextHeight}px`;
-    };
-    const onUp = () => {
-      window.removeEventListener("pointermove", onMove);
-      window.removeEventListener("pointerup", onUp);
-      // Use the tracked drag target rather than getBoundingClientRect(): .encounter-sheet
-      // has `transition: height .25s ease` for the peek/default/expanded/hide state changes,
-      // and that same transition fires on every pointermove's style.height write during a
-      // drag, so the rendered box lags far behind the target height for the whole gesture.
-      // Reading the live rect here would almost always read back near dragStartHeight and
-      // snap the wrong way regardless of how far the handle was actually dragged.
-      const midpoint = (HEIGHTS.default + HEIGHTS.expanded) / 2;
-      this._preferredCombatHeight = dragHeight > midpoint ? "expanded" : "default";
-      this._setHeight(this._preferredCombatHeight);
-    this.content.firstElementChild?.focus({preventScroll:true});
-    };
-    window.addEventListener("pointermove", onMove);
-    window.addEventListener("pointerup", onUp);
   }
 }

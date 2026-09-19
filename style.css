@@ -637,7 +637,21 @@ img.scene-layer { height: auto; }
 .sheet-handle::before {
   content: ""; width: 36px; height: 4px; border-radius: 2px; background: #3a4a66;
 }
-.sheet-content { flex: 1; min-height: 0; padding: 4px 12px 12px; overflow-y: auto; }
+.sheet-content { flex: 1; min-height: 0; padding: 4px 12px 12px; }
+
+/* A card's own layout: the front/back/status scroll independently in
+   .sheet-scroll; .sheet-footer (grade buttons, reveal button, the
+   review-controller pad) stays outside that scroller so it's always
+   reachable in one tap, however long the card content runs. */
+.sheet-combat { display: flex; flex-direction: column; height: 100%; }
+.sheet-scroll { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; }
+/* The card face specifically (not the HP/status header above it) centers in
+   whatever room is left: the sheet is now a fixed height for the whole
+   fight (see world-controls.css's .in-combat rules), so a short card no
+   longer just leaves dead space below it. Long content that overflows still
+   scrolls normally -- centering only affects the resting/unscrolled position. */
+.sheet-card-slot { flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: center; }
+.sheet-footer { flex-shrink: 0; }
 
 .sheet-peek-outer { display: flex; flex-direction: column; gap: 10px; }
 .sheet-peek { display: flex; align-items: center; gap: 10px; }

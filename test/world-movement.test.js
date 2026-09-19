@@ -65,6 +65,11 @@ it('clampToRoomBottom still floors cameraY at 0 when false, so it never looks ab
   const f=worldFraming(844,700,480*16/9,50,true,2000,1.35,.05,false);
   expect(f.cameraY).toBe(0);
 });
+it('explicitZoom overrides the whole zoom formula, e.g. to exactly fill a fixed combat-stage rectangle', () => {
+  const f=worldFraming(375,124,2000,508.4,true,620,1,.97,false,2.5);
+  expect(f.zoom).toBe(2.5);
+  expect(f.viewWidth).toBeCloseTo(375/2.5,5);
+});
 
 const ZONE = { id: "plains", width: 2000, groundTop: 110, groundBottom: 190 };
 

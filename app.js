@@ -122,7 +122,7 @@ function go(view) {
   $(".views").scrollTop = 0;
   renderers[view]?.();
 
-  if (view === "world") { worldScene?.resume(); if(document.body.classList.contains("study-focus"))worldScene?.app.ticker?.stop(); }
+  if (view === "world") worldScene?.resume();
 }
 
 document.querySelectorAll(".nav-item").forEach((btn) => btn.addEventListener("click", () => go(btn.dataset.target)));
@@ -749,18 +749,17 @@ async function handleGrade(grade) {
     }
 
     worldScene.setMobHp(fight.mob.id, result.mobHp);
-    encounterPanel.retract();
-    await worldScene.playHit(result.hits);
-    // Skip restore() on a fight-ending result -- the victory/defeat paths below
-    // call hide() a couple statements later, and restore() then hide() back to
-    // back would fire two competing CSS height transitions for nothing visible.
-    const fightOver = result.mobDefeated || result.playerDefeated || fight.endedWithRewards;
-    if (!fightOver) encounterPanel.restore();
+    // Fire-and-forget: the hit/damage animation plays out in the fixed combat
+    // stage on its own timeline (queueHit keeps successive animations from
+    // visually overlapping) and never blocks showing the next card below --
+    // that's the whole point, so grading a well-known card can be instant.
+    const hitAnimation = worldScene.queueHit(result.hits);
 
-    if (result.mobDefeated) return finishWithVictory(result.rewards);
-    if (fight.endedWithRewards) return finishWithVictory(fight.endedWithRewards);
+    if (result.mobDefeated) { await hitAnimation; return finishWithVictory(result.rewards); }
+    if (fight.endedWithRewards) { await hitAnimation; return finishWithVictory(fight.endedWithRewards); }
 
     if (result.playerDefeated) {
+      await hitAnimation; // let the finishing blow land before the defeat fade
       revokeFightMedia(fight);
       fight = null;
       encounterPanel.hide();
@@ -840,7 +839,7 @@ renderers.world = async () => {
   }
   encounterPanel = new window.Cardslayer.EncounterPanel({
     mountElement: $("#encounterPanelRoot"),
-    onReading: reading => { document.body.classList.toggle("study-focus",reading); if(reading)worldScene?.app.ticker?.stop(); else if(document.body.classList.contains("world-open"))worldScene?.app.ticker?.start(); },
+    onReading: reading => document.body.classList.toggle("study-focus",reading),
     onGrade: handleGrade,
     onFight: () => worldScene.engageSelectedMob(),
     onFlee: () => worldScene.deselectMob(),
