@@ -49,6 +49,22 @@ it('a lower feetFraction frames the subject higher on screen, e.g. so combat kee
   expect(feetScreenY(combat)).toBeLessThan(feetScreenY(normal));
   expect(feetScreenY(combat)).toBeCloseTo(700*.42,1);
 });
+it('clampToRoomBottom:false lets a tight combat crop look past the exploration room-bottom limit, toward the feet', () => {
+  // Reproduces a real room where the player stands well above the room's
+  // authored bottom edge (groundY=508.4, worldHeight=620, gap 111.6) -- with
+  // the room-bottom clamp on, this gap alone was enough to push the combat
+  // shot almost all the way back down to the plain exploration framing.
+  const width=375, height=620, zoneWidth=2000, groundY=508.4, worldHeight=620;
+  const clamped=worldFraming(width,height,zoneWidth,groundY,true,worldHeight,1.35,.42,true);
+  const unclamped=worldFraming(width,height,zoneWidth,groundY,true,worldHeight,1.35,.42,false);
+  const feetScreenY=(f)=>(groundY-f.cameraY)*f.zoom;
+  expect(feetScreenY(clamped)).toBeGreaterThan(400); // clamp forces feet low on screen despite feetFraction
+  expect(feetScreenY(unclamped)).toBeCloseTo(height*.42,1); // unclamped actually reaches the requested framing
+});
+it('clampToRoomBottom still floors cameraY at 0 when false, so it never looks above the top of the world', () => {
+  const f=worldFraming(844,700,480*16/9,50,true,2000,1.35,.05,false);
+  expect(f.cameraY).toBe(0);
+});
 
 const ZONE = { id: "plains", width: 2000, groundTop: 110, groundBottom: 190 };
 

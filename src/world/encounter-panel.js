@@ -67,15 +67,22 @@ export class EncounterPanel {
     this.handle.addEventListener("pointerdown", (event) => this._onHandlePointerDown(event));
   }
 
-  // The battle must always keep at least its top third free of the reading
+  // The battle must always keep at least its top quarter free of the reading
   // sheet, measured live off the actual view box -- this app's height chain
   // (nothing between .app's 100dvh and .view gives <main> a definite height)
   // leaves percentage-based CSS max-heights unable to resolve, so this can't
   // be done in CSS alone.
+  //
+  // The fraction is of the battle-viewable area specifically (the view minus
+  // the deck-progress bar the sheet's `bottom` offset sits above), not the
+  // whole view box -- that bar isn't battle, and counting it made the actual
+  // visible peek noticeably short of a true quarter.
   _maxSheetHeightPx() {
     const view = this.mountElement.closest(".view") ?? this.mountElement.parentElement;
     const viewHeight = view?.getBoundingClientRect().height || window.innerHeight;
-    return (viewHeight * 2) / 3;
+    const bottomOffset = parseFloat(getComputedStyle(this.root).bottom) || 0;
+    const battleHeight = viewHeight - bottomOffset;
+    return (battleHeight * 3) / 4;
   }
 
   _setHeight(state) {

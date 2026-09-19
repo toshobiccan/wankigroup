@@ -18,12 +18,26 @@ export function easeToward(current, target, deltaMS, response = 9) {
 // (see world-scene.js's combat framing, so the fighters stay visible above
 // the reading sheet) without this module knowing anything about combat --
 // both default to the plain exploration framing this always had.
-export function worldFraming(width, height, zoneWidth, groundY, touch = false, worldHeight = height, zoomBoost = 1, feetFraction = touch ? .65 : .76) {
+//
+// clampToRoomBottom (default true) caps how far down the camera can look at
+// worldHeight - viewHeight, so exploration never scrolls past the authored
+// background's bottom edge. A tight combat crop deliberately looks further
+// down than that -- toward the character's feet, well above where the
+// reading sheet's edge will sit -- and the room's bottom clamp was built for
+// the opposite framing (feet low on screen), so it was capping the combat
+// shot back down to nearly the normal exploration position. Pass false to
+// skip it: anything genuinely past the room's bottom edge that this exposes
+// only shows up in the lower portion of the crop, which is exactly the
+// portion the reading sheet covers anyway.
+export function worldFraming(width, height, zoneWidth, groundY, touch = false, worldHeight = height, zoomBoost = 1, feetFraction = touch ? .65 : .76, clampToRoomBottom = true) {
   const zoom = Math.max(.9, Math.min(1.485, height * .234 / 118), width / zoneWidth, height / worldHeight) * zoomBoost;
   const viewWidth = width / zoom;
   const viewHeight = height / zoom;
   const feetScreenY = Math.min(height - 10, Math.max(height * feetFraction, 138 * zoom));
-  const cameraY = Math.max(0, Math.min(worldHeight - viewHeight, groundY - feetScreenY / zoom));
+  const idealCameraY = groundY - feetScreenY / zoom;
+  const cameraY = clampToRoomBottom
+    ? Math.max(0, Math.min(worldHeight - viewHeight, idealCameraY))
+    : Math.max(0, idealCameraY);
   return { zoom, viewWidth, cameraY };
 }
 

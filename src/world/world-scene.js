@@ -566,7 +566,7 @@ export class WorldScene {
   }
 
   _updateCamera(deltaMS, snap=false) {
-    const frame=worldFraming(this.app.screen.width,this.app.screen.height,this.zone.width,this.zone.exits?this.position.y:(this.zone.groundTop+this.zone.groundBottom)/2,this.input?.touch,this._lastDisplayHeight,this.inCombat?COMBAT_ZOOM_BOOST:1,this.inCombat?COMBAT_FEET_FRACTION:undefined);
+    const frame=worldFraming(this.app.screen.width,this.app.screen.height,this.zone.width,this.zone.exits?this.position.y:(this.zone.groundTop+this.zone.groundBottom)/2,this.input?.touch,this._lastDisplayHeight,this.inCombat?COMBAT_ZOOM_BOOST:1,this.inCombat?COMBAT_FEET_FRACTION:undefined,!this.inCombat);
     this.zoom=frame.zoom;this.cameraY=snap?frame.cameraY:easeToward(this.cameraY??frame.cameraY,frame.cameraY,deltaMS,5);
     const focus=this.selectedMob && (this.inCombat || this._approaching)?(this.position.x+this.selectedMob.container.x)/2:null;
     this.cameraX=snap?computeCenteredCameraX(this.position.x,frame.viewWidth,this.zone.width):smoothCameraX(this.position.x,this.cameraX,this.velocity.x,frame.viewWidth,this.zone.width,deltaMS,focus);
@@ -1062,6 +1062,13 @@ export class WorldScene {
       this.player.position.set(this.position.x, this.position.y);
       this._wasMoving = false;
       this._emitMove(true);
+      // Snap straight to the zoomed combat framing rather than letting the
+      // usual eased pan catch up over time: onCombatStart below leads
+      // straight into showing a card, which stops the ticker (see app.js's
+      // onReading) almost immediately -- an eased camera would freeze
+      // partway through the transition, well short of framing the fighters
+      // above the reading sheet.
+      this._updateCamera(0, true);
       this.onCombatStart?.(this.selectedMob.data);
     }
 
