@@ -569,6 +569,7 @@ export class WorldScene {
   }
 
   _setTargetFromPointer(event) {
+    if(this.input?.touch && this.input.preferences?.mode === "joystick")return;
     if (this.inCombat || this._approaching) return; // movement is scripted (walk-up) or locked (fight) -- never a ground click's job to change it
     if (this.selectedMob) {
       // A mob is selected -- this ground click (mob clicks never reach here,

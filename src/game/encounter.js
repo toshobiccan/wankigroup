@@ -42,7 +42,12 @@ export function killReward(mob, player) {
 
 // Everyone who was fighting the mob when it fell gets the full reward.
 export function applyKill(player, mob, today = todayKey()) {
+  if(mob.tutorialMob && player.tutorial?.rewarded) {
+    if(player.tutorial.step==='combat')player.tutorial.step='reward';
+    return {xp:0,coins:0};
+  }
   const reward = killReward(mob, player);
+  if(mob.tutorialMob)player.tutorial={...player.tutorial,rewarded:true,step:player.tutorial?.step==='combat'?'reward':(player.tutorial?.step??'done')};
   applyReward(player, reward);
   ensureDaily(player, today).battlesWon += 1;
   return reward;

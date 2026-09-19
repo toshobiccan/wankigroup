@@ -56,20 +56,15 @@ function terrain(biome,x,y) {
 export function renderWorldMap(mount,zones,{currentId,onSelect,selectedId,title="THE KNOWN REALMS"}={}) {
   const {nodes,edges}=mapGraph(zones),byId=new Map(nodes.map(node=>[node.id,node]));
   const svg=svgNode('svg',{viewBox:'0 0 1000 680',class:'fantasy-map',role:'group','aria-label':'World map. Select a room to inspect its paths.'});
-  svg.append(svgNode('rect',{width:1000,height:680,rx:20,fill:'#e8d7ad'}));
-  svg.append(svgNode('rect',{x:15,y:15,width:970,height:650,rx:12,fill:'none',stroke:'#9a8250','stroke-width':2}));
-  svg.append(svgNode('path',{d:'M120 175Q165 70 298 107L423 62 561 125 711 93Q877 125 917 241L873 355 927 446Q889 586 737 581L607 612 470 558 354 609Q191 598 159 507L89 413 137 304Z',fill:'#cbd0a0',stroke:'#7a825a','stroke-width':3}));
-  svg.append(svgNode('path',{d:'M120 175Q170 87 298 119L424 77 560 140 709 107Q859 140 901 240',fill:'none',stroke:'#f4e8c7','stroke-width':6,opacity:.6}));
-  svg.append(svgNode('text',{x:500,y:52,'text-anchor':'middle',fill:'#59452e','font-family':'Georgia','font-size':25,'letter-spacing':5},title.slice(0,40)));
-  svg.append(svgNode('text',{x:99,y:574,fill:'#8b835f','font-family':'Georgia','font-size':18,'font-style':'italic',transform:'rotate(-17 99 574)'},'The Quiet Sea'));
-  svg.append(svgNode('path',{d:'M870 525v80 M830 565h80 M870 529l-9 30 9-5 9 5Z',fill:'#89764c',stroke:'#89764c','stroke-width':2}));
-  svg.append(svgNode('text',{x:870,y:516,'text-anchor':'middle',fill:'#655437','font-family':'Georgia','font-size':18},'N'));
-  for(const [from,to]of edges){const a=byId.get(from),b=byId.get(to);svg.append(svgNode('path',{d:`M${a.x} ${a.y}Q${(a.x+b.x)/2} ${(a.y+b.y)/2-16} ${b.x} ${b.y}`,fill:'none',stroke:'#786342','stroke-width':3,'stroke-dasharray':'7 6'}));}
+  svg.append(svgNode('image',{href:'/assets/world-map-adventure.png',width:1000,height:680,preserveAspectRatio:'xMidYMid slice','aria-hidden':'true'}));
+  svg.append(svgNode('rect',{x:280,y:20,width:440,height:48,rx:4,fill:'#243d47',stroke:'#c3a566','stroke-width':2,opacity:.94}));
+  svg.append(svgNode('text',{x:500,y:51,'text-anchor':'middle',fill:'#f2e6c2','font-family':'Georgia','font-size':21,'letter-spacing':3},title.slice(0,40)));
+  for(const [from,to]of edges){const a=byId.get(from),b=byId.get(to);svg.append(svgNode('path',{d:`M${a.x} ${a.y}Q${(a.x+b.x)/2} ${(a.y+b.y)/2-16} ${b.x} ${b.y}`,fill:'none',stroke:'#fff0c1','stroke-width':4,'stroke-dasharray':'7 6'}));}
   const areas=new Set();
   for(const node of nodes){
     const key=node.map?.areaId??node.areaName;
     svg.append(terrain(node.biome,node.x,node.y-42));
-    if(!areas.has(key)){areas.add(key);svg.append(svgNode('text',{x:node.x,y:node.y-94,fill:'#5e5036','font-family':'Georgia','font-size':20,'font-style':'italic'},node.areaName));}
+    if(!areas.has(key)){areas.add(key);svg.append(svgNode('text',{x:node.x,y:node.y-94,fill:'#fff4d5',stroke:'#253d36','stroke-width':3,'paint-order':'stroke','font-family':'Georgia','font-size':20,'font-style':'italic'},node.areaName));}
     const active=node.id===currentId,selected=node.id===selectedId;
     const name=node.displayName??node.id;
     const label=node.map?.areaName && name.startsWith(node.map.areaName+' ')?'Room '+name.slice(node.map.areaName.length+1):name;
@@ -77,7 +72,7 @@ export function renderWorldMap(mount,zones,{currentId,onSelect,selectedId,title=
     button.append(svgNode('circle',{cx:node.x,cy:node.y,r:23,fill:'transparent'}));
     if(active)button.append(svgNode('circle',{cx:node.x,cy:node.y,r:17,fill:'none',stroke:'#ae7439','stroke-width':3}));
     button.append(svgNode('circle',{cx:node.x,cy:node.y,r:selected?11:9,fill:active?'#b9783e':node.blank?'#cbbd9a':'#617b5c',stroke:'#463e2c','stroke-width':3}));
-    button.append(svgNode('text',{x:node.x,y:node.y+36,'text-anchor':'middle',fill:'#483d2b','font-family':'Georgia','font-size':13},label.length>13?label.slice(0,11)+'…':label));
+    button.append(svgNode('text',{x:node.x,y:node.y+36,'text-anchor':'middle',fill:'#fff5d5',stroke:'#253d36','stroke-width':3,'paint-order':'stroke','font-family':'Georgia','font-size':16},label));
     const choose=()=>onSelect?.(node);button.addEventListener('click',choose);button.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();choose();}});svg.append(button);
   }
   mount.replaceChildren(svg);

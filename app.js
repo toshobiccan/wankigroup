@@ -104,12 +104,13 @@ function closeModal() {
 // ================= NAVIGATION =================
 const renderers = {};
 let wardrobeDispose = null;
-let wardrobeReturn = "home";
+let wardrobeReturn = "world";
 
 function go(view) {
   if (view === "import") { go("home"); $("#importDrawer").open = true; $("#importDrawer").scrollIntoView({block:"nearest"}); return; }
-  if (player && !player.characterCreated && view !== "wardrobe") { openWardrobe(); return; }
+  if (player && !player.characterCreated && view !== "wardrobe" && view !== "world") { openWardrobe(); return; }
   const previousView = document.querySelector(".view.is-active")?.dataset.view;
+  if(view!=="world"){++guideRequest;wizardDispose?.();wizardDispose=null;}
   if (previousView === "wardrobe") { wardrobeDispose?.(); wardrobeDispose = null; }
   document.body.classList.toggle("creating-character", view === "wardrobe" && !player?.characterCreated);
   document.body.classList.toggle("world-open", view === "world");
@@ -121,13 +122,13 @@ function go(view) {
   $(".views").scrollTop = 0;
   renderers[view]?.();
 
-  if (view === "world") worldScene?.resume();
+  if (view === "world") { worldScene?.resume(); if(document.body.classList.contains("study-focus"))worldScene?.app.ticker?.stop(); }
 }
 
 document.querySelectorAll(".nav-item").forEach((btn) => btn.addEventListener("click", () => go(btn.dataset.target)));
 document.getElementById('homeWorldBtn').addEventListener('click',()=>go('world'));
 document.getElementById('browseDecksBtn').addEventListener('click',browsePremadeDecks);
-document.getElementById('tutorialBtn').addEventListener('click',()=>startTutorial(true));
+document.getElementById('tutorialBtn').addEventListener('click',()=>startTutorial(player?.tutorial?.step === 'done'));
 document.getElementById('homeQuestsBtn').addEventListener('click',()=>go('quests'));
 document.getElementById('mapReturnBtn').addEventListener('click',()=>go('world'));
 let mapLoadRequest=0;
@@ -165,7 +166,7 @@ function openWardrobe() {
     return;
   }
   const view = document.querySelector(".view.is-active")?.dataset.view;
-  if (view && view !== "wardrobe") wardrobeReturn = player.characterCreated ? view : "home";
+  if (view && view !== "wardrobe") wardrobeReturn = player.characterCreated ? view : "world";
   go("wardrobe");
 }
 
@@ -174,7 +175,7 @@ renderers.wardrobe = () => {
   wardrobeDispose = window.Cardslayer.mountCharacterCreator($("#wardrobeRoot"), {
     appearance: player.character, firstTime: !player.characterCreated,
     onSave: appearance => session.customizeCharacter(appearance),
-    onSaved: () => go(wardrobeReturn),
+    onSaved: () => { if(player.tutorial?.step && player.tutorial.step!=="done") startTutorial(); else go(wardrobeReturn); },
     onCancel: () => go(wardrobeReturn),
   });
 };
@@ -280,6 +281,7 @@ async function importFile(file) {
 // ================= HOME (deck list) =================
 renderers.home = async () => {
   const root = $("#deckList");
+  $("#tutorialBtn").textContent=player?.tutorial?.step && player.tutorial.step!=="done"?"Continue introduction":"Practice the basics";
   const decks = await DB.listDecks();
   if (!decks.length) {
     root.replaceChildren(
@@ -313,6 +315,36 @@ renderers.home = async () => {
   );
   root.replaceChildren(...rows);
 };
+
+// Premade decks are local content; adding them does not grant import rewards.
+async function ensurePracticeDeck() {
+ const id='premade-capital-cities';
+ if(!(await DB.listDecks()).some(deck=>deck.id===id)) {
+ const cities=[['France','Paris'],['Norway','Oslo'],['Japan','Tokyo'],['Italy','Rome'],['Canada','Ottawa'],['Spain','Madrid']];
+ await DB.addDeck({id,name:'Capital cities',cardCount:cities.length,importedAt:Date.now()},cities.map(([country,capital],i)=>({id:`${id}-${i}`,deckId:id,front:`What is the capital of ${country}?`,back:capital,due:0,interval:0,ease:2.5,reps:0})));
+ }return id;
+}
+async function browsePremadeDecks(){showModal(el('h3',{},'A small world of knowledge'),el('p',{},'Capital cities · 6 cards · A gentle place to start'),el('button',{class:'btn-small',onclick:async event=>{const button=event.currentTarget;button.disabled=true;try{setActiveDeck(await ensurePracticeDeck());closeModal();go('home');}catch{button.disabled=false;button.textContent='Could not save. Try again';}}},'Add capital cities'));}
+let wizardDispose=null, guideRequest=0;
+async function showWizardGuide(){
+ const request=++guideRequest;wizardDispose?.();wizardDispose=null;
+ if(document.querySelector('.view.is-active')?.dataset.view!=='world' || !player || player.tutorial?.step==='done' || fight)return;
+ const {mountWizardGuide}=await import('./src/ui/tutorial.js');
+ if(request!==guideRequest || fight)return;
+ wizardDispose=mountWizardGuide({mount:document.querySelector('[data-view="world"]'),player,online:session.mode==='online',send:action=>session.tutorialAction(action),onAdvance:()=>showWizardGuide(),onCreate:openWardrobe,onMenu:()=>go('home')});
+}
+async function startTutorial(replay=false){
+ if(!player || session.needsLogin)return;
+ if(fight || worldScene?.inCombat){go('world');return;}
+ try{
+  if(replay)await session.tutorialAction({action:'restart'});
+  const id=await ensurePracticeDeck();setActiveDeck(id);
+  go('world');
+  if(worldScene?.pageId && worldScene.pageId!=='spawn-1' && !worldScene.inCombat)await worldScene.loadZone('data/zones/spawn-1.json');
+  await showWizardGuide();
+ }catch{showModal(el('h3',{},'Could not open the introduction'),el('p',{},'Please try again.'),el('button',{class:'btn-small',onclick:closeModal},'Close'));}
+}
+async function showControls(){const {controlsForm}=await import('./src/ui/control-settings.js');showModal(el('h3',{},'Controls'),controlsForm(),el('div',{class:'modal-actions'},el('button',{class:'btn-small',onclick:closeModal},'Done'),el('button',{class:'btn-small btn-ghost',onclick:showAccountModal},'Account')));}
 
 // ================= QUESTS =================
 renderers.quests = () => {
@@ -429,6 +461,9 @@ function renderInventoryLeft() {
       el("button", { class: "btn-small", onclick: () => { inventoryView = "stats"; renderInventoryLeft(); } }, "Stats")
     )
   );
+  const portrait=$("#inventoryAvatar");
+  if(portrait)window.Cardslayer.renderCharacterAvatar(portrait,player.character).catch(()=>{});
+
 }
 
 function renderInventoryTabs() {
@@ -453,7 +488,7 @@ function showItemDetails(item) {
   document.querySelectorAll('.inventory-item').forEach(row => row.classList.toggle('is-selected', row.dataset.itemId === item.id));
   const equipped = player.equipment[item.slot]?.id === item.id;
   const stats = Object.entries(item.stats ?? {}).filter(([,value])=>Number.isFinite(value));
-  $('#itemDetails').replaceChildren(el('span',{class:'eyebrow'},item.slot ?? 'Material'),el('h3',{},item.name),el('p',{},item.description || 'An item for your adventures.'),stats.length ? el('p',{class:'item-stats'},stats.map(([key,value])=>`${key}: ${value > 0 ? '+' : ''}${value}`).join(' · ')) : null,item.kind==='equipable' && session?.mode==='local' ? el('button',{class:'btn-small',...(equipped?{disabled:''}:{}),onclick:()=>{session.equipItem(item.id);showItemDetails(item);}},equipped?'Equipped':'Equip item') : null);
+  $('#itemDetails').replaceChildren(...[el('span',{class:'eyebrow'},item.slot ?? 'Material'),el('h3',{},item.name),el('p',{},item.description || 'An item for your adventures.'),stats.length ? el('p',{class:'item-stats'},stats.map(([key,value])=>`${key}: ${value > 0 ? '+' : ''}${value}`).join(' · ')) : null,item.kind==='equipable' && session?.mode==='local' ? el('button',{class:'btn-small',...(equipped?{disabled:''}:{}),onclick:()=>{session.equipItem(item.id);showItemDetails(item);}},equipped?'Equipped':'Equip item') : null].filter(Boolean));
 }
 function renderItemRow(item, quantity) {
   const equipped = player.equipment[item.slot]?.id === item.id;
@@ -507,8 +542,7 @@ renderers.inventory = () => {
   renderInventoryLeft();
   renderInventoryTabs();
   renderInventoryList();
-  const portrait = $("#inventoryAvatar");
-  if (portrait) window.Cardslayer.renderCharacterAvatar(portrait, player.character);
+
 };
 
 // ================= SCHEDULING =================
@@ -531,7 +565,8 @@ function schedule(card, grade) {
     }
     card.due = Date.now() + card.interval * DAY;
   }
-  return DB.putCard(card);
+  const {tutorialChoices,...persistedCard}=card;
+  return DB.putCard(persistedCard);
 }
 
 // ================= WORLD / COMBAT =================
@@ -560,7 +595,7 @@ async function renderWorldDeckProgress() {
     // 'Again' leaves interval at zero and must remain in the unfinished count.
     const now = Date.now();
     const done = cards.filter((card) => card.reps > 0 && card.interval > 0 && card.due > now).length;
-    $("#worldDeckCounts").textContent = deck ? `${done} done · ${cards.length - done} left` : "Choose a deck on Home";
+    $("#worldDeckCounts").textContent = deck ? `${done} done · ${cards.length - done} left` : "Choose a deck in Menu";
     $("#worldDeckCounts").title = "Cards currently reviewed; new, due and retry cards remain unfinished.";
     $("#worldDeckPercent").textContent = deck && cards.length ? `${Math.round(done / cards.length * 100)}%` : "—";
   } catch (error) {
@@ -621,13 +656,18 @@ async function handleCombatStart(mobData) {
       // later click on this mob or the ground is silently swallowed.
       worldScene.endCombat({ mobDefeated: false });
       encounterPanel.showMessage({
-        text: "Pick an active deck on Home first.",
-        actionLabel: "Go to Home",
+        text: "Pick an active deck in Menu first.",
+        actionLabel: "Go to Menu",
         onAction: () => go("home"),
       });
       return;
     }
     const cards = await DB.cardsForDeck(device.activeDeckId);
+    if(mobData.tutorialMob && player.tutorial?.step!=="done") {
+      cards.sort((a,b)=>a.id.localeCompare(b.id));
+      const choiceIndex=cards.findIndex(card=>card.id==="premade-capital-cities-1");
+      if(choiceIndex>=0)cards[choiceIndex]={...cards[choiceIndex],tutorialChoices:["Stockholm","Oslo","Copenhagen"]};
+    }
     if (!cards.length) {
       worldScene.endCombat({ mobDefeated: false });
       encounterPanel.showMessage({ text: "This deck has no cards - import more or pick another." });
@@ -640,7 +680,8 @@ async function handleCombatStart(mobData) {
       encounterPanel.showMessage({ text: FIGHT_ERRORS[err.code] ?? "Couldn't start that fight." });
       return;
     }
-    fight = { mob: mobData, queue: buildFightQueue(cards) };
+    wizardDispose?.();wizardDispose=null;++guideRequest;
+    fight = { mob: mobData, queue: mobData.tutorialMob && player.tutorial?.step!=="done" ? cards : buildFightQueue(cards) };
     encounterPanel.showCard(fight.queue[0], fight.mob, playerHpState());
   } catch (err) {
     bailOutOfFight(err);
@@ -663,6 +704,7 @@ function finishWithVictory(rewards) {
   worldScene.endCombat({ mobDefeated: true });
   encounterPanel.hide();
   fight = null;
+  if(mob.tutorialMob && player.tutorial?.step==="reward"){void showWizardGuide();return;}
   showModal(
     el("div", { style: "font-size:48px" }, "🏆"),
     el("h3", {}, "Victory!"),
@@ -751,6 +793,7 @@ async function enterPage(pageId, position) {
     const snapshot = await session.joinZone(pageId, position);
     if (worldScene.pageId !== pageId) return; // already walked on to another page
     applyRoom(snapshot);
+    if(pageId==="spawn-1" && player?.tutorial?.step!=="done")void showWizardGuide();
   } catch (err) {
     console.error("joining the room failed", err);
     currentRoomId = null;
@@ -779,6 +822,7 @@ renderers.world = async () => {
   }
   encounterPanel = new window.Cardslayer.EncounterPanel({
     mountElement: $("#encounterPanelRoot"),
+    onReading: reading => { document.body.classList.toggle("study-focus",reading); if(reading)worldScene?.app.ticker?.stop(); else if(document.body.classList.contains("world-open"))worldScene?.app.ticker?.start(); },
     onGrade: handleGrade,
     onFight: () => worldScene.engageSelectedMob(),
     onFlee: () => worldScene.deselectMob(),
@@ -907,9 +951,9 @@ async function afterSignIn() {
   closeModal();
   updateNetBadge();
   if (worldScene?.pageId) enterPage(worldScene.pageId, worldScene._positionFrac());
-  if (!player.characterCreated || new URLSearchParams(location.search).has("wardrobe")) { openWardrobe(); return; }
-  const view = document.querySelector(".view.is-active")?.dataset.view;
-  renderers[view]?.();
+  if (new URLSearchParams(location.search).has("wardrobe")) { openWardrobe(); return; }
+  if (player.tutorial?.step && player.tutorial.step!=="done") { startTutorial(); return; }
+  go("world");
 }
 
 function showLoginModal() {
@@ -1018,7 +1062,7 @@ function updateNetBadge() {
 
 // ================= BOOT =================
 $("#modal").addEventListener("click", (e) => { if (e.target.id === "modal" && !modalLocked) closeModal(); });
-$("#settingsBtn").addEventListener("click", showAccountModal);
+$("#settingsBtn").addEventListener("click", showControls);
 $("#wardrobeBtn").addEventListener("click", openWardrobe);
 $("#worldWardrobeBtn").addEventListener("click", openWardrobe);
 
@@ -1046,9 +1090,9 @@ async function boot() {
   }
   player = session.player;
   renderHeader();
-  if (!player.characterCreated || new URLSearchParams(location.search).has("wardrobe")) { openWardrobe(); return; }
-  const view = document.querySelector(".view.is-active")?.dataset.view;
-  if (view && view !== "import") renderers[view]?.();
+  if (new URLSearchParams(location.search).has("wardrobe")) { openWardrobe(); return; }
+  if (player.tutorial?.step && player.tutorial.step!=="done") { startTutorial(); return; }
+  go("world");
 }
 
 boot();

@@ -84,6 +84,12 @@ export class OnlineSession extends Emitter {
     this.emit("account", null);
   }
 
+  async tutorialAction(action) {
+    const outcome = await this._api("POST", "/api/actions/tutorial", action);
+    this._setPlayer(outcome.player);
+    return outcome;
+  }
+
   async importedDeck(cardCount) {
     const outcome = await this._api("POST", "/api/actions/deck-imported", { cardCount });
     this._setPlayer(outcome.player);

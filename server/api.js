@@ -1,3 +1,4 @@
+import { tutorialAction } from "../src/game/tutorial.js";
 // The HTTP JSON API under /api. Accounts and anything that changes progression
 // outside a fight go through here; fights go through the WebSocket.
 //
@@ -91,6 +92,18 @@ export function createApi({ config, store, players, world }) {
         player.characterCreated = true;
         players.changed(account.id);
         return {};
+      });
+    },
+
+    "POST /api/actions/tutorial": ({body,account}) => {
+      requireAuth(account);
+      limit(actionLimiter,account.id);
+      return withPlayer(account,player=>{
+        // Online names are chosen during account creation, not through tutorial rewards.
+        const outcome=tutorialAction(player,{action:body.action,value:body.action==='welcome'?undefined:body.value});
+        if(!outcome.ok)throw new HttpError(400,outcome.error);
+        players.changed(account.id);
+        return outcome;
       });
     },
 

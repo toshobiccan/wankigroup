@@ -48,7 +48,7 @@
     </header>
 
     <main class="views">
-      <section class="view is-active" data-view="home">
+      <section class="view" data-view="home">
         <header class="home-banner"><div class="home-banner-copy"><span class="eyebrow">CARDSLAYER · YOUR ADVENTURE</span><h1>A little study.<br>A new horizon.</h1><p>Your next adventure begins with a card.</p><button class="btn-primary" id="homeWorldBtn">Enter the world <span aria-hidden="true">→</span></button></div><div class="home-leaves" aria-hidden="true"><i></i><i></i><i></i></div></header>
         <div class="home-content"><div class="section-heading"><div><span class="eyebrow">THE STUDY TABLE</span><h2>Your decks</h2></div><button id="homeQuestsBtn" class="btn-small btn-ghost">Daily quests</button></div>
         <div id="deckList" class="deck-list"></div>
@@ -99,11 +99,11 @@
       </section>
 
       <!-- ============ WORLD ============ -->
-      <section class="view" data-view="world">
+      <section class="view is-active" data-view="world">
         <button type="button" class="btn-small wardrobe-world-entry" id="worldWardrobeBtn">Wardrobe</button>
         <div id="worldRoot" class="world-root"></div>
         <aside class="world-progress" aria-label="Deck and character progress">
-          <div class="world-progress-row"><strong id="worldDeckName">No active deck</strong><span id="worldDeckCounts">Choose a deck on Home</span><b id="worldDeckPercent">—</b></div>
+          <div class="world-progress-row"><strong id="worldDeckName">No active deck</strong><span id="worldDeckCounts">Choose a deck in Menu</span><b id="worldDeckPercent">—</b></div>
           <div class="world-progress-row world-xp-row"><strong id="worldLevel">Lv 1</strong><progress id="worldXp" value="0" max="1000" aria-label="Experience toward next level"></progress><span id="worldXpText">0 / 1000 XP</span></div>
         </aside>
         <div id="netBadge" class="net-badge" hidden></div>
@@ -115,13 +115,13 @@
 
     <!-- ============ BOTTOM NAV ============ -->
     <nav class="bottomnav">
-      <button class="nav-item is-active" data-target="home">
-        <svg viewBox="0 0 28 28" aria-hidden="true"><path d="M4 25 V12 L7 9 V5 H10 V8 L14 4 L18 8 V5 H21 V9 L24 12 V25 H17 V19 Q14 15 11 19 V25Z" fill="currentColor"/><path d="M4 12 h20" stroke="#0000" /></svg>
-        <span>Home</span>
-      </button>
-      <button class="nav-item" data-target="world">
+      <button class="nav-item is-active" data-target="world">
         <svg viewBox="0 0 28 28" aria-hidden="true"><path d="M2 23 L9 9 L13 15 L17 6 L26 23Z" fill="currentColor"/><circle cx="20" cy="6" r="2.6" fill="currentColor"/></svg>
         <span>World</span>
+      </button>
+      <button class="nav-item" data-target="home">
+        <svg viewBox="0 0 28 28" aria-hidden="true"><path d="M4 25 V12 L7 9 V5 H10 V8 L14 4 L18 8 V5 H21 V9 L24 12 V25 H17 V19 Q14 15 11 19 V25Z" fill="currentColor"/><path d="M4 12 h20" stroke="#0000" /></svg>
+        <span>Menu</span>
       </button>
       <button class="nav-item" data-target="map">
         <svg viewBox="0 0 28 28" aria-hidden="true"><path d="M3 6 L10 3 L18 6 L25 3 V22 L18 25 L10 22 L3 25Z" fill="currentColor"/><path d="M10 3 V22 M18 6 V25" stroke="#1a2130" stroke-width="1.2"/><path d="M12 11 l4 4 m0 -4 l-4 4" stroke="#1a2130" stroke-width="1.6"/></svg>

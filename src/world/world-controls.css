@@ -10,3 +10,4 @@
 .world-actions button:active{background:#7e8c50}
 @media(pointer:coarse){.world-root .chat-input{bottom:140px;max-width:190px}.world-root .chat-log{bottom:170px;max-width:190px;max-height:48px}.world-root .room-label{top:8px;bottom:auto}}
 @media(min-width:760px){body.world-open .app{max-width:1100px}}
+.world-controls[data-mode="tap"]{display:none!important}.world-dpad{opacity:.38;border-radius:50%;background:#253c38a0;box-shadow:none;transition:opacity .15s}.world-dpad:active,.world-dpad:hover{opacity:.72}.world-actions{opacity:.55}.world-actions:active{opacity:.85}

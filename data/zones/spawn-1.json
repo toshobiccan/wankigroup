@@ -17,7 +17,14 @@
     }
   },
   "links": {},
-  "mobs": [],
+  "mobs": [
+    {
+      "id": "cottage-goblin",
+      "definitionId": "tutorial-goblin",
+      "xFrac": 0.36,
+      "yFrac": 0.82
+    }
+  ],
   "map": {
     "areaId": "spawn",
     "areaName": "Home and garden",

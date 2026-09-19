@@ -1,3 +1,4 @@
+import { tutorialAction } from "../game/tutorial.js";
 // Local (offline) mode: progression lives in localStorage and the world is a
 // single Room with only you in it. Same Session interface as OnlineSession --
 // see session.js -- so the rest of the app never checks which one it has.
@@ -76,6 +77,15 @@ export class LocalSession extends Emitter {
     this._player.characterCreated = true;
     this.emit("player", this._player);
     return this._player.character;
+  }
+
+  async tutorialAction(action) {
+    const next = structuredClone(this._player);
+    const result = tutorialAction(next, action);
+    if (!result.ok) throw new SessionError(result.error);
+    this.storage.setItem(PLAYER_KEY, JSON.stringify(next));
+    this._player = next; this.emit("player", next);
+    return result;
   }
 
   async importedDeck(cardCount) {

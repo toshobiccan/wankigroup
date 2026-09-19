@@ -3,6 +3,7 @@
 export const MOB_DEFINITIONS=Object.fromEntries(['melee','ranged','elite','boss'].map((role,i)=>[
   `placeholder-${role}`,{name:`${role[0].toUpperCase()+role.slice(1)} placeholder`,placeholder:true,level:i+1,image:'assets/mob-placeholder.svg',portrait:'assets/mob-placeholder.svg',stats:{hp:30+i*20,attackDamage:4+i*2,magicDamage:0,armor:0,magicResist:0,attackSpeed:8,luck:0},xpReward:20+i*15,coinReward:5+i*5}
 ]));
+MOB_DEFINITIONS['tutorial-goblin']={name:'Practice Goblin',tutorialMob:true,level:1,image:'assets/mob-goblin.png',portrait:'assets/mob-goblin.png',stats:{hp:32,attackDamage:2,magicDamage:0,armor:0,magicResist:0,attackSpeed:8,luck:0},xpReward:30,coinReward:0};
 export function resolveMob(spawn,definitions=MOB_DEFINITIONS){
   if(!spawn.definitionId)return spawn;
   const definition=definitions[spawn.definitionId];

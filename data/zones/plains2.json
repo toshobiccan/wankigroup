@@ -1,7 +1,18 @@
 {
   "id": "plains2",
-  "map": { "areaId": "plains", "areaName": "The Green March", "biome": "plains", "x": 325, "y": 330 },
+  "map": {
+    "areaId": "plains",
+    "areaName": "The Green March",
+    "biome": "plains",
+    "x": 325,
+    "y": 330,
+    "worldX": 490,
+    "worldY": 360
+  },
   "displayName": "Plains 2",
   "blank": true,
-  "links": { "prev": "plains1", "next": null }
+  "links": {
+    "prev": "plains1",
+    "next": null
+  }
 }

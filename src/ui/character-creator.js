@@ -15,7 +15,7 @@ function assets() { return assetsPromise ??= loadHeadAssets().catch(error => { a
 
 export function mountCharacterCreator(mount, { appearance, firstTime = false, onSave, onSaved, onCancel }) {
   mount.innerHTML = `<div class="wardrobe-room">
-    <header class="wardrobe-heading"><span class="wardrobe-kicker">${firstTime ? "A NEW ADVENTURE" : "THE WARDROBE"}</span><h2>${firstTime ? "Create your adventurer" : "A change of style"}</h2><p>${firstTime ? "Every adventure begins with you." : "Make yourself at home."}</p></header>
+    <header class="wardrobe-heading"><span class="wardrobe-kicker">${firstTime ? "A NEW ADVENTURE" : "THE WARDROBE"}</span><h2>${firstTime ? "Who are you?" : "A change of style"}</h2><p>${firstTime ? "Every adventure begins with you." : "Make yourself at home."}</p></header>
     <div class="wardrobe-mirror"><div class="wardrobe-mirror-inner"><canvas width="512" height="448" aria-label="Your character's face"></canvas></div><span class="mirror-ornament" aria-hidden="true">◆</span></div>
     <form class="wardrobe-panel"><fieldset disabled><legend class="sr-only">Your appearance</legend><div class="wardrobe-choices"></div>
     <p class="wardrobe-tip">Eyebrows follow your hair color.</p><div class="wardrobe-actions"><button type="submit" class="btn-primary wardrobe-save">${firstTime ? "Begin adventure" : "Save look"}</button><button type="button" class="btn-small wardrobe-cancel" ${firstTime ? "hidden" : ""}>Back</button></div>

@@ -1,3 +1,5 @@
+import { reviewKeyAction } from '../ui/review-controls.js';
+import { loadControls } from '../ui/control-settings.js';
 // DOM-only (no PIXI). Owns the sheet shown below the world canvas during
 // mob selection and combat. Knows nothing about players, decks, or DB --
 // app.js passes in exactly what each method needs to render, and the only
@@ -14,7 +16,8 @@ const HEIGHTS = {
 };
 
 export class EncounterPanel {
-  constructor({ mountElement, onGrade, onFight, onFlee }) {
+  constructor({ mountElement, onGrade, onFight, onFlee, onReading }) {
+    this.onReading = onReading;
     this.onGrade = onGrade; // (grade: "again"|"hard"|"good"|"easy") => void
     this.onFight = onFight; // () => void -- "Fight" button on the peek sheet
     this.onFlee = onFlee; // () => void -- "Flee" button on the peek sheet
@@ -50,6 +53,7 @@ export class EncounterPanel {
   }
 
   _setHeight(state) {
+    this.onReading?.(["default","expanded"].includes(state) && this.content.querySelector(".sheet-card-content") !== null);
     this._state = state;
     this.root.style.height = `${HEIGHTS[state]}px`;
   }
@@ -184,7 +188,17 @@ export class EncounterPanel {
       img.addEventListener("click", () => this._openLightbox(img.src));
     });
 
-    if (revealed) {
+    let submitted=false;
+    if(Array.isArray(card.tutorialChoices) && card.tutorialChoices.length && !revealed){
+      const actions=document.createElement('div');actions.className='answer-actions choice-actions';
+      const feedback=document.createElement('p');feedback.setAttribute('role','status');feedback.className='quiz-feedback';
+      for(const answer of card.tutorialChoices){
+        const button=document.createElement('button');button.textContent=answer;button.type='button';
+        button.onclick=()=>{if(submitted)return;if(answer!==card.back){feedback.textContent='Not quite. Try another answer.';button.disabled=true;return;}
+          submitted=true;wrap.querySelectorAll('button').forEach(b=>b.disabled=true);this.onGrade?.('good');};
+        actions.append(button);
+      }wrap.append(actions,feedback);
+    }else if (revealed) {
       const actions = document.createElement("div");
       actions.className = "answer-actions";
       const gradeButtons = []; // so a click on any one of them can disable all four before onGrade() fires
@@ -208,7 +222,8 @@ export class EncounterPanel {
         // naturally replaced/re-enabled next time showCard()/reveal() rebuilds
         // this content, so no re-enable logic is needed here.
         btn.addEventListener("click", () => {
-          gradeButtons.forEach((b) => { b.disabled = true; });
+          submitted=true;
+          wrap.querySelectorAll("button").forEach((b) => { b.disabled = true; });
           this.onGrade?.(grade);
         });
         gradeButtons.push(btn);
@@ -223,16 +238,40 @@ export class EncounterPanel {
       wrap.appendChild(revealBtn);
     }
 
+    const choices=[...wrap.querySelectorAll('.answer-actions button,.sheet-reveal-btn')];
+    let selected=0;
+    const highlight=()=>choices.forEach((button,i)=>button.classList.toggle('review-selected',i===selected));
+    const move=delta=>{if(submitted)return;selected=(selected+delta+choices.length)%choices.length;highlight();};
+    const back=()=>{if(submitted)return;if(revealed)this.showCard(card,mob,playerState);};
+    const preferences=loadControls();
+    if(preferences.mode!=='tap'){
+      const pad=document.createElement('div');pad.className='review-controller';pad.setAttribute('aria-label','Review controls');
+      for(const [label,title,act]of [['‹','Previous answer',()=>move(-1)],['›','Next answer',()=>move(1)],['B','Hide answer',back],['A','Confirm selected answer',()=>choices[selected]?.click()]]){
+        const b=document.createElement('button');b.type='button';b.textContent=label;b.setAttribute('aria-label',title);if(label==='B' && !revealed)b.disabled=true;b.onclick=()=>{if(preferences.haptics)navigator.vibrate?.(8);act();};pad.append(b);
+      }wrap.append(pad);highlight();
+    }
+    wrap.tabIndex=-1;
+    wrap.addEventListener('keydown',event=>{
+      const action=reviewKeyAction(event,preferences.keys,submitted);
+      if(!action)return;
+      event.preventDefault();
+      if(action==='previous')move(-1);
+      else if(action==='next')move(1);
+      else if(action==='confirm')choices[selected]?.click();
+      else if(action==='cancel')back();
+    });
     return wrap;
   }
 
   showCard(card, mob, playerState) {
     this.content.replaceChildren(this._buildCardContent(card, mob, playerState, { revealed: false }));
     this._setHeight(this._preferredCombatHeight);
+    this.content.firstElementChild?.focus({preventScroll:true});
   }
 
   reveal(card, mob, playerState) {
     this.content.replaceChildren(this._buildCardContent(card, mob, playerState, { revealed: true }));
+    this.content.firstElementChild?.focus({preventScroll:true});
   }
 
   _openLightbox(src) {
@@ -268,6 +307,7 @@ export class EncounterPanel {
       const midpoint = (HEIGHTS.default + HEIGHTS.expanded) / 2;
       this._preferredCombatHeight = dragHeight > midpoint ? "expanded" : "default";
       this._setHeight(this._preferredCombatHeight);
+    this.content.firstElementChild?.focus({preventScroll:true});
     };
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onUp);

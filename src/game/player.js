@@ -16,6 +16,7 @@ export function createDefaultPlayer({ name = "Adventurer" } = {}) {
     name,
     character: { ...DEFAULT_HEAD },
     characterCreated: false,
+    tutorial: {step:"welcome",rewarded:false},
     level: 1,
     xp: 0,
     coins: 0,
@@ -62,6 +63,8 @@ export function normalizePlayer(saved, { name } = {}) {
   const player = { ...defaults, ...source };
   player.character = normalizeHead(source.character);
   player.characterCreated = source.characterCreated === true;
+  player.tutorial = source.tutorial ?? (source.characterCreated ? {step:"done",rewarded:false} : defaults.tutorial);
+  if (["recall","choice"].includes(player.tutorial.step)) player.tutorial={...player.tutorial,step:"combat"};
   for (const group of ["stats", "inventory", "status", "daily"]) {
     player[group] = { ...defaults[group], ...(source[group] ?? {}) };
   }

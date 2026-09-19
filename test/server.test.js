@@ -83,6 +83,21 @@ describe("server (online)", () => {
 
   const guest = async (displayName) => (await api(ctx.base, "POST", "/api/auth/guest", { body: { displayName } })).data;
 
+  it("requires authentication and cannot grant tutorial XP through dialogue", async()=>{
+    const path='/api/actions/tutorial';
+    expect((await api(ctx.base,'POST',path,{body:{action:'choice',value:'Oslo'}})).status).toBe(401);
+    const a=await guest('NewLearner');
+    const act=body=>api(ctx.base,'POST',path,{body,token:a.token});
+    expect((await act({action:'welcome'})).status).toBe(400);
+    await api(ctx.base,'POST','/api/actions/customize-character',{body:{appearance:{}},token:a.token});
+    expect((await act({action:'welcome'})).status).toBe(200);
+    expect((await act({action:'controls'})).status).toBe(200);
+    expect((await act({action:'choice',value:'Oslo',xp:99999})).status).toBe(400);
+    expect((await act({action:'reward'})).status).toBe(400);
+    const p=(await api(ctx.base,'GET','/api/me',{token:a.token})).data.player;
+    expect(p.xp).toBe(0);expect(p.tutorial.step).toBe('combat');
+  });
+
   it("reports online config", async () => {
     const { data } = await api(ctx.base, "GET", "/api/config");
     expect(data).toMatchObject({ online: true, protocol: 1, wsPath: "/ws" });
