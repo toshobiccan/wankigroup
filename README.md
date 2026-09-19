@@ -59,6 +59,7 @@ Hosted on [Railway](https://railway.com). One-time setup: **`docs/DEPLOY.md`**. 
 
 ## Docs
 
+- `TODO.md` — the prioritized backlog; read this to know what to build next.
 - `docs/HANDOFF.md` — decisions already made; read first.
 - `docs/ROADMAP.md` — what's built and what's next.
 - `docs/DEPLOY.md` — putting the multiplayer server online.
