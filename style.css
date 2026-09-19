@@ -573,6 +573,19 @@ img.scene-layer { height: auto; }
 .deck-card .deck-meta { flex: 1; min-width: 0; }
 .deck-card .deck-name { font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .deck-card .deck-sub { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+.deck-info-btn {
+  display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0;
+  background: none; border: none; padding: 0; margin: 0;
+  text-align: left; cursor: pointer; color: inherit; font: inherit;
+}
+.deck-info-btn:hover .deck-name { text-decoration: underline; }
+
+.deck-options { text-align: left; }
+.deck-stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 18px; }
+.deck-stat-tile { padding: 10px 6px; border-radius: 6px; background: #0a1120; border: 1px solid #2a3a58; text-align: center; }
+.deck-stat-value { font-size: 18px; font-weight: 700; }
+.deck-stat-label { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: .04em; margin-top: 2px; }
+.study-override-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12.5px; color: var(--text-dim); }
 .btn-small {
   padding: 8px 12px;
   border-radius: 5px;
@@ -596,9 +609,18 @@ img.scene-layer { height: auto; }
 /* ================= ENCOUNTER SHEET ================= */
 .encounter-sheet {
   position: absolute; left: 0; right: 0; bottom: 0;
-  background: linear-gradient(180deg, #16243b, #111d31);
+  /* Translucent + blurred where there's no text/image of its own (the HP
+     row, status row, padding) -- keeps the zoomed-in fight peeking through
+     for immersion. .sheet-card-content (the actual card face) stays fully
+     opaque below, for reading clarity. */
+  background: rgba(17, 29, 49, .72);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
   border-top: 1px solid #2a3a58;
   box-shadow: 0 -6px 16px rgba(0,0,0,.5);
+  /* The top-third minimum is enforced in JS (EncounterPanel._maxSheetHeightPx),
+     not here -- this app's height chain leaves a percentage max-height unable
+     to resolve against a definite value (<main> has no explicit height/flex). */
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -634,6 +656,10 @@ img.scene-layer { height: auto; }
   font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 8px;
   background: rgba(212,164,65,.25); color: var(--gold-light);
 }
+
+.sheet-card-status { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+.tag-new { background: rgba(94, 203, 94, .25); color: #8fe08f; }
+.explain-btn { font-size: 11px; padding: 4px 10px; min-height: auto; }
 
 .sheet-message { padding: 20px 10px; text-align: center; color: var(--text-dim); font-size: 13px; }
 .sheet-message .btn-small { margin-top: 12px; }
@@ -789,6 +815,7 @@ img.scene-layer { height: auto; }
   font: inherit; font-size: 14px;
 }
 .text-input:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 2px rgba(212, 164, 65, .25); }
+.study-number-input { width: 80px; display: inline-block; margin-left: 8px; }
 .form-error { min-height: 1.2em; margin: 0 !important; color: #ff8a80 !important; font-size: 12.5px !important; }
 .link-btn {
   margin-top: 10px;

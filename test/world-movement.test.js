@@ -35,6 +35,20 @@ it('keeps the whole character visible in a short touch viewport',()=>{
   expect((360-118-f.cameraY)*f.zoom).toBeGreaterThanOrEqual(0);
   expect((360-f.cameraY)*f.zoom).toBeLessThan(180);
 });
+it('zoomBoost scales zoom (and therefore the fighters) up without changing anything else about the framing formula',()=>{
+  const base=worldFraming(844,700,480*16/9,360,true,480);
+  const boosted=worldFraming(844,700,480*16/9,360,true,480,1.35);
+  expect(boosted.zoom).toBeCloseTo(base.zoom*1.35,5);
+});
+it('a lower feetFraction frames the subject higher on screen, e.g. so combat keeps the fighters above a reading sheet',()=>{
+  // A tall room (worldHeight 2000) so the vertical-bounds clamp tested above
+  // doesn't bind here -- this test isolates feetFraction's own effect.
+  const normal=worldFraming(844,700,480*16/9,1000,true,2000);
+  const combat=worldFraming(844,700,480*16/9,1000,true,2000,1.35,.42);
+  const feetScreenY=(f)=>(1000-f.cameraY)*f.zoom;
+  expect(feetScreenY(combat)).toBeLessThan(feetScreenY(normal));
+  expect(feetScreenY(combat)).toBeCloseTo(700*.42,1);
+});
 
 const ZONE = { id: "plains", width: 2000, groundTop: 110, groundBottom: 190 };
 

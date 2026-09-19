@@ -220,7 +220,7 @@ async function importFile(file) {
   dropzone.classList.add("is-busy");
   title.textContent = `Reading ${file.name}…`;
   try {
-    const { name, cards } = await AnkiImport.parse(file);
+    const { name, cards, media } = await AnkiImport.parse(file);
     const deckId = `deck-${Date.now()}`;
     const now = Date.now();
     await DB.addDeck(
@@ -234,7 +234,8 @@ async function importFile(file) {
         interval: 0,
         ease: 2.5,
         reps: 0,
-      }))
+      })),
+      media
     );
 
     // The deck is already saved on this device; the reward goes through the
@@ -301,10 +302,12 @@ renderers.home = async () => {
       const learned = cards.filter((c) => c.reps > 0).length;
       const isActive = device.activeDeckId === d.id;
       return el("div", { class: `panel deck-card${isActive ? " is-active-deck" : ""}` },
-        el("div", { class: "deck-icon" }, d.name.trim()[0]?.toUpperCase() || "A"),
-        el("div", { class: "deck-meta" },
-          el("div", { class: "deck-name" }, d.name, isActive ? el("span", { class: "tag" }, "Active") : null),
-          el("div", { class: "deck-sub" }, `${d.cardCount} cards · ${learned} learned · ${due} due`)
+        el("button", { class: "deck-info-btn", onclick: () => showDeckOptions(d, cards), "aria-label": `${d.name} options` },
+          el("div", { class: "deck-icon" }, d.name.trim()[0]?.toUpperCase() || "A"),
+          el("div", { class: "deck-meta" },
+            el("div", { class: "deck-name" }, d.name, isActive ? el("span", { class: "tag" }, "Active") : null),
+            el("div", { class: "deck-sub" }, `${d.cardCount} cards · ${learned} learned · ${due} due`)
+          )
         ),
         el("button", {
           class: `btn-small${isActive ? " btn-ghost" : ""}`,
@@ -315,6 +318,18 @@ renderers.home = async () => {
   );
   root.replaceChildren(...rows);
 };
+
+// Anki-style "Deck Options": that deck's card breakdown (new/learning/review/
+// mature, seen/unseen) plus its scheduling settings (per-deck override of
+// src/game/srs.js's defaults). Opened by tapping a deck in the Home list.
+async function showDeckOptions(deck, cards) {
+  const { deckOptionsForm } = await import("./src/ui/study-settings.js");
+  showModal(
+    el("h3", {}, deck.name),
+    deckOptionsForm(deck, cards),
+    el("div", { class: "modal-actions" }, el("button", { class: "btn-small", onclick: closeModal }, "Done"))
+  );
+}
 
 // Premade decks are local content; adding them does not grant import rewards.
 async function ensurePracticeDeck() {
@@ -344,7 +359,8 @@ async function startTutorial(replay=false){
   await showWizardGuide();
  }catch{showModal(el('h3',{},'Could not open the introduction'),el('p',{},'Please try again.'),el('button',{class:'btn-small',onclick:closeModal},'Close'));}
 }
-async function showControls(){const {controlsForm}=await import('./src/ui/control-settings.js');showModal(el('h3',{},'Controls'),controlsForm(),el('div',{class:'modal-actions'},el('button',{class:'btn-small',onclick:closeModal},'Done'),el('button',{class:'btn-small btn-ghost',onclick:showAccountModal},'Account')));}
+async function showControls(){const {controlsForm}=await import('./src/ui/control-settings.js');showModal(el('h3',{},'Controls'),controlsForm(),el('div',{class:'modal-actions'},el('button',{class:'btn-small',onclick:closeModal},'Done'),el('button',{class:'btn-small btn-ghost',onclick:showStudySettings},'Study'),el('button',{class:'btn-small btn-ghost',onclick:showAccountModal},'Account')));}
+async function showStudySettings(){const {studySettingsForm}=await import('./src/ui/study-settings.js');showModal(el('h3',{},'Study'),studySettingsForm(),el('div',{class:'modal-actions'},el('button',{class:'btn-small',onclick:closeModal},'Done'),el('button',{class:'btn-small btn-ghost',onclick:showControls},'Controls')));}
 
 // ================= QUESTS =================
 renderers.quests = () => {
@@ -546,27 +562,14 @@ renderers.inventory = () => {
 };
 
 // ================= SCHEDULING =================
+// The actual scheduling math lives in src/game/srs.js (our own FSRS-inspired
+// difficulty/stability scheduler with a full new/learning/review lifecycle);
+// this just applies it to one card and persists the result.
 function schedule(card, grade) {
-  const DAY = 86_400_000;
-  card.reps += 1;
-  if (grade === "again") {
-    card.interval = 0;
-    card.ease = Math.max(1.3, card.ease - 0.2);
-    card.due = Date.now() + 60_000;
-  } else {
-    if (grade === "hard") {
-      card.interval = Math.max(1, card.interval * 1.2);
-      card.ease = Math.max(1.3, card.ease - 0.15);
-    } else if (grade === "good") {
-      card.interval = card.interval ? card.interval * card.ease : 1;
-    } else {
-      card.interval = card.interval ? card.interval * card.ease * 1.3 : 4;
-      card.ease += 0.15;
-    }
-    card.due = Date.now() + card.interval * DAY;
-  }
-  const {tutorialChoices,...persistedCard}=card;
-  return DB.putCard(persistedCard);
+  const settings = window.Cardslayer.game.loadStudySettings(card.deckId);
+  const graded = window.Cardslayer.game.gradeCard(card, grade, { settings });
+  const {tutorialChoices,...persistedCard}=graded;
+  return DB.putCard(persistedCard).then(() => graded);
 }
 
 // ================= WORLD / COMBAT =================
@@ -621,19 +624,27 @@ const FIGHT_ERRORS = {
 // to Idle using the same three-call pattern already used for a real loss.
 function bailOutOfFight(err) {
   console.error(err);
+  revokeFightMedia(fight);
   fight = null;
   encounterPanel.hide();
   worldScene.endCombat({ mobDefeated: false });
   session.flee().catch(() => {});
 }
 
-function buildFightQueue(deckCards) {
-  const now = Date.now();
-  const due = deckCards.filter((c) => c.reps > 0 && c.due <= now).sort((a, b) => a.due - b.due);
-  const fresh = deckCards.filter((c) => c.reps === 0);
-  const queue = [...due, ...fresh];
-  if (!queue.length) queue.push(...deckCards.sort((a, b) => a.due - b.due));
-  return queue;
+// Card images are rendered from blob: object URLs (built once per fight from
+// the deck's stored media Blobs); those must be revoked when the fight ends
+// or they leak for the life of the page.
+function mediaObjectURLs(mediaBlobMap) {
+  return new Map([...mediaBlobMap].map(([filename, blob]) => [filename, URL.createObjectURL(blob)]));
+}
+function revokeFightMedia(activeFight) {
+  if (!activeFight?.media) return;
+  for (const url of activeFight.media.values()) URL.revokeObjectURL(url);
+}
+
+function buildFightQueue(deckCards, deckId) {
+  const settings = window.Cardslayer.game.loadStudySettings(deckId);
+  return window.Cardslayer.game.buildStudyQueue(deckCards, settings);
 }
 
 function playerHpState() {
@@ -681,8 +692,9 @@ async function handleCombatStart(mobData) {
       return;
     }
     wizardDispose?.();wizardDispose=null;++guideRequest;
-    fight = { mob: mobData, queue: mobData.tutorialMob && player.tutorial?.step!=="done" ? cards : buildFightQueue(cards) };
-    encounterPanel.showCard(fight.queue[0], fight.mob, playerHpState());
+    const media = mediaObjectURLs(await DB.mediaForDeck(device.activeDeckId));
+    fight = { mob: mobData, queue: mobData.tutorialMob && player.tutorial?.step!=="done" ? cards : buildFightQueue(cards, device.activeDeckId), media };
+    encounterPanel.showCard(fight.queue[0], fight.mob, playerHpState(), fight.media);
   } catch (err) {
     bailOutOfFight(err);
   }
@@ -701,6 +713,7 @@ function handleCombatEnded({ mobId, rewards }) {
 
 function finishWithVictory(rewards) {
   const mob = fight.mob;
+  revokeFightMedia(fight);
   worldScene.endCombat({ mobDefeated: true });
   encounterPanel.hide();
   fight = null;
@@ -719,15 +732,19 @@ async function handleGrade(grade) {
   gradeInFlight = true;
   try {
     const card = fight.queue.shift();
-    await schedule(card, grade);
+    // schedule() returns the graded card (new status/difficulty/stability etc.)
+    // rather than mutating `card` in place -- a legacy card without a `status`
+    // field yet is normalized into a fresh object first, so the original
+    // reference wouldn't otherwise see the update.
+    const graded = await schedule(card, grade);
     void renderWorldDeckProgress();
     const result = await session.grade(grade);
     if (!fight) return;
     if (fight.endedWithRewards) return finishWithVictory(fight.endedWithRewards);
 
     if (result.again) {
-      fight.queue.push(card);
-      encounterPanel.showCard(fight.queue[0], fight.mob, playerHpState());
+      fight.queue.push(graded);
+      encounterPanel.showCard(fight.queue[0], fight.mob, playerHpState(), fight.media);
       return;
     }
 
@@ -744,6 +761,7 @@ async function handleGrade(grade) {
     if (fight.endedWithRewards) return finishWithVictory(fight.endedWithRewards);
 
     if (result.playerDefeated) {
+      revokeFightMedia(fight);
       fight = null;
       encounterPanel.hide();
       worldScene.endCombat({ mobDefeated: false });
@@ -755,9 +773,9 @@ async function handleGrade(grade) {
     // going until the mob or the player drops, so recycle a small deck.
     if (!fight.queue.length) {
       const cards = await DB.cardsForDeck(device.activeDeckId);
-      fight.queue = buildFightQueue(cards);
+      fight.queue = buildFightQueue(cards, device.activeDeckId);
     }
-    encounterPanel.showCard(fight.queue[0], fight.mob, playerHpState());
+    encounterPanel.showCard(fight.queue[0], fight.mob, playerHpState(), fight.media);
   } catch (err) {
     if (fight?.endedWithRewards) return finishWithVictory(fight.endedWithRewards);
     bailOutOfFight(err);

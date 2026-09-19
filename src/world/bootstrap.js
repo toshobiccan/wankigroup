@@ -9,6 +9,11 @@ import { EQUIP_SLOTS, createEquipable, createMaterial, makeMaterialStack, create
 import { createSession } from "../net/session.js";
 import { questView } from "../game/progression.js";
 import { XP_PER_LEVEL, START_ZONE_ID } from "../game/constants.js";
+import {
+  STATUS as CARD_STATUS, gradeCard, buildStudyQueue, normalizeCardState, isUnseen, cardLabel,
+  loadStudySettings, saveStudySettings, normalizeStudySettings, DEFAULT_STUDY_SETTINGS,
+  hasDeckOverride, resetDeckSettings, deckStats,
+} from "../game/srs.js";
 import { mountCharacterCreator, renderCharacterAvatar } from "../ui/character-creator.js";
 import { loadWorldMap, renderWorldMap, worldRegions } from './world-map.js';
 
@@ -19,7 +24,12 @@ Object.assign(window.Cardslayer, {
   createSession,
   mountCharacterCreator, renderCharacterAvatar,
   loadWorldMap, renderWorldMap, worldRegions,
-  game: { questView, XP_PER_LEVEL, START_ZONE_ID },
+  game: {
+    questView, XP_PER_LEVEL, START_ZONE_ID,
+    CARD_STATUS, gradeCard, buildStudyQueue, normalizeCardState, isUnseen, cardLabel,
+    loadStudySettings, saveStudySettings, normalizeStudySettings, DEFAULT_STUDY_SETTINGS,
+    hasDeckOverride, resetDeckSettings, deckStats,
+  },
   ready: true,
 });
 window.dispatchEvent(new Event("cardslayer:ready"));

@@ -14,11 +14,15 @@ export function easeToward(current, target, deltaMS, response = 9) {
   return current + (target - current) * (1 - Math.exp(-response * Math.max(0, deltaMS) / 1000));
 }
 
-export function worldFraming(width, height, zoneWidth, groundY, touch = false, worldHeight = height) {
-  const zoom = Math.max(.9, Math.min(1.485, height * .234 / 118), width / zoneWidth, height / worldHeight);
+// zoomBoost/feetFraction let a caller ask for a tighter, higher-framed shot
+// (see world-scene.js's combat framing, so the fighters stay visible above
+// the reading sheet) without this module knowing anything about combat --
+// both default to the plain exploration framing this always had.
+export function worldFraming(width, height, zoneWidth, groundY, touch = false, worldHeight = height, zoomBoost = 1, feetFraction = touch ? .65 : .76) {
+  const zoom = Math.max(.9, Math.min(1.485, height * .234 / 118), width / zoneWidth, height / worldHeight) * zoomBoost;
   const viewWidth = width / zoom;
   const viewHeight = height / zoom;
-  const feetScreenY = Math.min(height - 10, Math.max(height * (touch ? .65 : .76), 138 * zoom));
+  const feetScreenY = Math.min(height - 10, Math.max(height * feetFraction, 138 * zoom));
   const cameraY = Math.max(0, Math.min(worldHeight - viewHeight, groundY - feetScreenY / zoom));
   return { zoom, viewWidth, cameraY };
 }

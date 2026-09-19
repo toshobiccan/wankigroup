@@ -12,6 +12,12 @@ const MOVE_SPEED = 220; // world-pixels/second
 const PLAYER_HEIGHT = 118; // keeps the cutout equipment readable on a phone-sized world view
 const MOB_HEIGHT = 70; // a bit shorter than the player -- these are the weak, early mobs
 const APPROACH_DISTANCE = 60; // how close (world-pixels) the player walks before a fight actually starts
+// While fighting, the camera zooms in on the two combatants and frames them
+// noticeably higher on screen than during exploration -- so they stay visible
+// above the reading sheet (see style.css's .encounter-sheet) instead of only
+// the ground/background peeking out from behind it.
+const COMBAT_ZOOM_BOOST = 1.35;
+const COMBAT_FEET_FRACTION = 0.42;
 const EDGE_TRANSITION_MARGIN = 4; // world-pixels from a page's exact edge that counts as "reached it"
 const MOVE_SEND_INTERVAL_MS = 100; // at most this often, movement intents go to the session (and the server)
 const CHAT_BUBBLE_MS = 4500; // how long a chat bubble stays up before fading
@@ -560,7 +566,7 @@ export class WorldScene {
   }
 
   _updateCamera(deltaMS, snap=false) {
-    const frame=worldFraming(this.app.screen.width,this.app.screen.height,this.zone.width,this.zone.exits?this.position.y:(this.zone.groundTop+this.zone.groundBottom)/2,this.input?.touch,this._lastDisplayHeight);
+    const frame=worldFraming(this.app.screen.width,this.app.screen.height,this.zone.width,this.zone.exits?this.position.y:(this.zone.groundTop+this.zone.groundBottom)/2,this.input?.touch,this._lastDisplayHeight,this.inCombat?COMBAT_ZOOM_BOOST:1,this.inCombat?COMBAT_FEET_FRACTION:undefined);
     this.zoom=frame.zoom;this.cameraY=snap?frame.cameraY:easeToward(this.cameraY??frame.cameraY,frame.cameraY,deltaMS,5);
     const focus=this.selectedMob && (this.inCombat || this._approaching)?(this.position.x+this.selectedMob.container.x)/2:null;
     this.cameraX=snap?computeCenteredCameraX(this.position.x,frame.viewWidth,this.zone.width):smoothCameraX(this.position.x,this.cameraX,this.velocity.x,frame.viewWidth,this.zone.width,deltaMS,focus);

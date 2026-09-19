@@ -5,12 +5,20 @@ const DB = (() => {
   function open() {
     if (dbPromise) return dbPromise;
     dbPromise = new Promise((resolve, reject) => {
-      const req = indexedDB.open("cardslayer", 1);
+      const req = indexedDB.open("cardslayer", 2);
       req.onupgradeneeded = () => {
         const db = req.result;
-        db.createObjectStore("decks", { keyPath: "id" });
-        const cards = db.createObjectStore("cards", { keyPath: "id" });
-        cards.createIndex("deckId", "deckId");
+        if (!db.objectStoreNames.contains("decks")) db.createObjectStore("decks", { keyPath: "id" });
+        if (!db.objectStoreNames.contains("cards")) {
+          const cards = db.createObjectStore("cards", { keyPath: "id" });
+          cards.createIndex("deckId", "deckId");
+        }
+        // Card front/back can reference an image by filename (see anki-import.js);
+        // the Blob for it lives here, keyed by deck so a deck delete can sweep its media.
+        if (!db.objectStoreNames.contains("media")) {
+          const media = db.createObjectStore("media", { keyPath: "key" }); // key: `${deckId}::${filename}`
+          media.createIndex("deckId", "deckId");
+        }
       };
       req.onsuccess = () => resolve(req.result);
       req.onerror = () => reject(req.error);
@@ -33,12 +41,20 @@ const DB = (() => {
   }
 
   return {
-    async addDeck(deck, cards) {
+    // media: optional Map<filename, Blob> (or plain object), as returned by
+    // AnkiImport.parse(). Stored under this deck's id so deleteDeck can sweep it.
+    async addDeck(deck, cards, media) {
       const db = await open();
-      const tx = db.transaction(["decks", "cards"], "readwrite");
+      const tx = db.transaction(["decks", "cards", "media"], "readwrite");
       tx.objectStore("decks").put(deck);
-      const store = tx.objectStore("cards");
-      for (const card of cards) store.put(card);
+      const cardStore = tx.objectStore("cards");
+      for (const card of cards) cardStore.put(card);
+      if (media) {
+        const mediaStore = tx.objectStore("media");
+        for (const [filename, blob] of media instanceof Map ? media : Object.entries(media)) {
+          mediaStore.put({ key: `${deck.id}::${filename}`, deckId: deck.id, filename, blob });
+        }
+      }
       await done(tx);
     },
 
@@ -53,6 +69,13 @@ const DB = (() => {
       return request(db.transaction("cards").objectStore("cards").index("deckId").getAll(deckId));
     },
 
+    // Map<filename, Blob> for every image referenced by this deck's cards.
+    async mediaForDeck(deckId) {
+      const db = await open();
+      const rows = await request(db.transaction("media").objectStore("media").index("deckId").getAll(deckId));
+      return new Map(rows.map((row) => [row.filename, row.blob]));
+    },
+
     async putCard(card) {
       const db = await open();
       const tx = db.transaction("cards", "readwrite");
@@ -62,11 +85,13 @@ const DB = (() => {
 
     async deleteDeck(deckId) {
       const db = await open();
-      const cards = await this.cardsForDeck(deckId);
-      const tx = db.transaction(["decks", "cards"], "readwrite");
+      const [cards, media] = await Promise.all([this.cardsForDeck(deckId), this.mediaForDeck(deckId)]);
+      const tx = db.transaction(["decks", "cards", "media"], "readwrite");
       tx.objectStore("decks").delete(deckId);
-      const store = tx.objectStore("cards");
-      for (const c of cards) store.delete(c.id);
+      const cardStore = tx.objectStore("cards");
+      for (const c of cards) cardStore.delete(c.id);
+      const mediaStore = tx.objectStore("media");
+      for (const filename of media.keys()) mediaStore.delete(`${deckId}::${filename}`);
       await done(tx);
     },
   };

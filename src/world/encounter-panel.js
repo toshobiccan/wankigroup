@@ -1,5 +1,6 @@
 import { reviewKeyAction } from '../ui/review-controls.js';
 import { loadControls } from '../ui/control-settings.js';
+import { isUnseen, cardLabel } from '../game/srs.js';
 // DOM-only (no PIXI). Owns the sheet shown below the world canvas during
 // mob selection and combat. Knows nothing about players, decks, or DB --
 // app.js passes in exactly what each method needs to render, and the only
@@ -12,11 +13,25 @@ const HEIGHTS = {
   peek: 132,
   default: 320,
   expanded: 560,
+  // Deliberately taller than any real screen -- _setHeight() clamps this down
+  // via _maxSheetHeightPx() so the battle's top third always stays visible.
+  // The sheet itself is translucent and blurred, and the combat camera zooms
+  // in and frames the fighters near the top of that band (see world-scene.js's
+  // COMBAT_ZOOM_BOOST), so even at "full" the fight stays visible and legible
+  // behind the card.
+  full: 9999,
   retracted: 40, // smaller than peek -- just enough to keep the handle visible during a hit
 };
 
+// A card with an image, or with enough text to need real room, gets the
+// full-height treatment automatically -- reading and answering the card
+// matters more here than seeing the fight behind it, and nobody should have
+// to remember to drag the handle up before it's readable.
+const LONG_TEXT_CHARS = 140;
+
 export class EncounterPanel {
   constructor({ mountElement, onGrade, onFight, onFlee, onReading }) {
+    this.mountElement = mountElement;
     this.onReading = onReading;
     this.onGrade = onGrade; // (grade: "again"|"hard"|"good"|"easy") => void
     this.onFight = onFight; // () => void -- "Fight" button on the peek sheet
@@ -52,10 +67,21 @@ export class EncounterPanel {
     this.handle.addEventListener("pointerdown", (event) => this._onHandlePointerDown(event));
   }
 
+  // The battle must always keep at least its top third free of the reading
+  // sheet, measured live off the actual view box -- this app's height chain
+  // (nothing between .app's 100dvh and .view gives <main> a definite height)
+  // leaves percentage-based CSS max-heights unable to resolve, so this can't
+  // be done in CSS alone.
+  _maxSheetHeightPx() {
+    const view = this.mountElement.closest(".view") ?? this.mountElement.parentElement;
+    const viewHeight = view?.getBoundingClientRect().height || window.innerHeight;
+    return (viewHeight * 2) / 3;
+  }
+
   _setHeight(state) {
-    this.onReading?.(["default","expanded"].includes(state) && this.content.querySelector(".sheet-card-content") !== null);
+    this.onReading?.(["default","expanded","full"].includes(state) && this.content.querySelector(".sheet-card-content") !== null);
     this._state = state;
-    this.root.style.height = `${HEIGHTS[state]}px`;
+    this.root.style.height = `${Math.min(HEIGHTS[state], this._maxSheetHeightPx())}px`;
   }
 
   hide() {
@@ -140,14 +166,31 @@ export class EncounterPanel {
     this._setHeight("default");
   }
 
-  // card.front/card.back are plain text today (anki-import.js strips HTML
-  // and media on import), so this renders them as text, never innerHTML --
-  // matching how the rest of this codebase (app.js's el() helper) already
-  // treats card content. The <img> lookup below is real and wired up (any
-  // future card that does contain an <img> gets a working zoom tap) but
-  // finds nothing until a media-preserving import pipeline exists -- that's
-  // a separate, not-yet-planned piece of work, not a bug in this one.
-  _buildCardContent(card, mob, playerState, { revealed }) {
+  // card.front/card.back are either a plain string (legacy/premade cards) or
+  // an array of { t: "text", v } / { t: "img", v: filename } parts (cards
+  // imported since anki-import.js started preserving media). Either way this
+  // builds real DOM nodes directly -- text as text nodes, images resolved
+  // through `media` (filename -> object URL, built by app.js from the deck's
+  // stored Blobs) -- never innerHTML, so imported field content is never
+  // parsed as HTML.
+  _renderCardField(container, value, media) {
+    const parts = Array.isArray(value) ? value : [{ t: "text", v: value ?? "" }];
+    for (const part of parts) {
+      if (part.t === "img") {
+        const src = media?.get(part.v);
+        if (!src) continue; // media missing (e.g. deleted from storage) -- skip rather than show a broken icon
+        const img = document.createElement("img");
+        img.src = src;
+        img.alt = "";
+        img.addEventListener("click", () => this._openLightbox(img.src));
+        container.appendChild(img);
+      } else if (part.v) {
+        container.appendChild(document.createTextNode(part.v));
+      }
+    }
+  }
+
+  _buildCardContent(card, mob, playerState, { revealed, media }) {
     const wrap = document.createElement("div");
     wrap.className = "sheet-combat";
 
@@ -168,25 +211,40 @@ export class EncounterPanel {
     hpRow.append(hpLabel, hpBar);
     wrap.appendChild(hpRow);
 
+    const statusRow = document.createElement("div");
+    statusRow.className = "sheet-card-status";
+    const statusTag = document.createElement("span");
+    statusTag.className = `tag${isUnseen(card) ? " tag-new" : ""}`;
+    statusTag.textContent = cardLabel(card);
+    statusRow.appendChild(statusTag);
+    const explainBtn = document.createElement("button");
+    explainBtn.type = "button";
+    explainBtn.className = "btn-small btn-ghost explain-btn";
+    explainBtn.textContent = "✨ Explain";
+    explainBtn.disabled = true;
+    explainBtn.title = "Coming soon: an AI explanation of this card, for premium members.";
+    statusRow.appendChild(explainBtn);
+    wrap.appendChild(statusRow);
+
     const cardEl = document.createElement("div");
     cardEl.className = "sheet-card-content";
     const frontEl = document.createElement("div");
     frontEl.style.whiteSpace = "pre-line";
-    frontEl.textContent = card.front;
+    this._renderCardField(frontEl, card.front, media);
     cardEl.appendChild(frontEl);
 
     if (revealed) {
       const backEl = document.createElement("div");
       backEl.className = "sheet-card-answer";
       backEl.style.whiteSpace = "pre-line";
-      backEl.textContent = card.back || "—";
+      if (Array.isArray(card.back) ? card.back.some((p) => p.v) : card.back) {
+        this._renderCardField(backEl, card.back, media);
+      } else {
+        backEl.textContent = "—";
+      }
       cardEl.appendChild(backEl);
     }
     wrap.appendChild(cardEl);
-
-    cardEl.querySelectorAll("img").forEach((img) => {
-      img.addEventListener("click", () => this._openLightbox(img.src));
-    });
 
     let submitted=false;
     if(Array.isArray(card.tutorialChoices) && card.tutorialChoices.length && !revealed){
@@ -234,7 +292,7 @@ export class EncounterPanel {
       const revealBtn = document.createElement("button");
       revealBtn.className = "btn-primary sheet-reveal-btn";
       revealBtn.textContent = "Show Answer";
-      revealBtn.addEventListener("click", () => this.reveal(card, mob, playerState));
+      revealBtn.addEventListener("click", () => this.reveal(card, mob, playerState, media));
       wrap.appendChild(revealBtn);
     }
 
@@ -242,7 +300,7 @@ export class EncounterPanel {
     let selected=0;
     const highlight=()=>choices.forEach((button,i)=>button.classList.toggle('review-selected',i===selected));
     const move=delta=>{if(submitted)return;selected=(selected+delta+choices.length)%choices.length;highlight();};
-    const back=()=>{if(submitted)return;if(revealed)this.showCard(card,mob,playerState);};
+    const back=()=>{if(submitted)return;if(revealed)this.showCard(card,mob,playerState,media);};
     const preferences=loadControls();
     if(preferences.mode!=='tap'){
       const pad=document.createElement('div');pad.className='review-controller';pad.setAttribute('aria-label','Review controls');
@@ -263,14 +321,34 @@ export class EncounterPanel {
     return wrap;
   }
 
-  showCard(card, mob, playerState) {
-    this.content.replaceChildren(this._buildCardContent(card, mob, playerState, { revealed: false }));
-    this._setHeight(this._preferredCombatHeight);
+  // True if these parts (a card's front, or front+back) need the full-height
+  // treatment: any image, or enough combined text that a cramped sheet would
+  // get in the way of reading it.
+  _needsFullView(...partsLists) {
+    let chars = 0;
+    for (const parts of partsLists) {
+      for (const part of Array.isArray(parts) ? parts : [{ t: "text", v: parts ?? "" }]) {
+        if (part.t === "img") return true;
+        chars += part.v?.length ?? 0;
+      }
+    }
+    return chars > LONG_TEXT_CHARS;
+  }
+
+  // media: optional Map<filename, objectURL> for this card's deck (app.js
+  // builds it from DB.mediaForDeck's Blobs). Omitted, images just don't render.
+  showCard(card, mob, playerState, media) {
+    this.content.replaceChildren(this._buildCardContent(card, mob, playerState, { revealed: false, media }));
+    this._setHeight(this._needsFullView(card.front) ? "full" : this._preferredCombatHeight);
     this.content.firstElementChild?.focus({preventScroll:true});
   }
 
-  reveal(card, mob, playerState) {
-    this.content.replaceChildren(this._buildCardContent(card, mob, playerState, { revealed: true }));
+  reveal(card, mob, playerState, media) {
+    this.content.replaceChildren(this._buildCardContent(card, mob, playerState, { revealed: true, media }));
+    // The back can turn a short question into a long or image-bearing answer
+    // (or vice versa going "back" to the front) -- re-check every time either
+    // side of the card changes what's on screen, don't just inherit showCard's height.
+    this._setHeight(this._needsFullView(card.front, card.back) ? "full" : this._preferredCombatHeight);
     this.content.firstElementChild?.focus({preventScroll:true});
   }
 
@@ -284,14 +362,20 @@ export class EncounterPanel {
   }
 
   _onHandlePointerDown(event) {
-    if (this._state !== "default" && this._state !== "expanded") return; // only draggable during combat, not peek/retracted
+    // Draggable during combat (default/expanded), and from an auto-expanded
+    // "full" card so a long/image card never traps the handle -- not from
+    // peek/retracted, which aren't combat reading states at all.
+    if (!["default", "expanded", "full"].includes(this._state)) return;
     const dragStartY = event.clientY;
-    const dragStartHeight = HEIGHTS[this._state];
+    // Clamped into the normal drag range even from "full" (an oversized
+    // sentinel height, see HEIGHTS.full) -- otherwise the first pointermove
+    // below would need an impossible multi-thousand-pixel drag to register.
+    const dragStartHeight = Math.min(HEIGHTS.expanded, HEIGHTS[this._state]);
     let dragHeight = dragStartHeight; // tracks the intended target height, not the rendered one
 
     const onMove = (moveEvent) => {
       const delta = dragStartY - moveEvent.clientY; // dragging up increases height
-      const nextHeight = Math.min(HEIGHTS.expanded, Math.max(HEIGHTS.default, dragStartHeight + delta));
+      const nextHeight = Math.min(HEIGHTS.expanded, this._maxSheetHeightPx(), Math.max(HEIGHTS.default, dragStartHeight + delta));
       dragHeight = nextHeight;
       this.root.style.height = `${nextHeight}px`;
     };
